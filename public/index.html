@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Frontdesk</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="chat-container">
+    <header class="chat-header">
+      <div class="avatar">AI</div>
+      <div class="header-text">
+        <h1>Frontdesk Assistant</h1>
+        <p class="status"><span class="dot"></span> Online</p>
+      </div>
+      <a href="/admin.html" class="settings-link" title="Business settings">⚙</a>
+    </header>
+
+    <main id="messages" class="messages" aria-live="polite"></main>
+
+    <form id="chat-form" class="chat-form" autocomplete="off">
+      <input
+        id="chat-input"
+        type="text"
+        placeholder="Type your message..."
+        required
+        autofocus
+      />
+      <button type="submit" id="send-btn" aria-label="Send">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path d="M2 21l21-9L2 3v7l15 2-15 2z"/>
+        </svg>
+      </button>
+    </form>
+  </div>
+
+  <script src="/js/chat.js"></script>
+</body>
+</html>

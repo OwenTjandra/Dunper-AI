@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Business Settings — Frontdesk AI</title>
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <div>
+        <h1>Business Settings</h1>
+        <p class="subtitle">This is what your AI frontdesk knows about your business. Changes save instantly.</p>
+      </div>
+      <a href="/" class="link-btn">← Back to chat</a>
+    </header>
+
+    <form id="business-form" class="form">
+      <section class="card">
+        <h2>Basic Info</h2>
+        <label>
+          <span>Business Name</span>
+          <input name="name" type="text" required />
+        </label>
+        <label>
+          <span>Business Type</span>
+          <input name="type" type="text" placeholder="e.g. dental clinic, salon, bakery" required />
+        </label>
+        <label>
+          <span>Operating Hours</span>
+          <textarea name="hours" rows="2" placeholder="Mon-Fri 9am-5pm. Closed weekends." required></textarea>
+        </label>
+        <div class="row">
+          <label>
+            <span>Address</span>
+            <input name="address" type="text" required />
+          </label>
+          <label>
+            <span>Phone</span>
+            <input name="phone" type="text" required />
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Services</h2>
+          <button type="button" class="ghost-btn" id="add-service">+ Add service</button>
+        </div>
+        <div id="services-list" class="list"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Booking Rules</h2>
+          <button type="button" class="ghost-btn" id="add-rule">+ Add rule</button>
+        </div>
+        <p class="hint">One rule per line. Example: "Minimum 24 hours advance notice."</p>
+        <div id="rules-list" class="list"></div>
+      </section>
+
+      <section class="card">
+        <h2>Voice & Fallback</h2>
+        <label>
+          <span>Tone of voice</span>
+          <textarea name="tone" rows="2" placeholder="Warm, professional, reassuring." required></textarea>
+        </label>
+        <label>
+          <span>Fallback message (when AI doesn't know)</span>
+          <textarea name="fallback_contact" rows="2" placeholder="If a question is outside what you can help with, ask the customer to call us at..." required></textarea>
+        </label>
+      </section>
+
+      <div class="actions">
+        <button type="submit" class="primary-btn" id="save-btn">Save Changes</button>
+        <span id="status" class="status"></span>
+      </div>
+    </form>
+  </div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+{
+  "name": "Dr. Smith Dental Clinic",
+  "type": "dental clinic",
+  "hours": "Monday to Friday, 9:00 AM - 5:00 PM. Closed weekends and public holidays.",
+  "address": "123 Example Street, Jakarta",
+  "phone": "+62 21 1234 5678",
+  "tone": "Warm, professional, and reassuring. Many patients are nervous about dental visits.",
+  "fallback_contact": "If a question is outside what you can help with, ask the customer to call us at +62 21 1234 5678 during business hours.",
+  "services": [
+    {
+      "name": "Routine Cleaning",
+      "duration_minutes": 30,
+      "price": "Rp 350,000"
+    },
+    {
+      "name": "Filling",
+      "duration_minutes": 45,
+      "price": "Rp 500,000"
+    },
+    {
+      "name": "Teeth Whitening",
+      "duration_minutes": 60,
+      "price": "Rp 1,500,000"
+    },
+    {
+      "name": "Consultation",
+      "duration_minutes": 20,
+      "price": "Free for new patients"
+    }
+  ],
+  "booking_rules": [
+    "Appointments require at least 24 hours advance notice.",
+    "Cancellations must be made at least 12 hours before the appointment.",
+    "No appointments on Sundays or public holidays.",
+    "First-time patients should arrive 15 minutes early to fill out paperwork."
+  ]
+}
