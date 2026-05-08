@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in — Frontdesk AI</title>
+  <link rel="stylesheet" href="/css/admin.css" />
+  <style>
+    body { display: flex; align-items: center; justify-content: center; }
+    .login-card { max-width: 380px; width: 100%; }
+    .login-card h1 {
+      font-size: 24px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 4px;
+    }
+    .login-card p.subtitle { margin-bottom: 16px; }
+    .login-error {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      display: none;
+    }
+    .login-error.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="card login-card">
+    <h1>Sign in</h1>
+    <p class="subtitle">Business dashboard access only. Customers don't need this.</p>
+
+    <form id="login-form">
+      <label>
+        <span>Username</span>
+        <input name="username" type="text" required autofocus />
+      </label>
+      <label>
+        <span>Password</span>
+        <input name="password" type="password" required />
+      </label>
+      <div id="login-error" class="login-error"></div>
+      <button type="submit" class="primary-btn" id="login-btn">Sign in</button>
+    </form>
+  </div>
+
+  <script src="/js/login.js"></script>
+</body>
+</html>

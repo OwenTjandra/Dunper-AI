@@ -2,8 +2,14 @@ require('dotenv').config();
 const fs = require('fs');
 const os = require('os');
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const { askClaude } = require('./config/claude');
+const { seedAdminFromEnv, purgeExpiredSessions } = require('./db');
+const { router: authRouter, attachUser, requireAuth } = require('./auth');
+
+seedAdminFromEnv();
+purgeExpiredSessions();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -69,17 +75,26 @@ function validateBusiness(b) {
 }
 
 app.use(express.json());
+app.use(cookieParser());
+app.use(attachUser);
+
+app.use('/api/auth', authRouter);
+
+app.use((req, res, next) => {
+  if (req.path === '/admin.html') return requireAuth(req, res, next);
+  next();
+});
 app.use(express.static(path.join(__dirname, '../public')));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'Server is running', business: business.name });
 });
 
-app.get('/api/business', (req, res) => {
+app.get('/api/business', requireAuth, (req, res) => {
   res.json(business);
 });
 
-app.post('/api/business', (req, res) => {
+app.post('/api/business', requireAuth, (req, res) => {
   const updated = req.body;
   const error = validateBusiness(updated);
   if (error) return res.status(400).json({ error });

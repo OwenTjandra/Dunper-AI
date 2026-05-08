@@ -7,7 +7,8 @@ An AI-powered chatbot frontdesk for local SMEs. Customers chat in the browser; C
 - **Backend:** Node.js + Express
 - **AI:** Anthropic Claude Sonnet 4.6
 - **Frontend:** Plain HTML/CSS/JS (no framework)
-- **Config:** Single `business.json` file, editable in-browser at `/admin.html`
+- **Storage:** SQLite (`data.db`) for users + sessions; `business.json` for live business config
+- **Config:** Editable in-browser at `/admin.html` (login required)
 
 ## Getting started
 
@@ -15,15 +16,18 @@ An AI-powered chatbot frontdesk for local SMEs. Customers chat in the browser; C
 # 1. Install dependencies
 npm install
 
-# 2. Add your Anthropic API key
+# 2. Add your Anthropic API key + admin credentials
 cp .env.example .env
-# then edit .env and paste your real sk-ant-api03-... key
+# then edit .env: paste your sk-ant-api03-... key
+# and set ADMIN_USERNAME / ADMIN_PASSWORD (used to seed the first admin user)
 
 # 3. Run the server
 npm start
 ```
 
-Open http://localhost:3000 for the chat, or http://localhost:3000/admin.html to edit the business config.
+Open http://localhost:3000 for the chat, or http://localhost:3000/admin.html for the business dashboard (you'll be redirected to /login.html the first time).
+
+The first time the server starts with no users in `data.db`, it seeds an admin from `ADMIN_USERNAME` / `ADMIN_PASSWORD`. After that, changing those env vars has no effect — log in with the seeded credentials and (later) use the dashboard to change them.
 
 ## Testing on your local network
 
@@ -47,22 +51,26 @@ New-NetFirewallRule -DisplayName "FrontDesk Dev (TCP 3000)" -Direction Inbound -
 
 **macOS** (for the Mac mini): System Settings → Network → Firewall → Options → allow incoming connections for `node`. Or disable the firewall on a trusted LAN.
 
-> ⚠ **Security note:** the admin page (`/admin.html`) has no authentication yet, so anyone on the same Wi-Fi can change the business config. The Windows rule above is scoped to the `Private` network profile so it won't apply on coffee-shop / airport Wi-Fi — confirm your home network is marked **Private** in Windows network settings. Don't enable LAN access on untrusted networks until auth is in place.
+> ⚠ **Security note:** the admin page now requires login, but the customer chat is fully open. Anyone on the same Wi-Fi can use the chat (which is the point) and that means consuming your API quota. The Windows rule above is scoped to the `Private` network profile so it won't apply on coffee-shop / airport Wi-Fi — confirm your home network is marked **Private** in Windows network settings.
 
 ## Project layout
 
 ```
 frontdesk-ai/
 ├── src/
-│   ├── server.js          Express server, /chat + /api/business endpoints
+│   ├── server.js          Express server, routes, middleware wiring
+│   ├── auth.js            Login/logout endpoints + session middleware
+│   ├── db.js              SQLite setup (users, sessions) + seed
 │   └── config/claude.js   Claude SDK wrapper
 ├── public/
-│   ├── index.html         Chat UI
-│   ├── admin.html         Business config form
+│   ├── index.html         Chat UI (open to all)
+│   ├── login.html         Sign-in page for the dashboard
+│   ├── admin.html         Business dashboard (login required)
 │   ├── css/               Styles
 │   └── js/                Frontend logic
 ├── business.json          Live business config (name, hours, services, rules)
-├── .env                   API key (not committed)
+├── data.db                SQLite database — users + sessions (gitignored)
+├── .env                   API key + admin seed (gitignored)
 └── package.json
 ```
 
@@ -84,6 +92,10 @@ Saving from the admin form rebuilds the system prompt immediately — no server 
 - [x] Day 2 — `/chat` endpoint with conversation history
 - [x] Day 3 — Chat UI (message bubbles, typing indicator, mobile-responsive)
 - [x] Day 3.5 — Per-business config + admin form
+- [x] Stage 1a — Admin auth wall (SQLite users + sessions, login page)
+- [ ] Stage 1b — Version log of business.json changes + restore UI
+- [ ] Stage 2 — AI assistant in the dashboard that edits business config via tool use
+- [ ] Stage 3 — File uploads + client profiles
 - [ ] Day 4 — Google Calendar integration + `book_appointment` tool
 - [ ] Day 5 — Business dashboard (bookings, sentiment, customer log)
 - [ ] Day 6 — Cloudflare Tunnel + PM2 for going live

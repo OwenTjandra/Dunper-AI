@@ -83,15 +83,30 @@ function setStatus(text, kind) {
   if (kind === 'ok') setTimeout(() => { statusEl.textContent = ''; }, 2500);
 }
 
+function handleUnauthorized(res) {
+  if (res.status === 401) {
+    window.location.href = '/login.html';
+    return true;
+  }
+  return false;
+}
+
 async function loadBusiness() {
   try {
     const res = await fetch('/api/business');
+    if (handleUnauthorized(res)) return;
     const data = await res.json();
     fillForm(data);
   } catch (err) {
     setStatus(`Failed to load: ${err.message}`, 'err');
   }
 }
+
+async function logout() {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  window.location.href = '/login.html';
+}
+document.getElementById('logout-btn')?.addEventListener('click', logout);
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -103,6 +118,7 @@ form.addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(collectForm()),
     });
+    if (handleUnauthorized(res)) return;
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Save failed');
     setStatus('Saved ✓', 'ok');

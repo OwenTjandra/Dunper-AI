@@ -37,6 +37,12 @@ body {
   margin-top: 4px;
 }
 
+.header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .link-btn {
   text-decoration: none;
   color: #667eea;
@@ -46,6 +52,8 @@ body {
   border-radius: 8px;
   border: 1px solid #e5e7eb;
   background: #fff;
+  cursor: pointer;
+  font-family: inherit;
   transition: background 0.15s;
 }
 .link-btn:hover { background: #f9fafb; }

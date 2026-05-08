@@ -4,6 +4,12 @@ node_modules/
 .DS_Store
 *.log
 
+# SQLite database — local data, never commit
+data.db
+data.db-journal
+data.db-wal
+data.db-shm
+
 # Google service account credentials — NEVER commit
 ai-frontdesk-*.json
 *-service-account.json
