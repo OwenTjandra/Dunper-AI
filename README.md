@@ -20,10 +20,34 @@ cp .env.example .env
 # then edit .env and paste your real sk-ant-api03-... key
 
 # 3. Run the server
-node src/server.js
+npm start
 ```
 
 Open http://localhost:3000 for the chat, or http://localhost:3000/admin.html to edit the business config.
+
+## Testing on your local network
+
+Other devices on the same Wi-Fi (your phone, another laptop) can hit the server too — useful for testing the chat on mobile without deploying anywhere.
+
+On startup the server prints all reachable URLs, e.g.:
+
+```
+Local:  http://localhost:3000
+LAN:    http://192.168.11.68:3000
+Admin:  http://localhost:3000/admin.html
+```
+
+To allow inbound connections, open the port in the OS firewall once.
+
+**Windows** (run PowerShell as Administrator):
+
+```powershell
+New-NetFirewallRule -DisplayName "FrontDesk Dev (TCP 3000)" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow -Profile Private
+```
+
+**macOS** (for the Mac mini): System Settings → Network → Firewall → Options → allow incoming connections for `node`. Or disable the firewall on a trusted LAN.
+
+> ⚠ **Security note:** the admin page (`/admin.html`) has no authentication yet, so anyone on the same Wi-Fi can change the business config. The Windows rule above is scoped to the `Private` network profile so it won't apply on coffee-shop / airport Wi-Fi — confirm your home network is marked **Private** in Windows network settings. Don't enable LAN access on untrusted networks until auth is in place.
 
 ## Project layout
 
