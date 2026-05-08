@@ -29,11 +29,22 @@ const {
   getCustomerSummary,
   markWhatsAppMessageProcessed,
   purgeOldWhatsAppMessages,
+  createEscalation,
+  listOpenEscalations,
+  listAllEscalations,
+  resolveEscalation,
+  logUnansweredQuestion,
+  listUnansweredQuestions,
+  reviewUnansweredQuestion,
+  recordOutboxEmail,
+  listOutboxEmails,
+  getMetricsSnapshot,
 } = require('./db');
 const { getAvailableSlots, bookSlot } = require('./bookings');
 const googleIntegration = require('./integrations/google');
 const whatsapp = require('./integrations/whatsapp');
 const conversation = require('./conversation');
+const emailService = require('./email');
 const { router: authRouter, attachUser, requireAuth } = require('./auth');
 const { getBusiness, getSystemPrompt, applyBusinessUpdate } = require('./business');
 const { runAdminChat } = require('./admin_chat');
@@ -251,6 +262,7 @@ app.post('/chat', chatLimiter, attachCustomerProfile, (req, res) => {
       const reply = await askClaude(messages, getSystemPrompt());
       recordCustomerMessage(req.customerProfile.id, 'assistant', reply);
       conversation.maybeCompactInBackground(req.customerProfile.id);
+      maybeFlagUnanswered({ profileId: req.customerProfile.id, messageId, questionText: text, replyText: reply });
 
       res.json({ reply });
     } catch (err) {
@@ -366,6 +378,7 @@ app.post('/api/customer/bookings', attachCustomerProfile, (req, res) => {
     dateStr: String(date),
     time: String(time),
     notes: notes ? String(notes) : null,
+    source: 'web',
   });
   if (result.error) return res.status(result.status || 400).json({ error: result.error });
 
@@ -378,6 +391,9 @@ app.post('/api/customer/bookings', attachCustomerProfile, (req, res) => {
   }
 
   syncBookingToGoogle(result.booking, req.customerProfile.id);
+  setImmediate(() => emailService.sendBookingConfirmation(result.booking).catch(err =>
+    console.error('[Email] booking confirmation failed:', err.message)
+  ));
 
   res.json({ ok: true, booking: result.booking });
 });
@@ -429,10 +445,14 @@ app.post('/api/bookings', requireAuth, (req, res) => {
     dateStr: String(date),
     time: String(time),
     notes: notes ? String(notes) : null,
+    source: 'admin',
   });
   if (result.error) return res.status(result.status || 400).json({ error: result.error });
 
   syncBookingToGoogle(result.booking, null);
+  setImmediate(() => emailService.sendBookingConfirmation(result.booking).catch(err =>
+    console.error('[Email] booking confirmation failed:', err.message)
+  ));
 
   res.json({ ok: true, booking: result.booking });
 });
@@ -513,6 +533,48 @@ app.get('/api/profiles/:id/summary', requireAuth, (req, res) => {
   const summary = getCustomerSummary(Number(req.params.id));
   if (!summary) return res.status(404).json({ error: 'No summary yet.' });
   res.json({ summary });
+});
+
+app.post('/api/customer/escalate', attachCustomerProfile, (req, res) => {
+  const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim().slice(0, 500) : null;
+  const id = createEscalation({ profileId: req.customerProfile.id, reason });
+  recordCustomerMessage(req.customerProfile.id, 'user', '[Customer requested a human agent]');
+  res.json({ ok: true, id });
+});
+
+app.get('/api/escalations', requireAuth, (req, res) => {
+  const status = (req.query.status || 'open').toString();
+  const list = status === 'all' ? listAllEscalations() : listOpenEscalations();
+  res.json({ escalations: list });
+});
+
+app.post('/api/escalations/:id/resolve', requireAuth, (req, res) => {
+  const id = Number(req.params.id);
+  const note = typeof req.body?.note === 'string' ? req.body.note.trim() : null;
+  const ok = resolveEscalation(id, { username: req.user?.username, note });
+  if (!ok) return res.status(404).json({ error: 'Escalation not found or already resolved.' });
+  res.json({ ok: true });
+});
+
+app.get('/api/unanswered', requireAuth, (req, res) => {
+  res.json({ unanswered: listUnansweredQuestions() });
+});
+
+app.post('/api/unanswered/:id/review', requireAuth, (req, res) => {
+  const id = Number(req.params.id);
+  const note = typeof req.body?.note === 'string' ? req.body.note.trim() : null;
+  const status = req.body?.status === 'answered' ? 'answered' : 'reviewed';
+  const ok = reviewUnansweredQuestion(id, { username: req.user?.username, note, status });
+  if (!ok) return res.status(404).json({ error: 'Item not found.' });
+  res.json({ ok: true });
+});
+
+app.get('/api/metrics', requireAuth, (req, res) => {
+  res.json(getMetricsSnapshot());
+});
+
+app.get('/api/email/outbox', requireAuth, (req, res) => {
+  res.json({ emails: listOutboxEmails(), config: emailService.status() });
 });
 
 app.get('/api/integrations/google', requireAuth, (req, res) => {
@@ -601,6 +663,37 @@ app.get('/api/integrations/whatsapp', requireAuth, (req, res) => {
   res.json(whatsapp.status());
 });
 
+const UNCERTAINTY_PHRASES = [
+  /\bi (?:do not|don't|cannot|can't) (?:know|tell|determine|see)\b/i,
+  /\bi'?m (?:not (?:sure|certain)|unable)\b/i,
+  /\bi (?:would|'d) recommend (?:calling|reaching out|contacting)\b/i,
+  /\bplease (?:call|contact|reach out)\b/i,
+  /\b(?:that|this) is outside (?:what|my)\b/i,
+  /\bi (?:do not|don't) have (?:that|this|the) information\b/i,
+  /\bunfortunately,? i (?:cannot|can't|don't|do not)\b/i,
+];
+
+function repliesIndicateUncertainty(replyText) {
+  if (!replyText) return false;
+  return UNCERTAINTY_PHRASES.some(rx => rx.test(replyText));
+}
+
+function maybeFlagUnanswered({ profileId, messageId, questionText, replyText }) {
+  if (!questionText || !questionText.trim()) return;
+  if (!repliesIndicateUncertainty(replyText)) return;
+  try {
+    logUnansweredQuestion({
+      profileId,
+      messageId,
+      questionText,
+      replyText,
+      reason: 'fallback_phrase',
+    });
+  } catch (err) {
+    console.error('[Unanswered] log failed:', err.message);
+  }
+}
+
 async function handleWhatsAppPayload(payload) {
   const messages = whatsapp.parseInbound(payload);
   for (const msg of messages) {
@@ -642,6 +735,7 @@ async function handleWhatsAppPayload(payload) {
 
     recordCustomerMessage(profile.id, 'assistant', reply);
     conversation.maybeCompactInBackground(profile.id);
+    maybeFlagUnanswered({ profileId: profile.id, messageId: null, questionText: msg.text, replyText: reply });
 
     const sendResult = await whatsapp.sendText(msg.from, reply);
     if (!sendResult.ok && !sendResult.skipped) {

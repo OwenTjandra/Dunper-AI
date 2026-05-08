@@ -31,6 +31,9 @@ const TRANSLATIONS = {
     networkError: 'Network error',
     booked: 'Booked',
     seeYouThen: "We'll see you then!",
+    askHuman: 'Human',
+    handoffSent: "We've notified the team. Someone will get back to you shortly.",
+    handoffFailed: "Couldn't notify the team — please try again.",
   },
   id: {
     online: 'Online',
@@ -64,6 +67,9 @@ const TRANSLATIONS = {
     networkError: 'Kesalahan jaringan',
     booked: 'Terjadwal',
     seeYouThen: 'Sampai jumpa nanti!',
+    askHuman: 'Manusia',
+    handoffSent: 'Tim sudah kami beri tahu. Seseorang akan segera menghubungi Anda.',
+    handoffFailed: 'Gagal memberi tahu tim — coba lagi.',
   },
 };
 

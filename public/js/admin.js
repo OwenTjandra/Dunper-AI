@@ -1275,3 +1275,193 @@ function setupCollapsibleCards() {
   });
 }
 setupCollapsibleCards();
+
+const metricsGridEl = document.getElementById('metrics-grid');
+const refreshMetricsBtn = document.getElementById('refresh-metrics');
+const escalationsListEl = document.getElementById('escalations-list');
+const refreshEscalationsBtn = document.getElementById('refresh-escalations');
+const unansweredListEl = document.getElementById('unanswered-list');
+const refreshUnansweredBtn = document.getElementById('refresh-unanswered');
+const emailsListEl = document.getElementById('emails-list');
+const emailStatusLine = document.getElementById('email-status-line');
+const refreshEmailsBtn = document.getElementById('refresh-emails');
+
+function metricCard(label, value, sub) {
+  const safeValue = value ?? 0;
+  const subHtml = sub ? `<span class="metric-sub">${escapeHtml(sub)}</span>` : '';
+  return `<div class="metric"><span class="metric-label">${escapeHtml(label)}</span><span class="metric-value">${escapeHtml(String(safeValue))}</span>${subHtml}</div>`;
+}
+
+async function loadMetrics() {
+  if (!metricsGridEl) return;
+  metricsGridEl.innerHTML = '<p class="hint">Loading…</p>';
+  try {
+    const res = await fetch('/api/metrics');
+    if (handleUnauthorized(res)) return;
+    const m = await res.json();
+
+    const sentimentTotal = (m.sentimentBreakdown || []).reduce((s, r) => s + r.n, 0);
+    const sentimentSummary = sentimentTotal > 0
+      ? (m.sentimentBreakdown || []).map(r => `${r.sentiment} ${r.n}`).join(' · ')
+      : '—';
+    const sourceSummary = (m.bookingsBySource || []).map(r => `${r.source} ${r.n}`).join(' · ') || '—';
+
+    metricsGridEl.innerHTML = [
+      metricCard('Conversations', m.conversations),
+      metricCard('Customer messages', m.customerMessages),
+      metricCard('Conversion rate', `${m.conversionRate}%`, 'bookings ÷ conversations'),
+      metricCard('Bookings today', m.todayBookings),
+      metricCard('Bookings this week', m.weekBookings),
+      metricCard('Bookings this month', m.monthBookings),
+      metricCard('Top service', m.topService?.name || '—', m.topService ? `${m.topService.count} bookings (last 30d)` : null),
+      metricCard('Booking sources', sourceSummary),
+      metricCard('Sentiment', sentimentSummary),
+      metricCard('Open escalations', m.openEscalations),
+      metricCard('Open unanswered Qs', m.openUnanswered),
+      metricCard('Cancelled bookings', m.cancelledBookings),
+    ].join('');
+  } catch (err) {
+    metricsGridEl.innerHTML = `<p class="hint err">Failed: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function loadEscalations() {
+  if (!escalationsListEl) return;
+  escalationsListEl.innerHTML = '<p class="hint">Loading…</p>';
+  try {
+    const res = await fetch('/api/escalations?status=open');
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    if (!data.escalations?.length) {
+      escalationsListEl.innerHTML = '<p class="hint">No customers waiting.</p>';
+      return;
+    }
+    escalationsListEl.innerHTML = '';
+    data.escalations.forEach(e => {
+      const row = document.createElement('div');
+      row.className = 'alert-row';
+      const when = new Date(e.created_at).toLocaleString();
+      row.innerHTML = `
+        <div class="alert-meta">
+          <strong>${escapeHtml(e.customer_name || '(unnamed)')}</strong>
+          <span class="alert-sub">${escapeHtml(e.customer_phone || '')} · ${escapeHtml(e.customer_email || '')}</span>
+          <span class="alert-sub">${escapeHtml(e.reason || '')}</span>
+          <span class="alert-time">since ${escapeHtml(when)}</span>
+        </div>
+      `;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ghost-btn';
+      btn.textContent = 'Mark resolved';
+      btn.addEventListener('click', async () => {
+        const note = prompt('Resolution note (optional):') || '';
+        btn.disabled = true;
+        const r = await fetch(`/api/escalations/${e.id}/resolve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ note }),
+        });
+        if (handleUnauthorized(r)) return;
+        if (r.ok) { loadEscalations(); loadMetrics(); }
+        else { btn.disabled = false; alert('Failed.'); }
+      });
+      row.appendChild(btn);
+      escalationsListEl.appendChild(row);
+    });
+  } catch (err) {
+    escalationsListEl.innerHTML = `<p class="hint err">Failed: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function loadUnanswered() {
+  if (!unansweredListEl) return;
+  unansweredListEl.innerHTML = '<p class="hint">Loading…</p>';
+  try {
+    const res = await fetch('/api/unanswered');
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    const open = (data.unanswered || []).filter(u => u.status === 'open');
+    if (!open.length) {
+      unansweredListEl.innerHTML = '<p class="hint">Nothing flagged.</p>';
+      return;
+    }
+    unansweredListEl.innerHTML = '';
+    open.forEach(u => {
+      const row = document.createElement('div');
+      row.className = 'alert-row';
+      const when = new Date(u.created_at).toLocaleString();
+      row.innerHTML = `
+        <div class="alert-meta">
+          <strong>Q:</strong> ${escapeHtml(u.question_text)}
+          <span class="alert-sub"><strong>AI replied:</strong> ${escapeHtml((u.reply_text || '').slice(0, 200))}${(u.reply_text || '').length > 200 ? '…' : ''}</span>
+          <span class="alert-time">${escapeHtml(u.customer_name || 'unnamed')} · ${escapeHtml(when)}</span>
+        </div>
+      `;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ghost-btn';
+      btn.textContent = 'Mark reviewed';
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        const r = await fetch(`/api/unanswered/${u.id}/review`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'reviewed' }),
+        });
+        if (handleUnauthorized(r)) return;
+        if (r.ok) { loadUnanswered(); loadMetrics(); }
+        else { btn.disabled = false; alert('Failed.'); }
+      });
+      row.appendChild(btn);
+      unansweredListEl.appendChild(row);
+    });
+  } catch (err) {
+    unansweredListEl.innerHTML = `<p class="hint err">Failed: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function loadEmails() {
+  if (!emailsListEl) return;
+  emailsListEl.innerHTML = '<p class="hint">Loading…</p>';
+  try {
+    const res = await fetch('/api/email/outbox');
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    if (emailStatusLine) {
+      emailStatusLine.textContent = data.config?.configured
+        ? '✓ SMTP configured — emails will actually send.'
+        : '✗ SMTP not configured. Set SMTP_HOST/PORT/USER/PASS in .env to start delivering.';
+    }
+    if (!data.emails?.length) {
+      emailsListEl.innerHTML = '<p class="hint">No confirmation emails yet.</p>';
+      return;
+    }
+    emailsListEl.innerHTML = '';
+    data.emails.forEach(e => {
+      const row = document.createElement('div');
+      row.className = `alert-row email-${e.status}`;
+      const when = new Date(e.created_at).toLocaleString();
+      row.innerHTML = `
+        <div class="alert-meta">
+          <strong>${escapeHtml(e.subject)}</strong>
+          <span class="alert-sub">to ${escapeHtml(e.to_address)}</span>
+          ${e.error_text ? `<span class="alert-sub err">${escapeHtml(e.error_text)}</span>` : ''}
+          <span class="alert-time">${escapeHtml(e.status)} · ${escapeHtml(when)}</span>
+        </div>
+      `;
+      emailsListEl.appendChild(row);
+    });
+  } catch (err) {
+    emailsListEl.innerHTML = `<p class="hint err">Failed: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+refreshMetricsBtn?.addEventListener('click', loadMetrics);
+refreshEscalationsBtn?.addEventListener('click', loadEscalations);
+refreshUnansweredBtn?.addEventListener('click', loadUnanswered);
+refreshEmailsBtn?.addEventListener('click', loadEmails);
+
+loadMetrics();
+loadEscalations();
+loadUnanswered();
+loadEmails();

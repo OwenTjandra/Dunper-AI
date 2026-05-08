@@ -221,6 +221,24 @@ async function loadBusinessBranding() {
 
 window.addEventListener('load', () => { loadBusinessBranding(); loadExisting(); });
 
+const handoffBtn = document.getElementById('handoff-btn');
+handoffBtn?.addEventListener('click', async () => {
+  handoffBtn.disabled = true;
+  try {
+    const res = await fetch('/api/customer/escalate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'Requested from chat header' }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    addMessage('assistant', t('handoffSent'));
+  } catch (err) {
+    addMessage('error', `${t('handoffFailed')}: ${err.message}`);
+  } finally {
+    setTimeout(() => { handoffBtn.disabled = false; }, 30000);
+  }
+});
+
 window.appendBookingConfirmation = function (booking) {
   const lang = (window.getCurrentLang && window.getCurrentLang()) || 'en';
   const localeMap = { en: 'en-US', id: 'id-ID', ms: 'ms-MY' };

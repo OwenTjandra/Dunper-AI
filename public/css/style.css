@@ -80,6 +80,23 @@ body {
   border-radius: 50%;
 }
 
+.handoff-btn {
+  margin-left: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: inherit;
+  transition: background 0.15s;
+  padding: 0;
+}
+.handoff-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.16); }
+.handoff-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 .book-btn {
   margin-left: 8px;
   background: linear-gradient(135deg, #667eea, #764ba2);

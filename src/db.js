@@ -343,8 +343,8 @@ function updateCustomerProfile(id, fields) {
 function createBooking(b) {
   const result = db.prepare(`
     INSERT INTO bookings
-      (profile_id, customer_name, customer_phone, customer_email, service_name, duration_minutes, starts_at, ends_at, status, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (profile_id, customer_name, customer_phone, customer_email, service_name, duration_minutes, starts_at, ends_at, status, notes, source)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     b.profileId ?? null,
     b.customerName,
@@ -355,7 +355,8 @@ function createBooking(b) {
     b.startsAt,
     b.endsAt,
     b.status ?? 'confirmed',
-    b.notes ?? null
+    b.notes ?? null,
+    b.source ?? 'web'
   );
   return getBookingById(result.lastInsertRowid);
 }
@@ -452,6 +453,153 @@ function clearGoogleConnection() {
   db.prepare('DELETE FROM google_connection WHERE id = 1').run();
 }
 
+function createEscalation({ profileId, reason }) {
+  const result = db.prepare(`
+    INSERT INTO escalations (profile_id, reason) VALUES (?, ?)
+  `).run(profileId, reason ?? null);
+  return result.lastInsertRowid;
+}
+
+function listOpenEscalations() {
+  return db.prepare(`
+    SELECT e.*,
+           p.name AS customer_name, p.phone AS customer_phone, p.email AS customer_email,
+           p.session_id AS profile_session_id
+    FROM escalations e
+    LEFT JOIN customer_profiles p ON p.id = e.profile_id
+    WHERE e.status = 'pending'
+    ORDER BY e.created_at ASC
+  `).all();
+}
+
+function listAllEscalations(limit = 100) {
+  return db.prepare(`
+    SELECT e.*,
+           p.name AS customer_name, p.phone AS customer_phone, p.email AS customer_email
+    FROM escalations e
+    LEFT JOIN customer_profiles p ON p.id = e.profile_id
+    ORDER BY e.created_at DESC
+    LIMIT ?
+  `).all(limit);
+}
+
+function resolveEscalation(id, { username, note }) {
+  const info = db.prepare(`
+    UPDATE escalations
+       SET status = 'resolved', resolved_by_username = ?, resolved_note = ?, resolved_at = CURRENT_TIMESTAMP
+     WHERE id = ? AND status = 'pending'
+  `).run(username ?? null, note ?? null, id);
+  return info.changes > 0;
+}
+
+function logUnansweredQuestion({ profileId, messageId, questionText, replyText, reason }) {
+  const result = db.prepare(`
+    INSERT INTO unanswered_questions (profile_id, message_id, question_text, reply_text, reason)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(profileId, messageId ?? null, questionText, replyText ?? null, reason ?? 'fallback_phrase');
+  return result.lastInsertRowid;
+}
+
+function listUnansweredQuestions(limit = 100) {
+  return db.prepare(`
+    SELECT u.*,
+           p.name AS customer_name, p.phone AS customer_phone, p.email AS customer_email
+    FROM unanswered_questions u
+    LEFT JOIN customer_profiles p ON p.id = u.profile_id
+    ORDER BY u.created_at DESC
+    LIMIT ?
+  `).all(limit);
+}
+
+function reviewUnansweredQuestion(id, { username, note, status }) {
+  const info = db.prepare(`
+    UPDATE unanswered_questions
+       SET status = ?, reviewed_by_username = ?, reviewed_note = ?, reviewed_at = CURRENT_TIMESTAMP
+     WHERE id = ?
+  `).run(status || 'reviewed', username ?? null, note ?? null, id);
+  return info.changes > 0;
+}
+
+function recordOutboxEmail({ toAddress, subject, bodyText, bodyHtml, category, relatedId, status, errorText, sentAt }) {
+  const result = db.prepare(`
+    INSERT INTO email_outbox (to_address, subject, body_text, body_html, category, related_id, status, error_text, sent_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    toAddress,
+    subject,
+    bodyText,
+    bodyHtml ?? null,
+    category,
+    relatedId ?? null,
+    status || 'pending',
+    errorText ?? null,
+    sentAt ?? null
+  );
+  return result.lastInsertRowid;
+}
+
+function listOutboxEmails(limit = 50) {
+  return db.prepare(`
+    SELECT id, to_address, subject, category, related_id, status, error_text, created_at, sent_at
+    FROM email_outbox
+    ORDER BY id DESC
+    LIMIT ?
+  `).all(limit);
+}
+
+function getMetricsSnapshot() {
+  const conversations = db.prepare('SELECT COUNT(*) AS n FROM customer_profiles').get().n;
+  const totalBookings = db.prepare("SELECT COUNT(*) AS n FROM bookings WHERE status != 'cancelled'").get().n;
+  const cancelledBookings = db.prepare("SELECT COUNT(*) AS n FROM bookings WHERE status = 'cancelled'").get().n;
+
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 7);
+  const monthStart = new Date(); monthStart.setMonth(monthStart.getMonth() - 1);
+
+  const todayBookings = db.prepare(`SELECT COUNT(*) AS n FROM bookings WHERE status != 'cancelled' AND starts_at >= ?`).get(todayStart.toISOString()).n;
+  const weekBookings = db.prepare(`SELECT COUNT(*) AS n FROM bookings WHERE status != 'cancelled' AND starts_at >= ?`).get(weekStart.toISOString()).n;
+  const monthBookings = db.prepare(`SELECT COUNT(*) AS n FROM bookings WHERE status != 'cancelled' AND starts_at >= ?`).get(monthStart.toISOString()).n;
+
+  const topServiceRow = db.prepare(`
+    SELECT service_name, COUNT(*) AS n
+    FROM bookings
+    WHERE status != 'cancelled' AND created_at >= ?
+    GROUP BY service_name
+    ORDER BY n DESC
+    LIMIT 1
+  `).get(monthStart.toISOString());
+
+  const sourceRows = db.prepare(`
+    SELECT source, COUNT(*) AS n FROM bookings WHERE status != 'cancelled' GROUP BY source
+  `).all();
+
+  const sentimentRows = db.prepare(`
+    SELECT sentiment, COUNT(*) AS n FROM customer_summaries WHERE sentiment IS NOT NULL GROUP BY sentiment
+  `).all();
+
+  const openEscalations = db.prepare(`SELECT COUNT(*) AS n FROM escalations WHERE status = 'pending'`).get().n;
+  const openUnanswered = db.prepare(`SELECT COUNT(*) AS n FROM unanswered_questions WHERE status = 'open'`).get().n;
+
+  const totalMessages = db.prepare(`SELECT COUNT(*) AS n FROM customer_messages WHERE role = 'user'`).get().n;
+  const conversionRate = conversations > 0 ? Math.round((totalBookings / conversations) * 100) : 0;
+
+  return {
+    conversations,
+    customerMessages: totalMessages,
+    totalBookings,
+    cancelledBookings,
+    todayBookings,
+    weekBookings,
+    monthBookings,
+    conversionRate,
+    topService: topServiceRow ? { name: topServiceRow.service_name, count: topServiceRow.n } : null,
+    bookingsBySource: sourceRows,
+    sentimentBreakdown: sentimentRows,
+    openEscalations,
+    openUnanswered,
+  };
+}
+
 function getConversationCompaction(profileId) {
   return db.prepare('SELECT * FROM conversation_compactions WHERE profile_id = ?').get(profileId);
 }
@@ -524,4 +672,14 @@ module.exports = {
   purgeOldWhatsAppMessages,
   getConversationCompaction,
   upsertConversationCompaction,
+  createEscalation,
+  listOpenEscalations,
+  listAllEscalations,
+  resolveEscalation,
+  logUnansweredQuestion,
+  listUnansweredQuestions,
+  reviewUnansweredQuestion,
+  recordOutboxEmail,
+  listOutboxEmails,
+  getMetricsSnapshot,
 };
