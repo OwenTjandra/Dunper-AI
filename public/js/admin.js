@@ -815,7 +815,8 @@ async function loadIntegrationStatus() {
     grid.querySelector('[data-pick="sheet"]').addEventListener('change', (e) => {
       saveSelection({ sheetId: e.target.value });
     });
-    grid.querySelector('[data-create-sheet]').addEventListener('click', createNewSheet);
+    const createBtn = grid.querySelector('[data-create-sheet]');
+    createBtn.addEventListener('click', () => createNewSheet(createBtn));
 
     populateCalendars(grid.querySelector('[data-pick="calendar"]'), data.calendarId);
     populateSheets(grid.querySelector('[data-pick="sheet"]'), data.sheetId);
@@ -870,10 +871,14 @@ async function saveSelection(payload) {
   }
 }
 
-async function createNewSheet() {
-  const title = prompt('Name for the new spreadsheet?', 'Frontdesk Bookings');
-  if (!title) return;
+async function createNewSheet(button) {
+  const originalLabel = button?.textContent;
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Creating…';
+  }
   try {
+    const title = `Frontdesk — ${new Date().toLocaleDateString()}`;
     const res = await fetch('/api/integrations/google/sheets/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -884,7 +889,11 @@ async function createNewSheet() {
     if (!res.ok) throw new Error(data.error || 'Create failed');
     loadIntegrationStatus();
   } catch (err) {
-    alert(`Failed: ${err.message}`);
+    alert(`Failed to create sheet: ${err.message}`);
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalLabel;
+    }
   }
 }
 
