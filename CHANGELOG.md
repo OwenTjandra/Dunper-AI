@@ -2,6 +2,35 @@
 
 All notable changes to this project. Entries are in reverse chronological order (newest first). Each entry lists what changed and which files to look at if a regression appears.
 
+## 2026-05-08 (latest) — WhatsApp Cloud API auto-reply
+
+### Added
+- **Bidirectional WhatsApp** via Meta's official Cloud API. Customers messaging your WhatsApp Business number now get auto-replies from Claude, with the same system prompt + business config the web chat uses.
+  - File: [src/integrations/whatsapp.js](src/integrations/whatsapp.js).
+- **`GET /webhooks/whatsapp`** — Meta's verification handshake. Validates `WHATSAPP_VERIFY_TOKEN` and echoes the challenge back.
+- **`POST /webhooks/whatsapp`** — receives inbound messages. Verifies HMAC SHA-256 signature against `WHATSAPP_APP_SECRET` if set. Returns 200 immediately, then handles the message asynchronously so Meta's 5-second timeout never trips.
+- **Conversation persistence:** WhatsApp conversations write into the existing `customer_messages` table, keyed by a synthetic `session_id = wa:<phone>`. They get the customer's phone auto-filled on first message.
+- **Dashboard tagging:** customer rows now show a green "WhatsApp" tag (or blue "Web") so owners see which channel a conversation came from at a glance.
+- **WhatsApp Integrations panel** on the dashboard — shows configuration status and the exact webhook URL to paste into Meta.
+- **Step-by-step setup doc** at [docs/whatsapp-setup.md](docs/whatsapp-setup.md) covering: Cloudflare quick tunnel, Meta app creation, test number, access tokens, webhook configuration, recipient whitelisting, common errors, and the production upgrade path (permanent token, real business number, named tunnel).
+- New `.env` knobs: `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`.
+
+### Changed
+- `express.json()` now captures the raw request body on `req.rawBody` (used for HMAC verification of WhatsApp webhooks).
+
+### Known issues / things to watch
+- **Test number = 5 recipients max.** Meta's free test number only delivers to whitelisted phones. For real customers you need a Meta-approved business number.
+- **Temporary access tokens expire in 24h.** You'll see "Error validating access token" in server logs after a day. Switch to a System User Token (instructions in setup doc).
+- **No image / voice / document handling yet.** WhatsApp customers sending images currently see a log line `[WhatsApp] ignoring non-text message` and get no reply. Add multimodal handling later if needed.
+- **No human handoff.** Every customer message gets an auto-reply. If a customer says "let me speak to a human", Claude will *talk about* doing that but won't actually escalate. We could wire a Slack/email notification for "I want a human" detection.
+- **Web chat ≠ WhatsApp same-customer continuity.** Right now if Sarah chats on the web, then later WhatsApps the business, those are two separate profiles in the dashboard. We could merge them via phone number — small change, ask if you want it.
+- **Quick tunnel URL changes on every restart.** Re-verify the webhook in Meta whenever you restart cloudflared, or use a named tunnel with a stable subdomain.
+
+### Rollback notes
+- WhatsApp integration is fully isolated to `src/integrations/whatsapp.js` and the two webhook routes + `handleWhatsAppPayload` function in `src/server.js`. Deleting those reverts cleanly. Existing WhatsApp customer profiles remain in the DB harmlessly.
+
+---
+
 ## 2026-05-08 (later) — Google Calendar/Sheets sync, WhatsApp button, chat-form polish
 
 ### Added

@@ -333,6 +333,18 @@ function renderCustomerSummary(p) {
   pid.className = 'pid';
   pid.textContent = `#${p.id}`;
   top.appendChild(pid);
+  const isWhatsApp = String(p.session_id || '').startsWith('wa:');
+  if (isWhatsApp) {
+    const channel = document.createElement('span');
+    channel.className = 'channel-tag wa';
+    channel.textContent = 'WhatsApp';
+    top.appendChild(channel);
+  } else {
+    const channel = document.createElement('span');
+    channel.className = 'channel-tag web';
+    channel.textContent = 'Web';
+    top.appendChild(channel);
+  }
   const nameEl = document.createElement('span');
   nameEl.textContent = p.name || '(unnamed)';
   top.appendChild(nameEl);
@@ -910,3 +922,43 @@ if (location.search.includes('google=connected')) {
 
 refreshIntegrationsBtn?.addEventListener('click', loadIntegrationStatus);
 loadIntegrationStatus();
+
+const whatsappStatusEl = document.getElementById('whatsapp-status');
+const refreshWhatsappBtn = document.getElementById('refresh-whatsapp');
+
+async function loadWhatsAppStatus() {
+  if (!whatsappStatusEl) return;
+  whatsappStatusEl.innerHTML = '<p class="hint">Loading…</p>';
+  try {
+    const res = await fetch('/api/integrations/whatsapp');
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    whatsappStatusEl.innerHTML = '';
+
+    const grid = document.createElement('div');
+    grid.className = 'integration-grid';
+    grid.innerHTML = `
+      <div class="integration-pill ${data.configured ? 'on' : 'off'}">
+        <strong>WhatsApp Cloud API</strong>
+        <span>${data.configured ? 'Configured' : 'Not configured'}</span>
+        ${data.phoneNumberId ? `<code>Phone Number ID: ${escapeHtml(data.phoneNumberId)}</code>` : '<code class="muted">WHATSAPP_PHONE_NUMBER_ID not set</code>'}
+      </div>
+      <div class="integration-pill ${data.verifyTokenSet && data.accessTokenSet ? 'on' : 'off'}">
+        <strong>Webhook readiness</strong>
+        <span>${data.verifyTokenSet && data.accessTokenSet ? 'Ready' : 'Missing tokens'}</span>
+        <code>Verify token: ${data.verifyTokenSet ? 'set' : 'NOT set'} · Access token: ${data.accessTokenSet ? 'set' : 'NOT set'} · App secret: ${data.appSecretSet ? 'set' : 'optional, not set'}</code>
+      </div>
+    `;
+    whatsappStatusEl.appendChild(grid);
+
+    const note = document.createElement('p');
+    note.className = 'hint';
+    note.innerHTML = `Webhook URL to enter in Meta:&nbsp;<code class="copyable">https://&lt;your-cloudflare-tunnel-url&gt;/webhooks/whatsapp</code>`;
+    whatsappStatusEl.appendChild(note);
+  } catch (err) {
+    whatsappStatusEl.innerHTML = `<p class="hint err">Failed: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+refreshWhatsappBtn?.addEventListener('click', loadWhatsAppStatus);
+loadWhatsAppStatus();

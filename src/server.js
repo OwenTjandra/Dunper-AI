@@ -29,6 +29,7 @@ const {
 } = require('./db');
 const { getAvailableSlots, bookSlot } = require('./bookings');
 const googleIntegration = require('./integrations/google');
+const whatsapp = require('./integrations/whatsapp');
 const { router: authRouter, attachUser, requireAuth } = require('./auth');
 const { getBusiness, getSystemPrompt, applyBusinessUpdate } = require('./business');
 const { runAdminChat } = require('./admin_chat');
@@ -41,11 +42,32 @@ seedInitialBusinessVersion(getBusiness());
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+app.use(express.json({
+  verify: (req, _res, buf) => { req.rawBody = buf; },
+}));
 app.use(cookieParser());
 app.use(attachUser);
 
 app.use('/api/auth', authRouter);
+
+app.get('/webhooks/whatsapp', (req, res) => {
+  const result = whatsapp.verifyWebhookHandshake(req.query);
+  if (result.ok) return res.status(200).send(result.challenge);
+  return res.status(403).send('Forbidden');
+});
+
+app.post('/webhooks/whatsapp', async (req, res) => {
+  const sig = req.get('x-hub-signature-256');
+  const verified = whatsapp.verifySignature(req.rawBody || Buffer.alloc(0), sig);
+  if (!verified.ok) {
+    console.warn('[WhatsApp] webhook signature failed:', verified.reason);
+    return res.status(401).send('bad signature');
+  }
+  res.status(200).send('OK');
+  setImmediate(() => handleWhatsAppPayload(req.body).catch(err => {
+    console.error('[WhatsApp] handler error:', err);
+  }));
+});
 
 app.use((req, res, next) => {
   if (req.path === '/admin.html') return requireAuth(req, res, next);
@@ -488,6 +510,53 @@ app.post('/api/integrations/google/select', requireAuth, (req, res) => {
   if (sheetId !== undefined) googleIntegration.selectSheet(sheetId);
   res.json({ status: googleIntegration.status() });
 });
+
+app.get('/api/integrations/whatsapp', requireAuth, (req, res) => {
+  res.json(whatsapp.status());
+});
+
+async function handleWhatsAppPayload(payload) {
+  const messages = whatsapp.parseInbound(payload);
+  for (const msg of messages) {
+    if (msg.kind !== 'text') {
+      console.log('[WhatsApp] ignoring non-text message:', msg.messageType, 'from', msg.from);
+      continue;
+    }
+
+    const sessionId = whatsapp.sessionIdForPhone(msg.from);
+    const profile = getOrCreateProfileBySession(sessionId);
+
+    if (!profile.phone) {
+      updateCustomerProfile(profile.id, { phone: msg.from });
+    }
+
+    recordCustomerMessage(profile.id, 'user', msg.text);
+
+    const stored = getCustomerMessages(profile.id);
+    const claudeMessages = stored.map(m => ({ role: m.role, content: m.content }));
+
+    const docBlocks = documents.buildDocumentBlocks();
+    if (docBlocks.length > 0 && claudeMessages.length > 0 && claudeMessages[0].role === 'user') {
+      const firstContent = [{ type: 'text', text: claudeMessages[0].content }];
+      claudeMessages[0] = { role: 'user', content: [...docBlocks, ...firstContent] };
+    }
+
+    let reply;
+    try {
+      reply = await askClaude(claudeMessages, getSystemPrompt());
+    } catch (err) {
+      console.error('[WhatsApp] Claude error:', err.message);
+      reply = "Sorry, I'm having trouble right now. Please try again in a moment.";
+    }
+
+    recordCustomerMessage(profile.id, 'assistant', reply);
+
+    const sendResult = await whatsapp.sendText(msg.from, reply);
+    if (!sendResult.ok && !sendResult.skipped) {
+      console.error('[WhatsApp] sendText failed:', sendResult.error, sendResult.raw);
+    }
+  }
+}
 
 function getLanAddresses() {
   return Object.values(os.networkInterfaces())
