@@ -405,6 +405,13 @@ function renderCustomerSummary(p) {
     phoneEl.textContent = `· ${p.phone}`;
     top.appendChild(phoneEl);
   }
+  if (p.email) {
+    const emailEl = document.createElement('span');
+    emailEl.style.color = '#6b7280';
+    emailEl.style.fontSize = '13px';
+    emailEl.textContent = `· ${p.email}`;
+    top.appendChild(emailEl);
+  }
   meta.appendChild(top);
 
   const sub = document.createElement('div');

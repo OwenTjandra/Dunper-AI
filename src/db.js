@@ -274,7 +274,7 @@ function getCustomerMessages(profileId) {
 function listCustomerProfiles() {
   return db.prepare(`
     SELECT
-      p.id, p.session_id, p.name, p.phone, p.notes,
+      p.id, p.session_id, p.name, p.phone, p.email, p.notes,
       p.created_at, p.last_seen_at,
       (SELECT COUNT(*) FROM customer_messages WHERE profile_id = p.id) AS message_count,
       (SELECT content FROM customer_messages WHERE profile_id = p.id ORDER BY id DESC LIMIT 1) AS last_message
