@@ -1,5 +1,6 @@
 require('dotenv').config();
 const fs = require('fs');
+const os = require('os');
 const express = require('express');
 const path = require('path');
 const { askClaude } = require('./config/claude');
@@ -107,8 +108,18 @@ app.post('/chat', async (req, res) => {
   }
 });
 
+function getLanAddresses() {
+  return Object.values(os.networkInterfaces())
+    .flat()
+    .filter(i => i && i.family === 'IPv4' && !i.internal)
+    .map(i => i.address);
+}
+
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
   console.log(`Configured for: ${business.name}`);
-  console.log(`Admin: http://localhost:${PORT}/admin.html`);
+  console.log(`Local:  http://localhost:${PORT}`);
+  for (const addr of getLanAddresses()) {
+    console.log(`LAN:    http://${addr}:${PORT}`);
+  }
+  console.log(`Admin:  http://localhost:${PORT}/admin.html`);
 });
