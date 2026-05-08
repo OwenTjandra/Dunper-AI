@@ -3,21 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Frontdesk</title>
+  <title>Dunper AI</title>
+  <link rel="icon" type="image/png" href="/img/logo.png" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
   <div class="chat-container">
     <header class="chat-header">
-      <div class="avatar">AI</div>
+      <div class="avatar"><img src="/img/logo.png" alt="Dunper" /></div>
       <div class="header-text">
-        <h1>Frontdesk Assistant</h1>
-        <p class="status"><span class="dot"></span> Online</p>
+        <h1>Dunper AI</h1>
+        <p class="status"><span class="dot"></span> <span data-i18n="online">Online</span></p>
       </div>
-      <a id="whatsapp-link" class="wa-link" href="#" target="_blank" rel="noopener" hidden title="Chat on WhatsApp" aria-label="Chat on WhatsApp">
+      <select id="lang-picker" class="lang-picker" aria-label="Language">
+        <option value="en">🇬🇧 EN</option>
+        <option value="id">🇮🇩 ID</option>
+      </select>
+      <a id="whatsapp-link" class="wa-link" href="#" target="_blank" rel="noopener" hidden data-i18n-title="chatOnWhatsApp" data-i18n-aria-label="chatOnWhatsApp">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20.52 3.48A11.93 11.93 0 0 0 12.05.06C5.5.06.18 5.38.18 11.93c0 2.1.55 4.15 1.6 5.95L.06 23.94l6.2-1.62a11.86 11.86 0 0 0 5.79 1.48h.01c6.55 0 11.87-5.32 11.88-11.87a11.84 11.84 0 0 0-3.42-8.45zM12.06 22a9.83 9.83 0 0 1-5.02-1.37l-.36-.21-3.68.96.99-3.59-.24-.37a9.84 9.84 0 1 1 18.27-5.49c0 5.43-4.42 9.85-9.85 9.85zm5.4-7.37c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.66.15-.2.3-.76.96-.93 1.16-.17.2-.34.22-.64.07-.3-.15-1.25-.46-2.39-1.47a9 9 0 0 1-1.66-2.07c-.17-.3-.02-.46.13-.6.13-.13.3-.34.45-.5.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.66-1.6-.91-2.18-.24-.57-.48-.5-.66-.5l-.56-.01a1.07 1.07 0 0 0-.78.37c-.27.3-1.02 1-1.02 2.45 0 1.45 1.05 2.84 1.2 3.04.15.2 2.07 3.16 5.02 4.43.7.3 1.25.48 1.68.62.7.22 1.34.19 1.85.12.56-.08 1.74-.71 1.99-1.4.25-.69.25-1.27.17-1.4-.07-.13-.27-.2-.57-.35z"/></svg>
       </a>
-      <button type="button" id="open-booking-btn" class="book-btn">Book</button>
+      <button type="button" id="open-booking-btn" class="book-btn" data-i18n="book">Book</button>
     </header>
 
     <main id="messages" class="messages" aria-live="polite"></main>
@@ -25,22 +30,23 @@
     <div id="attachment-preview" class="attachment-preview" hidden>
       <img id="attachment-preview-img" alt="Selected attachment" />
       <span id="attachment-preview-name"></span>
-      <button type="button" id="attachment-preview-clear" aria-label="Remove attachment">×</button>
+      <button type="button" id="attachment-preview-clear" data-i18n-aria-label="removeAttachment" aria-label="Remove attachment">×</button>
     </div>
 
     <form id="chat-form" class="chat-form" autocomplete="off">
       <input id="attachment-input" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden />
-      <button type="button" id="attachment-btn" class="attachment-btn" aria-label="Attach image">
+      <button type="button" id="attachment-btn" class="attachment-btn" data-i18n-aria-label="attachImage" aria-label="Attach image">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57a4 4 0 0 1 5.66 5.66l-8.58 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
       </button>
       <div class="input-wrap">
-        <input
+        <textarea
           id="chat-input"
-          type="text"
           placeholder="Type your message..."
+          data-i18n-placeholder="typeMessage"
+          rows="1"
           autofocus
-        />
-        <button type="submit" id="send-btn" aria-label="Send">
+        ></textarea>
+        <button type="submit" id="send-btn" data-i18n-aria-label="send" aria-label="Send">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
             <path d="M2 21l21-9L2 3v7l15 2-15 2z"/>
           </svg>
@@ -56,46 +62,47 @@
   <div id="booking-modal" class="modal" hidden>
     <div class="modal-card">
       <header class="modal-head">
-        <h2>Book an appointment</h2>
-        <button type="button" class="modal-close" id="booking-close" aria-label="Close">×</button>
+        <h2 data-i18n="bookTitle">Book an appointment</h2>
+        <button type="button" class="modal-close" id="booking-close" data-i18n-aria-label="close" aria-label="Close">×</button>
       </header>
       <form id="booking-form" class="modal-body">
         <label>
-          <span>Service</span>
+          <span data-i18n="service">Service</span>
           <select id="booking-service" required></select>
         </label>
         <label>
-          <span>Date</span>
+          <span data-i18n="date">Date</span>
           <input type="date" id="booking-date" required />
         </label>
         <div class="slots-wrap">
-          <span class="slots-label">Available times</span>
+          <span class="slots-label" data-i18n="availableTimes">Available times</span>
           <div id="booking-slots" class="slots">
-            <p class="hint">Pick a date to see times.</p>
+            <p class="hint" data-i18n="pickDateHint">Pick a date to see times.</p>
           </div>
         </div>
         <div class="row-2">
           <label>
-            <span>Your name</span>
+            <span data-i18n="yourName">Your name</span>
             <input type="text" id="booking-name" required />
           </label>
           <label>
-            <span>Phone</span>
+            <span data-i18n="phone">Phone</span>
             <input type="tel" id="booking-phone" required />
           </label>
         </div>
         <label>
-          <span>Email</span>
+          <span data-i18n="email">Email</span>
           <input type="email" id="booking-email" required placeholder="you@example.com" />
         </label>
         <div class="modal-actions">
-          <button type="submit" id="booking-submit" class="primary-btn" disabled>Confirm booking</button>
+          <button type="submit" id="booking-submit" class="primary-btn" disabled data-i18n="confirmBooking">Confirm booking</button>
           <span id="booking-status" class="status"></span>
         </div>
       </form>
     </div>
   </div>
 
+  <script src="/js/i18n.js"></script>
   <script src="/js/chat.js"></script>
   <script src="/js/booking.js"></script>
 </body>

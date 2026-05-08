@@ -69,6 +69,9 @@ attachmentInput.addEventListener('change', (e) => {
 });
 previewClearBtn.addEventListener('click', clearAttachment);
 
+let greetingMessageEl = null;
+let initialGreetingShown = false;
+
 async function loadExisting() {
   try {
     const res = await fetch('/api/customer/messages');
@@ -77,17 +80,39 @@ async function loadExisting() {
     if (data.messages?.length) {
       data.messages.forEach(m => addMessage(m.role, m.content, m.attachments));
     } else {
-      addMessage('assistant', "Hi! I'm your frontdesk assistant. How can I help you today?");
+      greetingMessageEl = addMessage('assistant', t('greeting'));
+      initialGreetingShown = true;
     }
   } catch (err) {
-    addMessage('error', `Couldn't load history: ${err.message}`);
+    addMessage('error', `${t('couldntLoadHistory')}: ${err.message}`);
   }
 }
+
+window.addEventListener('languagechange', () => {
+  if (initialGreetingShown && greetingMessageEl) {
+    const span = greetingMessageEl.querySelector('span') || greetingMessageEl;
+    span.textContent = t('greeting');
+  }
+});
+
+function autoSizeInput() {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
+}
+
+inputEl.addEventListener('input', autoSizeInput);
+inputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+    e.preventDefault();
+    formEl.requestSubmit();
+  }
+});
 
 async function sendMessage(text, file) {
   const localAttachments = file ? [{ url: URL.createObjectURL(file), filename: file.name }] : null;
   addMessage('user', text, localAttachments);
   inputEl.value = '';
+  autoSizeInput();
   clearAttachment();
   sendBtn.disabled = true;
   attachmentBtn.disabled = true;
@@ -103,13 +128,13 @@ async function sendMessage(text, file) {
     hideTyping();
 
     if (!res.ok || data.error) {
-      addMessage('error', `Error: ${data.error || `HTTP ${res.status}`}`);
+      addMessage('error', `${t('error')}: ${data.error || `HTTP ${res.status}`}`);
     } else {
       addMessage('assistant', data.reply);
     }
   } catch (err) {
     hideTyping();
-    addMessage('error', `Network error: ${err.message}`);
+    addMessage('error', `${t('networkError')}: ${err.message}`);
   } finally {
     sendBtn.disabled = false;
     attachmentBtn.disabled = false;
@@ -148,7 +173,7 @@ async function loadBusinessBranding() {
     if (data.name) {
       const titleEl = document.querySelector('.header-text h1');
       if (titleEl) titleEl.textContent = data.name;
-      document.title = `${data.name} — Frontdesk`;
+      document.title = `${data.name} — Dunper AI`;
     }
   } catch {}
 }
@@ -156,8 +181,11 @@ async function loadBusinessBranding() {
 window.addEventListener('load', () => { loadBusinessBranding(); loadExisting(); });
 
 window.appendBookingConfirmation = function (booking) {
+  const lang = (window.getCurrentLang && window.getCurrentLang()) || 'en';
+  const localeMap = { en: 'en-US', id: 'id-ID', ms: 'ms-MY' };
+  const locale = localeMap[lang] || undefined;
   const start = new Date(booking.starts_at);
-  const dateStr = start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-  const timeStr = start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  addMessage('assistant', `✓ Booked: ${booking.service_name} on ${dateStr} at ${timeStr}. We'll see you then!`);
+  const dateStr = start.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+  const timeStr = start.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+  addMessage('assistant', `✓ ${t('booked')}: ${booking.service_name} — ${dateStr} ${timeStr}. ${t('seeYouThen')}`);
 };

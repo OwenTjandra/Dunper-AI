@@ -1127,7 +1127,7 @@ async function createNewSheet(button) {
     button.textContent = 'Creating…';
   }
   try {
-    const title = `Frontdesk — ${new Date().toLocaleDateString()}`;
+    const title = `Dunper AI — ${new Date().toLocaleDateString()}`;
     const res = await fetch('/api/integrations/google/sheets/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

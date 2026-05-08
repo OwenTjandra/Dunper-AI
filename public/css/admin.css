@@ -22,6 +22,19 @@ body {
   flex-wrap: wrap;
 }
 
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .page-header h1 {
   font-size: 28px;
   font-weight: 700;

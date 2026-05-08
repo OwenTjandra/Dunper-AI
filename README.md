@@ -1,4 +1,4 @@
-# FrontDesk AI
+# Dunper AI
 
 An AI-powered chatbot frontdesk for local SMEs. Customers chat in the browser; Claude answers questions, helps with bookings, and surfaces business info — all configured per-client through a simple admin form.
 

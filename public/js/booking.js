@@ -39,8 +39,12 @@ async function loadServices() {
       serviceEl.appendChild(opt);
     });
   } catch (err) {
-    setStatus(`Failed to load services: ${err.message}`, 'err');
+    setStatus(`${tt('failedLoadServices')}: ${err.message}`, 'err');
   }
+}
+
+function tt(key) {
+  return (window.t ? window.t(key) : key);
 }
 
 function setStatus(text, kind) {
@@ -70,17 +74,17 @@ async function refreshSlots() {
   selectedSlot = null;
   submitBtn.disabled = true;
   if (!dateEl.value || !serviceEl.value) {
-    slotsEl.innerHTML = '<p class="hint">Pick a date and service to see times.</p>';
+    slotsEl.innerHTML = `<p class="hint">${tt('pickDateAndService')}</p>`;
     return;
   }
-  slotsEl.innerHTML = '<p class="hint">Loading…</p>';
+  slotsEl.innerHTML = `<p class="hint">${tt('loading')}</p>`;
   try {
     const url = `/api/customer/availability?date=${encodeURIComponent(dateEl.value)}&service=${encodeURIComponent(serviceEl.value)}`;
     const res = await fetch(url);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     if (data.reason || (data.slots && data.slots.length === 0)) {
-      slotsEl.innerHTML = `<p class="hint">${data.reason || 'No available times — try another day.'}</p>`;
+      slotsEl.innerHTML = `<p class="hint">${data.reason || tt('noSlots')}</p>`;
       return;
     }
     slotsEl.innerHTML = '';
@@ -108,11 +112,15 @@ modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); }
 serviceEl.addEventListener('change', refreshSlots);
 dateEl.addEventListener('change', refreshSlots);
 
+window.addEventListener('languagechange', () => {
+  if (!modal.hidden) refreshSlots();
+});
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!selectedSlot) return;
   submitBtn.disabled = true;
-  setStatus('Booking…', '');
+  setStatus(tt('booking'), '');
   try {
     const res = await fetch('/api/customer/bookings', {
       method: 'POST',
@@ -128,7 +136,7 @@ form.addEventListener('submit', async (e) => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    setStatus('Booked!', 'ok');
+    setStatus(tt('bookedShort'), 'ok');
     if (window.appendBookingConfirmation) {
       window.appendBookingConfirmation(data.booking);
     }

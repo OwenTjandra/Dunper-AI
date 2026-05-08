@@ -1,7 +1,7 @@
 {
-  "name": "frontdesk-ai",
+  "name": "dunper-ai",
   "version": "1.0.0",
-  "description": "AI-powered frontdesk assistant for small businesses.",
+  "description": "Dunper AI — AI-powered frontdesk assistant for small businesses.",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
