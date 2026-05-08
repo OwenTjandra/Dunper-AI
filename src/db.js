@@ -55,6 +55,17 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_customer_messages_profile ON customer_messages(profile_id, created_at);
+
+  CREATE TABLE IF NOT EXISTS business_documents (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    filename     TEXT NOT NULL,
+    content_type TEXT NOT NULL,
+    size         INTEGER NOT NULL,
+    storage_name TEXT NOT NULL UNIQUE,
+    uploaded_by_user_id  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    uploaded_by_username TEXT,
+    created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 function seedAdminFromEnv() {
@@ -186,6 +197,33 @@ function getCustomerProfile(id) {
   return db.prepare('SELECT * FROM customer_profiles WHERE id = ?').get(id);
 }
 
+function addBusinessDocument({ filename, contentType, size, storageName, user }) {
+  const result = db.prepare(`
+    INSERT INTO business_documents
+      (filename, content_type, size, storage_name, uploaded_by_user_id, uploaded_by_username)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(filename, contentType, size, storageName, user?.id ?? null, user?.username ?? null);
+  return getBusinessDocument(result.lastInsertRowid);
+}
+
+function listBusinessDocuments() {
+  return db.prepare(`
+    SELECT id, filename, content_type, size, storage_name,
+           uploaded_by_user_id, uploaded_by_username, created_at
+    FROM business_documents
+    ORDER BY id DESC
+  `).all();
+}
+
+function getBusinessDocument(id) {
+  return db.prepare('SELECT * FROM business_documents WHERE id = ?').get(id);
+}
+
+function deleteBusinessDocument(id) {
+  const info = db.prepare('DELETE FROM business_documents WHERE id = ?').run(id);
+  return info.changes > 0;
+}
+
 function updateCustomerProfile(id, fields) {
   const allowed = ['name', 'phone', 'notes'];
   const sets = [];
@@ -220,4 +258,8 @@ module.exports = {
   listCustomerProfiles,
   getCustomerProfile,
   updateCustomerProfile,
+  addBusinessDocument,
+  listBusinessDocuments,
+  getBusinessDocument,
+  deleteBusinessDocument,
 };

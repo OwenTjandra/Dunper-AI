@@ -459,6 +459,100 @@ async function loadCustomers() {
 refreshCustomersBtn?.addEventListener('click', loadCustomers);
 loadCustomers();
 
+const documentsListEl = document.getElementById('documents-list');
+const documentsFormEl = document.getElementById('documents-form');
+const documentsFileEl = document.getElementById('documents-file');
+const documentsUploadBtn = document.getElementById('documents-upload-btn');
+const documentsStatusEl = document.getElementById('documents-status');
+const refreshDocumentsBtn = document.getElementById('refresh-documents');
+
+function formatBytes(n) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function setDocStatus(text, kind) {
+  documentsStatusEl.textContent = text;
+  documentsStatusEl.className = `status ${kind || ''}`;
+  if (kind === 'ok') setTimeout(() => { documentsStatusEl.textContent = ''; }, 2500);
+}
+
+async function loadDocuments() {
+  try {
+    const res = await fetch('/api/business/documents');
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    documentsListEl.innerHTML = '';
+    if (!data.documents?.length) {
+      documentsListEl.innerHTML = '<p class="hint">No documents yet.</p>';
+      return;
+    }
+    data.documents.forEach(d => {
+      const row = document.createElement('div');
+      row.className = 'document-row';
+
+      const meta = document.createElement('div');
+      meta.className = 'document-meta';
+      const top = document.createElement('div');
+      top.className = 'top';
+      top.textContent = d.filename;
+      meta.appendChild(top);
+      const sub = document.createElement('div');
+      sub.className = 'sub';
+      const who = d.uploadedBy ? `by ${d.uploadedBy}` : '';
+      sub.textContent = `${d.contentType} · ${formatBytes(d.size)} · ${timeAgo(d.createdAt)}${who ? ' · ' + who : ''}`;
+      meta.appendChild(sub);
+      row.appendChild(meta);
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'icon-btn';
+      del.title = 'Delete';
+      del.textContent = '×';
+      del.addEventListener('click', () => deleteDocument(d.id, d.filename));
+      row.appendChild(del);
+
+      documentsListEl.appendChild(row);
+    });
+  } catch (err) {
+    documentsListEl.innerHTML = `<p class="hint">Failed to load: ${err.message}</p>`;
+  }
+}
+
+async function deleteDocument(id, filename) {
+  if (!confirm(`Delete "${filename}"? The customer AI will stop seeing it immediately.`)) return;
+  const res = await fetch(`/api/business/documents/${id}`, { method: 'DELETE' });
+  if (handleUnauthorized(res)) return;
+  if (res.ok) loadDocuments();
+}
+
+documentsFormEl?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const file = documentsFileEl.files?.[0];
+  if (!file) return;
+  documentsUploadBtn.disabled = true;
+  setDocStatus('Uploading…', '');
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('/api/business/documents', { method: 'POST', body: fd });
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    setDocStatus('Uploaded ✓', 'ok');
+    documentsFileEl.value = '';
+    loadDocuments();
+  } catch (err) {
+    setDocStatus(err.message, 'err');
+  } finally {
+    documentsUploadBtn.disabled = false;
+  }
+});
+
+refreshDocumentsBtn?.addEventListener('click', loadDocuments);
+loadDocuments();
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   saveBtn.disabled = true;

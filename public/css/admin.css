@@ -295,6 +295,54 @@ textarea:focus {
   flex: 1;
 }
 
+.documents-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.documents-form input[type="file"] {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.documents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.document-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.document-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.document-meta .top {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  word-break: break-all;
+}
+
+.document-meta .sub {
+  font-size: 12px;
+  color: #6b7280;
+}
+
 .customers-list {
   display: flex;
   flex-direction: column;

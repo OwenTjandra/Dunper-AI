@@ -10,6 +10,9 @@ data.db-journal
 data.db-wal
 data.db-shm
 
+# Uploaded files (customer attachments + business knowledge docs)
+uploads/
+
 # Google service account credentials — NEVER commit
 ai-frontdesk-*.json
 *-service-account.json

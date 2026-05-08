@@ -61,8 +61,9 @@ frontdesk-ai/
 │   ├── server.js          Express server, routes, middleware wiring
 │   ├── business.js        Business config state, validation, applyBusinessUpdate
 │   ├── admin_chat.js      Admin AI assistant: tool definitions + tool-use loop
+│   ├── documents.js       Owner knowledge doc storage (multer) + Claude doc blocks
 │   ├── auth.js            Login/logout endpoints + session middleware
-│   ├── db.js              SQLite setup (users, sessions, business_versions) + seeds
+│   ├── db.js              SQLite setup (users, sessions, business_versions, customers, documents) + seeds
 │   └── config/claude.js   Claude SDK wrapper
 ├── public/
 │   ├── index.html         Chat UI (open to all)
@@ -71,7 +72,8 @@ frontdesk-ai/
 │   ├── css/               Styles
 │   └── js/                Frontend logic
 ├── business.json          Live business config (name, hours, services, rules)
-├── data.db                SQLite database — users + sessions (gitignored)
+├── data.db                SQLite database — users, sessions, customers, documents, version log (gitignored)
+├── uploads/               Stored knowledge docs and customer attachments (gitignored)
 ├── .env                   API key + admin seed (gitignored)
 └── package.json
 ```
@@ -98,6 +100,10 @@ Every customer browser gets a long-lived `frontdesk_customer` cookie on first ch
 
 The dashboard's "Customers" panel lists everyone who's chatted, newest activity first. Click a row to expand and read the full transcript. You can fill in the customer's name, phone number, and free-form internal notes — those don't go to the AI, they're just for you.
 
+## Knowledge documents
+
+Upload PDFs, plain text, or markdown files in the dashboard's "Knowledge documents" panel — price sheets, policies, FAQs, anything the customer-facing AI should answer from. On every customer chat, the server prepends each document as an Anthropic `document` content block to the first user message of the conversation. Claude can read them directly (PDFs are sent natively, no text extraction step), and once a doc is removed it stops appearing in chats. Files live under `uploads/business/` (gitignored), 10MB max each.
+
 ## Roadmap
 
 - [x] Day 1 — Server + Claude API connection
@@ -108,7 +114,8 @@ The dashboard's "Customers" panel lists everyone who's chatted, newest activity 
 - [x] Stage 1b — Version log of business.json changes + restore UI
 - [x] Stage 2 — AI assistant in the dashboard that edits business config via tool use
 - [x] Stage 3a — Customer profiles + persistent conversation history (server-side, viewable in dashboard)
-- [ ] Stage 3b — File uploads (customer images/docs + owner knowledge docs)
+- [x] Stage 3b owner docs — Owner uploads PDFs/text/markdown the customer AI grounds answers in
+- [ ] Stage 3b customer attachments — Customer attaches images that Claude sees via vision
 - [ ] Day 4 — Google Calendar integration + `book_appointment` tool
 - [ ] Day 5 — Business dashboard (bookings, sentiment, customer log)
 - [ ] Day 6 — Cloudflare Tunnel + PM2 for going live

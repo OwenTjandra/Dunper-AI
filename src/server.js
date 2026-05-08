@@ -21,6 +21,7 @@ const {
 const { router: authRouter, attachUser, requireAuth } = require('./auth');
 const { getBusiness, getSystemPrompt, applyBusinessUpdate } = require('./business');
 const { runAdminChat } = require('./admin_chat');
+const documents = require('./documents');
 
 seedAdminFromEnv();
 purgeExpiredSessions();
@@ -134,6 +135,14 @@ app.post('/chat', attachCustomerProfile, async (req, res) => {
     const stored = getCustomerMessages(req.customerProfile.id);
     const messages = stored.map(m => ({ role: m.role, content: m.content }));
 
+    const docBlocks = documents.buildDocumentBlocks();
+    if (docBlocks.length > 0 && messages.length > 0 && messages[0].role === 'user') {
+      messages[0] = {
+        role: 'user',
+        content: [...docBlocks, { type: 'text', text: messages[0].content }],
+      };
+    }
+
     const reply = await askClaude(messages, getSystemPrompt());
 
     recordCustomerMessage(req.customerProfile.id, 'assistant', reply);
@@ -154,6 +163,25 @@ app.get('/api/profiles/:id', requireAuth, (req, res) => {
   if (!profile) return res.status(404).json({ error: 'Profile not found' });
   const messages = getCustomerMessages(profile.id).map(serializeMessage);
   res.json({ profile, messages });
+});
+
+app.get('/api/business/documents', requireAuth, (req, res) => {
+  res.json({ documents: documents.listDocuments() });
+});
+
+app.post('/api/business/documents', requireAuth, (req, res) => {
+  documents.upload.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+    const doc = documents.recordUpload(req.file, req.user);
+    res.json({ ok: true, document: { id: doc.id, filename: doc.filename, contentType: doc.content_type, size: doc.size, createdAt: doc.created_at } });
+  });
+});
+
+app.delete('/api/business/documents/:id', requireAuth, (req, res) => {
+  const ok = documents.removeDocument(Number(req.params.id));
+  if (!ok) return res.status(404).json({ error: 'Document not found.' });
+  res.json({ ok: true });
 });
 
 app.patch('/api/profiles/:id', requireAuth, (req, res) => {

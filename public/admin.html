@@ -94,6 +94,22 @@
       </div>
     </form>
 
+    <section class="card documents-card">
+      <div class="card-head">
+        <h2>Knowledge documents</h2>
+        <button type="button" class="ghost-btn" id="refresh-documents">Refresh</button>
+      </div>
+      <p class="hint">Upload PDFs or text files (price sheets, policies, FAQs). The customer-facing AI gets these on every chat, so it can answer questions grounded in your real documents. Max 10MB each. PDF, TXT, MD only.</p>
+      <form id="documents-form" class="documents-form">
+        <input type="file" id="documents-file" accept="application/pdf,text/plain,text/markdown,.pdf,.txt,.md" required />
+        <button type="submit" class="primary-btn" id="documents-upload-btn">Upload</button>
+      </form>
+      <div id="documents-status" class="status"></div>
+      <div id="documents-list" class="documents-list">
+        <p class="hint">Loading…</p>
+      </div>
+    </section>
+
     <section class="card customers-card">
       <div class="card-head">
         <h2>Customers</h2>
