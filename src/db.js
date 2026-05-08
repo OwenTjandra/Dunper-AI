@@ -79,6 +79,33 @@ db.exec(`
     uploaded_by_username TEXT,
     created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS bookings (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    profile_id       INTEGER REFERENCES customer_profiles(id) ON DELETE SET NULL,
+    customer_name    TEXT NOT NULL,
+    customer_phone   TEXT NOT NULL,
+    service_name     TEXT NOT NULL,
+    duration_minutes INTEGER NOT NULL,
+    starts_at        TEXT NOT NULL,
+    ends_at          TEXT NOT NULL,
+    status           TEXT NOT NULL DEFAULT 'confirmed',
+    notes            TEXT,
+    created_at       TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_bookings_starts_at ON bookings(starts_at);
+  CREATE INDEX IF NOT EXISTS idx_bookings_profile ON bookings(profile_id);
+
+  CREATE TABLE IF NOT EXISTS customer_summaries (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    profile_id      INTEGER NOT NULL UNIQUE REFERENCES customer_profiles(id) ON DELETE CASCADE,
+    summary         TEXT NOT NULL,
+    sentiment       TEXT,
+    intent          TEXT,
+    last_message_id INTEGER,
+    updated_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 function seedAdminFromEnv() {
@@ -276,6 +303,76 @@ function updateCustomerProfile(id, fields) {
   return info.changes > 0;
 }
 
+function createBooking(b) {
+  const result = db.prepare(`
+    INSERT INTO bookings
+      (profile_id, customer_name, customer_phone, service_name, duration_minutes, starts_at, ends_at, status, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    b.profileId ?? null,
+    b.customerName,
+    b.customerPhone,
+    b.serviceName,
+    b.durationMinutes,
+    b.startsAt,
+    b.endsAt,
+    b.status ?? 'confirmed',
+    b.notes ?? null
+  );
+  return getBookingById(result.lastInsertRowid);
+}
+
+function getBookingById(id) {
+  return db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+}
+
+function listBookings(limit = 200) {
+  return db.prepare(`
+    SELECT b.*, p.session_id AS profile_session_id
+    FROM bookings b
+    LEFT JOIN customer_profiles p ON p.id = b.profile_id
+    ORDER BY b.starts_at DESC
+    LIMIT ?
+  `).all(limit);
+}
+
+function listBookingsForProfile(profileId) {
+  return db.prepare(`
+    SELECT * FROM bookings WHERE profile_id = ? ORDER BY starts_at DESC
+  `).all(profileId);
+}
+
+function listBookingsBetween(startIso, endIso) {
+  return db.prepare(`
+    SELECT * FROM bookings
+    WHERE status != 'cancelled' AND starts_at < ? AND ends_at > ?
+    ORDER BY starts_at ASC
+  `).all(endIso, startIso);
+}
+
+function cancelBooking(id) {
+  const info = db.prepare(`UPDATE bookings SET status = 'cancelled' WHERE id = ?`).run(id);
+  return info.changes > 0;
+}
+
+function upsertCustomerSummary({ profileId, summary, sentiment, intent, lastMessageId }) {
+  db.prepare(`
+    INSERT INTO customer_summaries (profile_id, summary, sentiment, intent, last_message_id, updated_at)
+    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(profile_id) DO UPDATE SET
+      summary = excluded.summary,
+      sentiment = excluded.sentiment,
+      intent = excluded.intent,
+      last_message_id = excluded.last_message_id,
+      updated_at = CURRENT_TIMESTAMP
+  `).run(profileId, summary, sentiment ?? null, intent ?? null, lastMessageId ?? null);
+  return getCustomerSummary(profileId);
+}
+
+function getCustomerSummary(profileId) {
+  return db.prepare('SELECT * FROM customer_summaries WHERE profile_id = ?').get(profileId);
+}
+
 module.exports = {
   db,
   seedAdminFromEnv,
@@ -301,4 +398,12 @@ module.exports = {
   addCustomerAttachment,
   getAttachmentsForMessage,
   getAttachmentById,
+  createBooking,
+  getBookingById,
+  listBookings,
+  listBookingsForProfile,
+  listBookingsBetween,
+  cancelBooking,
+  upsertCustomerSummary,
+  getCustomerSummary,
 };

@@ -15,4 +15,6 @@ uploads/
 
 # Google service account credentials — NEVER commit
 ai-frontdesk-*.json
+ai-frontdesk-*.json.zip
 *-service-account.json
+*-service-account.json.zip

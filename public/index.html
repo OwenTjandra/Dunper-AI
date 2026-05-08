@@ -14,7 +14,7 @@
         <h1>Frontdesk Assistant</h1>
         <p class="status"><span class="dot"></span> Online</p>
       </div>
-      <a href="/admin.html" class="settings-link" title="Business settings">⚙</a>
+      <button type="button" id="open-booking-btn" class="book-btn">Book</button>
     </header>
 
     <main id="messages" class="messages" aria-live="polite"></main>
@@ -44,6 +44,46 @@
     </form>
   </div>
 
+  <div id="booking-modal" class="modal" hidden>
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2>Book an appointment</h2>
+        <button type="button" class="modal-close" id="booking-close" aria-label="Close">×</button>
+      </header>
+      <form id="booking-form" class="modal-body">
+        <label>
+          <span>Service</span>
+          <select id="booking-service" required></select>
+        </label>
+        <label>
+          <span>Date</span>
+          <input type="date" id="booking-date" required />
+        </label>
+        <div class="slots-wrap">
+          <span class="slots-label">Available times</span>
+          <div id="booking-slots" class="slots">
+            <p class="hint">Pick a date to see times.</p>
+          </div>
+        </div>
+        <div class="row-2">
+          <label>
+            <span>Your name</span>
+            <input type="text" id="booking-name" required />
+          </label>
+          <label>
+            <span>Phone</span>
+            <input type="tel" id="booking-phone" required />
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" id="booking-submit" class="primary-btn" disabled>Confirm booking</button>
+          <span id="booking-status" class="status"></span>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="/js/chat.js"></script>
+  <script src="/js/booking.js"></script>
 </body>
 </html>

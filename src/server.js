@@ -20,7 +20,14 @@ const {
   addCustomerAttachment,
   getAttachmentsForMessage,
   getAttachmentById,
+  listBookings,
+  listBookingsForProfile,
+  cancelBooking,
+  getBookingById,
+  upsertCustomerSummary,
+  getCustomerSummary,
 } = require('./db');
+const { getAvailableSlots, bookSlot } = require('./bookings');
 const { router: authRouter, attachUser, requireAuth } = require('./auth');
 const { getBusiness, getSystemPrompt, applyBusinessUpdate } = require('./business');
 const { runAdminChat } = require('./admin_chat');
@@ -258,6 +265,123 @@ app.patch('/api/profiles/:id', requireAuth, (req, res) => {
   }
   updateCustomerProfile(id, fields);
   res.json({ profile: getCustomerProfile(id) });
+});
+
+app.get('/api/customer/business', attachCustomerProfile, (req, res) => {
+  const b = getBusiness();
+  res.json({
+    name: b.name,
+    type: b.type,
+    services: (b.services || []).map(s => ({
+      name: s.name,
+      duration_minutes: s.duration_minutes,
+      price: s.price,
+    })),
+  });
+});
+
+app.get('/api/customer/availability', attachCustomerProfile, (req, res) => {
+  const { date, service } = req.query;
+  if (!date || !service) return res.status(400).json({ error: 'date and service required' });
+  const result = getAvailableSlots(String(date), String(service));
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.json(result);
+});
+
+app.post('/api/customer/bookings', attachCustomerProfile, (req, res) => {
+  const { service, date, time, name, phone, notes } = req.body || {};
+  if (!service || !date || !time || !name || !phone) {
+    return res.status(400).json({ error: 'service, date, time, name, phone are required' });
+  }
+  const result = bookSlot({
+    profileId: req.customerProfile.id,
+    customerName: String(name),
+    customerPhone: String(phone),
+    serviceName: String(service),
+    dateStr: String(date),
+    time: String(time),
+    notes: notes ? String(notes) : null,
+  });
+  if (result.error) return res.status(result.status || 400).json({ error: result.error });
+
+  if (!req.customerProfile.name || !req.customerProfile.phone) {
+    updateCustomerProfile(req.customerProfile.id, {
+      name: req.customerProfile.name || String(name),
+      phone: req.customerProfile.phone || String(phone),
+    });
+  }
+
+  res.json({ ok: true, booking: result.booking });
+});
+
+app.get('/api/customer/bookings', attachCustomerProfile, (req, res) => {
+  res.json({ bookings: listBookingsForProfile(req.customerProfile.id) });
+});
+
+app.get('/api/bookings', requireAuth, (req, res) => {
+  res.json({ bookings: listBookings() });
+});
+
+app.post('/api/bookings/:id/cancel', requireAuth, (req, res) => {
+  const id = Number(req.params.id);
+  if (!getBookingById(id)) return res.status(404).json({ error: 'Booking not found' });
+  cancelBooking(id);
+  res.json({ ok: true });
+});
+
+app.post('/api/profiles/:id/summarize', requireAuth, async (req, res) => {
+  try {
+    const profileId = Number(req.params.id);
+    const profile = getCustomerProfile(profileId);
+    if (!profile) return res.status(404).json({ error: 'Profile not found' });
+
+    const messages = getCustomerMessages(profileId);
+    if (messages.length === 0) {
+      return res.status(400).json({ error: 'No messages to summarize.' });
+    }
+
+    const transcript = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
+    const lastMessageId = messages[messages.length - 1].id;
+
+    const summaryPrompt = `You are summarizing a customer's conversation with a business frontdesk chatbot. Read the transcript and respond with a JSON object only — no prose, no markdown — with keys:
+- "summary": 1-2 sentence neutral summary of what the customer wanted and what happened.
+- "intent": short label (e.g. "booking inquiry", "pricing question", "complaint", "general info").
+- "sentiment": one of "positive", "neutral", "negative", "frustrated".
+
+TRANSCRIPT:
+${transcript}`;
+
+    const reply = await askClaude(
+      [{ role: 'user', content: summaryPrompt }],
+      'You output only valid JSON. No prose. No markdown fences.'
+    );
+
+    let parsed;
+    try {
+      const cleaned = reply.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch {
+      parsed = { summary: reply.slice(0, 500), intent: null, sentiment: null };
+    }
+
+    const stored = upsertCustomerSummary({
+      profileId,
+      summary: parsed.summary || '',
+      sentiment: parsed.sentiment || null,
+      intent: parsed.intent || null,
+      lastMessageId,
+    });
+    res.json({ summary: stored });
+  } catch (err) {
+    console.error('Summarize error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/profiles/:id/summary', requireAuth, (req, res) => {
+  const summary = getCustomerSummary(Number(req.params.id));
+  if (!summary) return res.status(404).json({ error: 'No summary yet.' });
+  res.json({ summary });
 });
 
 function getLanAddresses() {

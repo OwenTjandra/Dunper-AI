@@ -125,3 +125,10 @@ formEl.addEventListener('submit', (e) => {
 });
 
 window.addEventListener('load', loadExisting);
+
+window.appendBookingConfirmation = function (booking) {
+  const start = new Date(booking.starts_at);
+  const dateStr = start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const timeStr = start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  addMessage('assistant', `✓ Booked: ${booking.service_name} on ${dateStr} at ${timeStr}. We'll see you then!`);
+};

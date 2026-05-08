@@ -415,6 +415,39 @@ async function expandCustomer(profileId, row) {
     editRow.querySelector('[data-field="phone"]').value = data.profile.phone || '';
     detail.appendChild(editRow);
 
+    const summaryBox = document.createElement('div');
+    summaryBox.className = 'ai-summary';
+    summaryBox.innerHTML = `
+      <div class="ai-summary-head">
+        <span class="ai-summary-title">AI summary</span>
+        <button type="button" class="ghost-btn" data-summarize>Generate</button>
+      </div>
+      <div class="ai-summary-body"><p class="hint">Click Generate to have the AI summarize this conversation.</p></div>
+    `;
+    detail.appendChild(summaryBox);
+    fetch(`/api/profiles/${profileId}/summary`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.summary) renderSummaryInto(summaryBox.querySelector('.ai-summary-body'), d.summary); });
+    summaryBox.querySelector('[data-summarize]').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.textContent = 'Thinking…';
+      const body = summaryBox.querySelector('.ai-summary-body');
+      body.innerHTML = '<p class="hint">Generating…</p>';
+      try {
+        const r = await fetch(`/api/profiles/${profileId}/summarize`, { method: 'POST' });
+        if (handleUnauthorized(r)) return;
+        const dd = await r.json();
+        if (!r.ok) throw new Error(dd.error || 'Failed');
+        renderSummaryInto(body, dd.summary);
+      } catch (err) {
+        body.innerHTML = `<p class="hint err">${err.message}</p>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Regenerate';
+      }
+    });
+
     const notesLabel = document.createElement('label');
     notesLabel.innerHTML = '<span>Internal notes</span><textarea rows="2" placeholder="Anything you want to remember about this customer…"></textarea>';
     notesLabel.querySelector('textarea').value = data.profile.notes || '';
@@ -590,3 +623,106 @@ form.addEventListener('submit', async (e) => {
 
 loadBusiness();
 loadHistory();
+
+function renderSummaryInto(el, summary) {
+  el.innerHTML = '';
+  const text = document.createElement('p');
+  text.className = 'ai-summary-text';
+  text.textContent = summary.summary || '(empty)';
+  el.appendChild(text);
+  if (summary.intent || summary.sentiment) {
+    const tags = document.createElement('div');
+    tags.className = 'ai-summary-tags';
+    if (summary.intent) {
+      const t = document.createElement('span');
+      t.className = 'tag';
+      t.textContent = summary.intent;
+      tags.appendChild(t);
+    }
+    if (summary.sentiment) {
+      const t = document.createElement('span');
+      t.className = `tag sentiment ${summary.sentiment}`;
+      t.textContent = summary.sentiment;
+      tags.appendChild(t);
+    }
+    el.appendChild(tags);
+  }
+  if (summary.updated_at) {
+    const ts = document.createElement('span');
+    ts.className = 'ai-summary-ts';
+    ts.textContent = `Updated ${new Date(summary.updated_at).toLocaleString()}`;
+    el.appendChild(ts);
+  }
+}
+
+const bookingsListEl = document.getElementById('bookings-list');
+const refreshBookingsBtn = document.getElementById('refresh-bookings');
+
+async function loadBookings() {
+  if (!bookingsListEl) return;
+  bookingsListEl.innerHTML = '<p class="hint">Loading…</p>';
+  try {
+    const res = await fetch('/api/bookings');
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    if (!data.bookings?.length) {
+      bookingsListEl.innerHTML = '<p class="hint">No bookings yet.</p>';
+      return;
+    }
+    bookingsListEl.innerHTML = '';
+    data.bookings.forEach(b => bookingsListEl.appendChild(renderBookingRow(b)));
+  } catch (err) {
+    bookingsListEl.innerHTML = `<p class="hint err">Failed: ${err.message}</p>`;
+  }
+}
+
+function renderBookingRow(b) {
+  const row = document.createElement('div');
+  row.className = `booking-row ${b.status === 'cancelled' ? 'cancelled' : ''}`;
+  const start = new Date(b.starts_at);
+  const dateStr = start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const timeStr = start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
+  const meta = document.createElement('div');
+  meta.className = 'booking-meta';
+  meta.innerHTML = `
+    <div class="top">
+      <strong>${escapeHtml(b.service_name)}</strong>
+      <span class="when">${dateStr} · ${timeStr}</span>
+    </div>
+    <div class="sub">${escapeHtml(b.customer_name)} · ${escapeHtml(b.customer_phone)} · ${b.duration_minutes} min</div>
+  `;
+  row.appendChild(meta);
+
+  const right = document.createElement('div');
+  right.className = 'booking-right';
+  if (b.status === 'cancelled') {
+    const tag = document.createElement('span');
+    tag.className = 'tag sentiment negative';
+    tag.textContent = 'cancelled';
+    right.appendChild(tag);
+  } else {
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'ghost-btn';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', async () => {
+      if (!confirm('Cancel this booking?')) return;
+      cancelBtn.disabled = true;
+      const r = await fetch(`/api/bookings/${b.id}/cancel`, { method: 'POST' });
+      if (handleUnauthorized(r)) return;
+      if (r.ok) loadBookings();
+      else { cancelBtn.disabled = false; alert('Failed to cancel'); }
+    });
+    right.appendChild(cancelBtn);
+  }
+  row.appendChild(right);
+  return row;
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+refreshBookingsBtn?.addEventListener('click', loadBookings);
+loadBookings();
