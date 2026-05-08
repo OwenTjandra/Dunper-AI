@@ -59,8 +59,10 @@ New-NetFirewallRule -DisplayName "FrontDesk Dev (TCP 3000)" -Direction Inbound -
 frontdesk-ai/
 ├── src/
 │   ├── server.js          Express server, routes, middleware wiring
+│   ├── business.js        Business config state, validation, applyBusinessUpdate
+│   ├── admin_chat.js      Admin AI assistant: tool definitions + tool-use loop
 │   ├── auth.js            Login/logout endpoints + session middleware
-│   ├── db.js              SQLite setup (users, sessions) + seed
+│   ├── db.js              SQLite setup (users, sessions, business_versions) + seeds
 │   └── config/claude.js   Claude SDK wrapper
 ├── public/
 │   ├── index.html         Chat UI (open to all)
@@ -88,6 +90,8 @@ Saving from the admin form rebuilds the system prompt immediately — no server 
 
 Every save is logged to the `business_versions` table in `data.db` with the username and timestamp. The dashboard's "History" panel lists them newest-first; click **Restore** on any earlier version to roll back. A restore is just another write, so it shows up in the log too — you can always undo it.
 
+The "Edit with AI" panel at the top of the dashboard is a chat interface that can mutate the config via tool use. Type natural-language requests ("add a deep cleaning, Rp 750,000, 75 min", "drop the no-Sundays rule", "change our hours to Mon–Sat 8–6") and the assistant calls `update_business_field`, `add_service`, `update_service`, `remove_service`, `add_rule`, or `remove_rule` as appropriate. Each successful tool call goes through the same `applyBusinessUpdate` path as the form save, so the version log captures everything. Ambiguous requests trigger a clarifying question rather than a guess.
+
 ## Roadmap
 
 - [x] Day 1 — Server + Claude API connection
@@ -96,7 +100,7 @@ Every save is logged to the `business_versions` table in `data.db` with the user
 - [x] Day 3.5 — Per-business config + admin form
 - [x] Stage 1a — Admin auth wall (SQLite users + sessions, login page)
 - [x] Stage 1b — Version log of business.json changes + restore UI
-- [ ] Stage 2 — AI assistant in the dashboard that edits business config via tool use
+- [x] Stage 2 — AI assistant in the dashboard that edits business config via tool use
 - [ ] Stage 3 — File uploads + client profiles
 - [ ] Day 4 — Google Calendar integration + `book_appointment` tool
 - [ ] Day 5 — Business dashboard (bookings, sentiment, customer log)

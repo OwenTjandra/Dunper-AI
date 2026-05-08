@@ -19,6 +19,19 @@
       </div>
     </header>
 
+    <section class="card assistant-card">
+      <div class="card-head">
+        <h2>Edit with AI</h2>
+        <button type="button" class="ghost-btn" id="assistant-reset">New conversation</button>
+      </div>
+      <p class="hint">Ask in plain language — "change our hours to Mon–Sat 9–6", "add a $200 deep cleaning that takes 75 min", "drop the no-Sundays rule". Each change is saved and added to History below, so you can always restore.</p>
+      <div id="assistant-messages" class="assistant-messages"></div>
+      <form id="assistant-form" class="assistant-form" autocomplete="off">
+        <input id="assistant-input" type="text" placeholder="What do you want to change?" required />
+        <button type="submit" class="primary-btn" id="assistant-send">Send</button>
+      </form>
+    </section>
+
     <form id="business-form" class="form">
       <section class="card">
         <h2>Basic Info</h2>

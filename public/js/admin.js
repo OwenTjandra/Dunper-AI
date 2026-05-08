@@ -197,6 +197,93 @@ async function restoreVersion(id) {
 
 refreshHistoryBtn?.addEventListener('click', loadHistory);
 
+const assistantMessagesEl = document.getElementById('assistant-messages');
+const assistantFormEl = document.getElementById('assistant-form');
+const assistantInputEl = document.getElementById('assistant-input');
+const assistantSendBtn = document.getElementById('assistant-send');
+const assistantResetBtn = document.getElementById('assistant-reset');
+
+let assistantHistory = [];
+
+function appendAssistantMessage(role, text, toolCalls) {
+  const el = document.createElement('div');
+  el.className = `assistant-msg ${role}`;
+  el.textContent = text;
+  if (toolCalls?.length) {
+    const tools = document.createElement('div');
+    tools.className = 'assistant-tools';
+    toolCalls.forEach(tc => {
+      const chip = document.createElement('span');
+      chip.className = `assistant-tool-chip ${tc.ok ? '' : 'failed'}`;
+      chip.textContent = tc.ok ? tc.name : `${tc.name} (failed)`;
+      tools.appendChild(chip);
+    });
+    el.appendChild(tools);
+  }
+  assistantMessagesEl.appendChild(el);
+  assistantMessagesEl.scrollTop = assistantMessagesEl.scrollHeight;
+  return el;
+}
+
+function showThinking() {
+  const el = document.createElement('div');
+  el.className = 'assistant-msg thinking';
+  el.id = 'assistant-thinking';
+  el.textContent = 'Thinking…';
+  assistantMessagesEl.appendChild(el);
+  assistantMessagesEl.scrollTop = assistantMessagesEl.scrollHeight;
+}
+
+function hideThinking() {
+  document.getElementById('assistant-thinking')?.remove();
+}
+
+assistantFormEl?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = assistantInputEl.value.trim();
+  if (!text) return;
+
+  assistantHistory.push({ role: 'user', content: text });
+  appendAssistantMessage('user', text);
+  assistantInputEl.value = '';
+  assistantSendBtn.disabled = true;
+  showThinking();
+
+  try {
+    const res = await fetch('/api/admin/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: assistantHistory }),
+    });
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    hideThinking();
+    if (!res.ok) {
+      appendAssistantMessage('error', data.error || 'Assistant failed');
+      assistantHistory.pop();
+      return;
+    }
+    assistantHistory.push({ role: 'assistant', content: data.reply });
+    appendAssistantMessage('assistant', data.reply, data.toolCalls);
+    if (data.business) {
+      fillForm(data.business);
+      loadHistory();
+    }
+  } catch (err) {
+    hideThinking();
+    appendAssistantMessage('error', `Network error: ${err.message}`);
+    assistantHistory.pop();
+  } finally {
+    assistantSendBtn.disabled = false;
+    assistantInputEl.focus();
+  }
+});
+
+assistantResetBtn?.addEventListener('click', () => {
+  assistantHistory = [];
+  assistantMessagesEl.innerHTML = '';
+});
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   saveBtn.disabled = true;
