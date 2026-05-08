@@ -33,6 +33,7 @@ const {
 const { getAvailableSlots, bookSlot } = require('./bookings');
 const googleIntegration = require('./integrations/google');
 const whatsapp = require('./integrations/whatsapp');
+const conversation = require('./conversation');
 const { router: authRouter, attachUser, requireAuth } = require('./auth');
 const { getBusiness, getSystemPrompt, applyBusinessUpdate } = require('./business');
 const { runAdminChat } = require('./admin_chat');
@@ -230,8 +231,11 @@ app.post('/chat', chatLimiter, attachCustomerProfile, (req, res) => {
         });
       }
 
-      const stored = getCustomerMessages(req.customerProfile.id);
-      const messages = stored.map(m => {
+      const { messages: baseMessages } = conversation.buildBaseMessagesForClaude(req.customerProfile.id);
+      const messages = baseMessages.map(m => {
+        if (typeof m.id === 'string' && m.id.startsWith('synth-')) {
+          return { role: m.role, content: m.content };
+        }
         const atts = getAttachmentsForMessage(m.id);
         return { role: m.role, content: buildClaudeMessageContent(m, atts) };
       });
@@ -246,6 +250,7 @@ app.post('/chat', chatLimiter, attachCustomerProfile, (req, res) => {
 
       const reply = await askClaude(messages, getSystemPrompt());
       recordCustomerMessage(req.customerProfile.id, 'assistant', reply);
+      conversation.maybeCompactInBackground(req.customerProfile.id);
 
       res.json({ reply });
     } catch (err) {
@@ -618,8 +623,8 @@ async function handleWhatsAppPayload(payload) {
 
     recordCustomerMessage(profile.id, 'user', msg.text);
 
-    const stored = getCustomerMessages(profile.id);
-    const claudeMessages = stored.map(m => ({ role: m.role, content: m.content }));
+    const { messages: baseMessages } = conversation.buildBaseMessagesForClaude(profile.id);
+    const claudeMessages = baseMessages.map(m => ({ role: m.role, content: m.content }));
 
     const docBlocks = documents.buildDocumentBlocks();
     if (docBlocks.length > 0 && claudeMessages.length > 0 && claudeMessages[0].role === 'user') {
@@ -636,6 +641,7 @@ async function handleWhatsAppPayload(payload) {
     }
 
     recordCustomerMessage(profile.id, 'assistant', reply);
+    conversation.maybeCompactInBackground(profile.id);
 
     const sendResult = await whatsapp.sendText(msg.from, reply);
     if (!sendResult.ok && !sendResult.skipped) {

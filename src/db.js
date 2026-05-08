@@ -452,6 +452,22 @@ function clearGoogleConnection() {
   db.prepare('DELETE FROM google_connection WHERE id = 1').run();
 }
 
+function getConversationCompaction(profileId) {
+  return db.prepare('SELECT * FROM conversation_compactions WHERE profile_id = ?').get(profileId);
+}
+
+function upsertConversationCompaction({ profileId, throughMessageId, summary, messageCount }) {
+  db.prepare(`
+    INSERT INTO conversation_compactions (profile_id, through_message_id, summary, message_count, updated_at)
+    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(profile_id) DO UPDATE SET
+      through_message_id = excluded.through_message_id,
+      summary = excluded.summary,
+      message_count = excluded.message_count,
+      updated_at = CURRENT_TIMESTAMP
+  `).run(profileId, throughMessageId, summary, messageCount);
+}
+
 function markWhatsAppMessageProcessed(messageId) {
   try {
     db.prepare('INSERT INTO processed_wa_messages (message_id) VALUES (?)').run(messageId);
@@ -506,4 +522,6 @@ module.exports = {
   clearGoogleConnection,
   markWhatsAppMessageProcessed,
   purgeOldWhatsAppMessages,
+  getConversationCompaction,
+  upsertConversationCompaction,
 };
