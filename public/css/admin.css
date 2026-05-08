@@ -68,7 +68,27 @@ body {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  transition: padding 0.15s, gap 0.15s;
 }
+
+.card.collapsed { padding: 14px 24px; gap: 0; }
+.card.collapsed > *:not(:first-child) { display: none; }
+.card > .card-head, .card > h2 {
+  cursor: pointer;
+  user-select: none;
+}
+.card > h2::after, .card > .card-head::after {
+  content: '▾';
+  margin-left: auto;
+  font-size: 13px;
+  color: #6b7280;
+  transition: transform 0.2s;
+}
+.card > h2 { display: flex; align-items: center; }
+.card.collapsed > h2::after, .card.collapsed > .card-head::after {
+  transform: rotate(-90deg);
+}
+.card > .card-head { padding-right: 6px; }
 
 .card h2 {
   font-size: 16px;
@@ -712,6 +732,22 @@ textarea:focus {
   gap: 4px;
 }
 .sheet-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #f3f4f6;
+}
+.pagination-info {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+.pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
 .integration-pill.on { background: #f0fdf4; border-color: #bbf7d0; }
 .integration-pill.off { background: #fef2f2; border-color: #fecaca; }
 .integration-pill strong { font-size: 13px; color: #111827; }

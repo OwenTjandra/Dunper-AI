@@ -124,8 +124,50 @@ async function logout() {
 }
 document.getElementById('logout-btn')?.addEventListener('click', logout);
 
+const PER_PAGE = 10;
+
+function paginate(items, page) {
+  const totalPages = Math.max(1, Math.ceil(items.length / PER_PAGE));
+  const safePage = Math.min(Math.max(0, page), totalPages - 1);
+  const start = safePage * PER_PAGE;
+  return {
+    items: items.slice(start, start + PER_PAGE),
+    page: safePage,
+    totalPages,
+    pageStart: start,
+    totalItems: items.length,
+  };
+}
+
+function appendPagination(containerEl, totalPages, currentPage, onChange) {
+  if (totalPages <= 1) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'pagination';
+  const prev = document.createElement('button');
+  prev.type = 'button';
+  prev.className = 'ghost-btn';
+  prev.textContent = '← Prev';
+  prev.disabled = currentPage === 0;
+  prev.addEventListener('click', () => onChange(currentPage - 1));
+  const info = document.createElement('span');
+  info.className = 'pagination-info';
+  info.textContent = `Page ${currentPage + 1} of ${totalPages}`;
+  const next = document.createElement('button');
+  next.type = 'button';
+  next.className = 'ghost-btn';
+  next.textContent = 'Next →';
+  next.disabled = currentPage === totalPages - 1;
+  next.addEventListener('click', () => onChange(currentPage + 1));
+  wrap.appendChild(prev);
+  wrap.appendChild(info);
+  wrap.appendChild(next);
+  containerEl.appendChild(wrap);
+}
+
 const historyListEl = document.getElementById('history-list');
 const refreshHistoryBtn = document.getElementById('refresh-history');
+let historyPage = 0;
+let cachedHistoryVersions = [];
 
 function formatTimestamp(iso) {
   const d = new Date(iso.endsWith('Z') ? iso : iso.replace(' ', 'T') + 'Z');
@@ -134,13 +176,16 @@ function formatTimestamp(iso) {
 }
 
 function renderHistory(versions) {
+  cachedHistoryVersions = versions;
   historyListEl.innerHTML = '';
   if (!versions.length) {
     historyListEl.innerHTML = '<p class="hint">No history yet.</p>';
     return;
   }
-  versions.forEach((v, idx) => {
-    const isCurrent = idx === 0;
+  const { items, page, totalPages, pageStart } = paginate(versions, historyPage);
+  historyPage = page;
+  items.forEach((v, idx) => {
+    const isCurrent = pageStart + idx === 0;
     const row = document.createElement('div');
     row.className = `history-row ${isCurrent ? 'current' : ''}`;
 
@@ -183,10 +228,15 @@ function renderHistory(versions) {
 
     historyListEl.appendChild(row);
   });
+  appendPagination(historyListEl, totalPages, page, (newPage) => {
+    historyPage = newPage;
+    renderHistory(cachedHistoryVersions);
+  });
 }
 
 async function loadHistory() {
   try {
+    historyPage = 0;
     const res = await fetch('/api/business/versions');
     if (handleUnauthorized(res)) return;
     const data = await res.json();
@@ -505,29 +555,44 @@ async function expandCustomer(profileId, row) {
   }
 }
 
+let customersPage = 0;
+let cachedCustomerProfiles = [];
+
+function renderCustomers(profiles) {
+  cachedCustomerProfiles = profiles;
+  customersListEl.innerHTML = '';
+  if (!profiles.length) {
+    customersListEl.innerHTML = '<p class="hint">No conversations yet.</p>';
+    return;
+  }
+  const { items, page, totalPages } = paginate(profiles, customersPage);
+  customersPage = page;
+  items.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'customer-row';
+    row.dataset.profileId = String(p.id);
+    const summary = renderCustomerSummary(p);
+    summary.addEventListener('click', () => expandCustomer(p.id, row));
+    row.appendChild(summary);
+    customersListEl.appendChild(row);
+    if (openCustomerIds.has(p.id)) {
+      openCustomerIds.delete(p.id);
+      expandCustomer(p.id, row);
+    }
+  });
+  appendPagination(customersListEl, totalPages, page, (newPage) => {
+    customersPage = newPage;
+    renderCustomers(cachedCustomerProfiles);
+  });
+}
+
 async function loadCustomers() {
   try {
+    customersPage = 0;
     const res = await fetch('/api/profiles');
     if (handleUnauthorized(res)) return;
     const data = await res.json();
-    customersListEl.innerHTML = '';
-    if (!data.profiles?.length) {
-      customersListEl.innerHTML = '<p class="hint">No conversations yet.</p>';
-      return;
-    }
-    data.profiles.forEach(p => {
-      const row = document.createElement('div');
-      row.className = 'customer-row';
-      row.dataset.profileId = String(p.id);
-      const summary = renderCustomerSummary(p);
-      summary.addEventListener('click', () => expandCustomer(p.id, row));
-      row.appendChild(summary);
-      customersListEl.appendChild(row);
-      if (openCustomerIds.has(p.id)) {
-        openCustomerIds.delete(p.id);
-        expandCustomer(p.id, row);
-      }
-    });
+    renderCustomers(data.profiles || []);
   } catch (err) {
     customersListEl.innerHTML = `<p class="hint">Failed to load: ${err.message}</p>`;
   }
@@ -1127,3 +1192,25 @@ async function loadWhatsAppStatus() {
 
 refreshWhatsappBtn?.addEventListener('click', loadWhatsAppStatus);
 loadWhatsAppStatus();
+
+// Collapsible cards — click the head (or h2) to toggle. State persists per-card.
+function setupCollapsibleCards() {
+  document.querySelectorAll('.card').forEach((card, idx) => {
+    if (card.dataset.collapsibleInit) return;
+    card.dataset.collapsibleInit = '1';
+    const head = card.querySelector(':scope > .card-head') || card.querySelector(':scope > h2');
+    if (!head) return;
+    const title = card.querySelector('h2')?.textContent?.trim() || `card-${idx}`;
+    const key = `frontdesk_card_${title}`;
+    const saved = localStorage.getItem(key);
+    const collapsed = saved === null ? true : saved === '1';
+    if (collapsed) card.classList.add('collapsed');
+    head.addEventListener('click', (e) => {
+      if (e.target.closest('button, a, input, select, textarea')) return;
+      const nowCollapsed = !card.classList.contains('collapsed');
+      card.classList.toggle('collapsed');
+      localStorage.setItem(key, nowCollapsed ? '1' : '0');
+    });
+  });
+}
+setupCollapsibleCards();
