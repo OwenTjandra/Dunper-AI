@@ -510,6 +510,15 @@ app.post('/api/integrations/google/sheets/create', requireAuth, async (req, res)
   }
 });
 
+app.post('/api/integrations/google/reformat', requireAuth, async (req, res) => {
+  try {
+    const result = await googleIntegration.reformatExistingTabs();
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 app.post('/api/integrations/google/select', requireAuth, (req, res) => {
   const { calendarId, sheetId } = req.body || {};
   if (calendarId !== undefined) googleIntegration.selectCalendar(calendarId);

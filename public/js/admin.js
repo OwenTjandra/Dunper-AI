@@ -819,7 +819,10 @@ async function loadIntegrationStatus() {
       <div class="integration-pill ${data.sheetId ? 'on' : 'off'}">
         <strong>Sheet</strong>
         <select data-pick="sheet"><option value="">Loading…</option></select>
-        <button type="button" class="ghost-btn" data-create-sheet>+ Create new</button>
+        <div class="sheet-actions">
+          <button type="button" class="ghost-btn" data-reformat-sheet>Polish formatting</button>
+          <button type="button" class="ghost-btn" data-create-sheet>+ Create new</button>
+        </div>
       </div>
     `;
     integrationStatusEl.appendChild(grid);
@@ -832,6 +835,8 @@ async function loadIntegrationStatus() {
     });
     const createBtn = grid.querySelector('[data-create-sheet]');
     createBtn.addEventListener('click', () => createNewSheet(createBtn));
+    const reformatBtn = grid.querySelector('[data-reformat-sheet]');
+    reformatBtn.addEventListener('click', () => reformatSheet(reformatBtn));
 
     populateCalendars(grid.querySelector('[data-pick="calendar"]'), data.calendarId);
     populateSheets(grid.querySelector('[data-pick="sheet"]'), data.sheetId);
@@ -883,6 +888,27 @@ async function saveSelection(payload) {
     }
   } catch (err) {
     alert(`Failed to save: ${err.message}`);
+  }
+}
+
+async function reformatSheet(button) {
+  const originalLabel = button?.textContent;
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Polishing…';
+  }
+  try {
+    const res = await fetch('/api/integrations/google/reformat', { method: 'POST' });
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Reformat failed');
+    if (button) {
+      button.textContent = `Polished ${data.reformatted.join(' + ')} ✓`;
+      setTimeout(() => { button.textContent = originalLabel; button.disabled = false; }, 2200);
+    }
+  } catch (err) {
+    alert(`Failed to reformat: ${err.message}`);
+    if (button) { button.disabled = false; button.textContent = originalLabel; }
   }
 }
 

@@ -711,6 +711,7 @@ textarea:focus {
   flex-direction: column;
   gap: 4px;
 }
+.sheet-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .integration-pill.on { background: #f0fdf4; border-color: #bbf7d0; }
 .integration-pill.off { background: #fef2f2; border-color: #fecaca; }
 .integration-pill strong { font-size: 13px; color: #111827; }

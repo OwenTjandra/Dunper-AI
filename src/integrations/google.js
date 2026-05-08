@@ -246,7 +246,10 @@ function columnLetter(n) {
 }
 
 async function applyTabFormatting(sheets, spreadsheetId, sheetId, headerCount) {
-  const requests = [
+  // Step 1: layout (freeze, banding, header style, alignment) — banding may
+  // throw if it already exists, so we run that as a separate optional step.
+  const baseRequests = [
+    // Header style
     {
       repeatCell: {
         range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
@@ -258,11 +261,26 @@ async function applyTabFormatting(sheets, spreadsheetId, sheetId, headerCount) {
               bold: true,
               fontSize: 11,
             },
+            horizontalAlignment: 'CENTER',
             verticalAlignment: 'MIDDLE',
             padding: { top: 6, bottom: 6, left: 8, right: 8 },
           },
         },
-        fields: 'userEnteredFormat(backgroundColor,textFormat,verticalAlignment,padding)',
+        fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,padding)',
+      },
+    },
+    // Center every data cell (rows 2+)
+    {
+      repeatCell: {
+        range: { sheetId, startRowIndex: 1 },
+        cell: {
+          userEnteredFormat: {
+            horizontalAlignment: 'CENTER',
+            verticalAlignment: 'MIDDLE',
+            padding: { top: 4, bottom: 4, left: 8, right: 8 },
+          },
+        },
+        fields: 'userEnteredFormat(horizontalAlignment,verticalAlignment,padding)',
       },
     },
     {
@@ -272,28 +290,62 @@ async function applyTabFormatting(sheets, spreadsheetId, sheetId, headerCount) {
       },
     },
     {
-      addBanding: {
-        bandedRange: {
-          range: { sheetId, startRowIndex: 1 },
-          rowProperties: {
-            firstBandColor: { red: 1, green: 1, blue: 1 },
-            secondBandColor: { red: 0.97, green: 0.98, blue: 0.99 },
-          },
-        },
-      },
-    },
-    {
       autoResizeDimensions: {
         dimensions: { sheetId, dimension: 'COLUMNS', startIndex: 0, endIndex: headerCount },
       },
     },
   ];
+  await sheets.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests: baseRequests } });
+
+  // Step 2: banding — separate request, swallow "already exists" errors.
   try {
-    await sheets.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests } });
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [{
+          addBanding: {
+            bandedRange: {
+              range: { sheetId, startRowIndex: 1 },
+              rowProperties: {
+                firstBandColor: { red: 1, green: 1, blue: 1 },
+                secondBandColor: { red: 0.97, green: 0.98, blue: 0.99 },
+              },
+            },
+          },
+        }],
+      },
+    });
   } catch (err) {
-    // Banding may already exist if the tab was reformatted — non-fatal.
-    console.warn('[Google Sheets] formatting partially applied:', err.message);
+    // Banding likely already present from a previous run — fine.
   }
+}
+
+async function reformatExistingTabs() {
+  const conn = getGoogleConnection();
+  if (!conn?.sheet_id) throw new Error('No sheet connected.');
+  const auth = authorizedClient();
+  const sheets = google.sheets({ version: 'v4', auth });
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: conn.sheet_id });
+
+  const targets = [
+    { name: BOOKINGS_TAB, header: BOOKINGS_HEADER },
+    { name: CUSTOMERS_TAB, header: CUSTOMERS_HEADER },
+  ];
+  const reformatted = [];
+  for (const t of targets) {
+    const tab = meta.data.sheets.find(s => s.properties.title === t.name);
+    if (!tab) continue;
+    // Rewrite the header row in case columns changed (e.g. Email added).
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: conn.sheet_id,
+      range: `${t.name}!A1:${columnLetter(t.header.length)}1`,
+      valueInputOption: 'RAW',
+      requestBody: { values: [t.header] },
+    });
+    await applyTabFormatting(sheets, conn.sheet_id, tab.properties.sheetId, t.header.length);
+    reformatted.push(t.name);
+  }
+  return { reformatted };
 }
 
 async function ensureSheetTab(sheets, spreadsheetId, tabName, headerRow) {
@@ -435,4 +487,5 @@ module.exports = {
   createCalendarEvent,
   appendBookingRow,
   upsertCustomerRow,
+  reformatExistingTabs,
 };
