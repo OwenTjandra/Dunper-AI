@@ -80,6 +80,17 @@
         <span id="status" class="status"></span>
       </div>
     </form>
+
+    <section class="card history-card">
+      <div class="card-head">
+        <h2>History</h2>
+        <button type="button" class="ghost-btn" id="refresh-history">Refresh</button>
+      </div>
+      <p class="hint">Every save is logged. Restore any earlier version — restoring also creates a new entry, so you can always undo.</p>
+      <div id="history-list" class="history-list">
+        <p class="hint">Loading…</p>
+      </div>
+    </section>
   </div>
 
   <script src="/js/admin.js"></script>

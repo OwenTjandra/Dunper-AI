@@ -5,7 +5,14 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const { askClaude } = require('./config/claude');
-const { seedAdminFromEnv, purgeExpiredSessions } = require('./db');
+const {
+  seedAdminFromEnv,
+  purgeExpiredSessions,
+  recordBusinessVersion,
+  listBusinessVersions,
+  getBusinessVersion,
+  seedInitialBusinessVersion,
+} = require('./db');
 const { router: authRouter, attachUser, requireAuth } = require('./auth');
 
 seedAdminFromEnv();
@@ -26,6 +33,7 @@ function loadBusiness() {
 
 let business = loadBusiness();
 let systemPrompt = buildSystemPrompt(business);
+seedInitialBusinessVersion(business);
 
 function buildSystemPrompt(b) {
   const services = (b.services || [])
@@ -94,19 +102,54 @@ app.get('/api/business', requireAuth, (req, res) => {
   res.json(business);
 });
 
-app.post('/api/business', requireAuth, (req, res) => {
-  const updated = req.body;
+function applyBusinessUpdate(updated, user, note) {
   const error = validateBusiness(updated);
-  if (error) return res.status(400).json({ error });
-
+  if (error) return { error, status: 400 };
   try {
     fs.writeFileSync(BUSINESS_PATH, JSON.stringify(updated, null, 2));
     business = updated;
     systemPrompt = buildSystemPrompt(business);
-    res.json({ ok: true, business });
+    recordBusinessVersion({ snapshot: updated, user, note });
+    return { ok: true };
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return { error: err.message, status: 500 };
   }
+}
+
+app.post('/api/business', requireAuth, (req, res) => {
+  const result = applyBusinessUpdate(req.body, req.user, null);
+  if (result.error) return res.status(result.status).json({ error: result.error });
+  res.json({ ok: true, business });
+});
+
+app.get('/api/business/versions', requireAuth, (req, res) => {
+  const versions = listBusinessVersions().map(v => ({
+    id: v.id,
+    username: v.username,
+    note: v.note,
+    createdAt: v.createdAt,
+    summary: {
+      name: v.snapshot.name,
+      services: v.snapshot.services?.length ?? 0,
+      rules: v.snapshot.booking_rules?.length ?? 0,
+    },
+  }));
+  res.json({ versions });
+});
+
+app.get('/api/business/versions/:id', requireAuth, (req, res) => {
+  const version = getBusinessVersion(Number(req.params.id));
+  if (!version) return res.status(404).json({ error: 'Version not found' });
+  res.json({ version });
+});
+
+app.post('/api/business/versions/:id/restore', requireAuth, (req, res) => {
+  const version = getBusinessVersion(Number(req.params.id));
+  if (!version) return res.status(404).json({ error: 'Version not found' });
+  const note = `Restored from version #${version.id}`;
+  const result = applyBusinessUpdate(version.snapshot, req.user, note);
+  if (result.error) return res.status(result.status).json({ error: result.error });
+  res.json({ ok: true, business, restoredFrom: version.id });
 });
 
 app.post('/chat', async (req, res) => {

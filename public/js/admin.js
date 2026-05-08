@@ -108,6 +108,95 @@ async function logout() {
 }
 document.getElementById('logout-btn')?.addEventListener('click', logout);
 
+const historyListEl = document.getElementById('history-list');
+const refreshHistoryBtn = document.getElementById('refresh-history');
+
+function formatTimestamp(iso) {
+  const d = new Date(iso.endsWith('Z') ? iso : iso.replace(' ', 'T') + 'Z');
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString();
+}
+
+function renderHistory(versions) {
+  historyListEl.innerHTML = '';
+  if (!versions.length) {
+    historyListEl.innerHTML = '<p class="hint">No history yet.</p>';
+    return;
+  }
+  versions.forEach((v, idx) => {
+    const isCurrent = idx === 0;
+    const row = document.createElement('div');
+    row.className = `history-row ${isCurrent ? 'current' : ''}`;
+
+    const meta = document.createElement('div');
+    meta.className = 'history-meta';
+
+    const top = document.createElement('div');
+    top.className = 'top';
+    const vid = document.createElement('span');
+    vid.className = 'vid';
+    vid.textContent = `#${v.id}`;
+    top.appendChild(vid);
+    const who = document.createElement('span');
+    who.textContent = v.username ? `by ${v.username}` : 'system';
+    top.appendChild(who);
+    if (isCurrent) {
+      const badge = document.createElement('span');
+      badge.className = 'current-badge';
+      badge.textContent = 'Current';
+      top.appendChild(badge);
+    }
+    meta.appendChild(top);
+
+    const sub = document.createElement('div');
+    sub.className = 'sub';
+    const summary = `${v.summary.name} · ${v.summary.services} services · ${v.summary.rules} rules`;
+    sub.textContent = `${formatTimestamp(v.createdAt)} · ${summary}${v.note ? ` · ${v.note}` : ''}`;
+    meta.appendChild(sub);
+
+    row.appendChild(meta);
+
+    if (!isCurrent) {
+      const restoreBtn = document.createElement('button');
+      restoreBtn.type = 'button';
+      restoreBtn.className = 'ghost-btn';
+      restoreBtn.textContent = 'Restore';
+      restoreBtn.addEventListener('click', () => restoreVersion(v.id));
+      row.appendChild(restoreBtn);
+    }
+
+    historyListEl.appendChild(row);
+  });
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/business/versions');
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    renderHistory(data.versions || []);
+  } catch (err) {
+    historyListEl.innerHTML = `<p class="hint">Failed to load history: ${err.message}</p>`;
+  }
+}
+
+async function restoreVersion(id) {
+  if (!confirm(`Restore to version #${id}? Your current values will be replaced (but kept in history).`)) return;
+  try {
+    const res = await fetch(`/api/business/versions/${id}/restore`, { method: 'POST' });
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Restore failed');
+    fillForm(data.business);
+    setStatus(`Restored from #${id} ✓`, 'ok');
+    loadHistory();
+  } catch (err) {
+    setStatus(err.message, 'err');
+  }
+}
+
+refreshHistoryBtn?.addEventListener('click', loadHistory);
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   saveBtn.disabled = true;
@@ -122,6 +211,7 @@ form.addEventListener('submit', async (e) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Save failed');
     setStatus('Saved ✓', 'ok');
+    loadHistory();
   } catch (err) {
     setStatus(err.message, 'err');
   } finally {
@@ -130,3 +220,4 @@ form.addEventListener('submit', async (e) => {
 });
 
 loadBusiness();
+loadHistory();

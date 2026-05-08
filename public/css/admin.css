@@ -205,6 +205,68 @@ textarea:focus {
 .status.ok { color: #059669; }
 .status.err { color: #dc2626; }
 
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.history-row.current {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+.history-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.history-meta .top {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.history-meta .top .vid {
+  font-family: ui-monospace, "Cascadia Mono", Menlo, monospace;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.history-meta .sub {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.current-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0369a1;
+  background: #e0f2fe;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 @media (max-width: 600px) {
   .row, .service-row { grid-template-columns: 1fr; }
+  .history-row { grid-template-columns: 1fr; }
 }

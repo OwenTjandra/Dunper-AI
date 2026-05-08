@@ -24,6 +24,17 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+
+  CREATE TABLE IF NOT EXISTS business_versions (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    username   TEXT,
+    snapshot   TEXT NOT NULL,
+    note       TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_business_versions_created_at ON business_versions(created_at);
 `);
 
 function seedAdminFromEnv() {
@@ -64,6 +75,56 @@ function purgeExpiredSessions() {
   db.prepare('DELETE FROM sessions WHERE expires_at <= CURRENT_TIMESTAMP').run();
 }
 
+function recordBusinessVersion({ snapshot, user, note }) {
+  db.prepare(`
+    INSERT INTO business_versions (user_id, username, snapshot, note)
+    VALUES (?, ?, ?, ?)
+  `).run(user?.id ?? null, user?.username ?? null, JSON.stringify(snapshot), note ?? null);
+}
+
+function listBusinessVersions(limit = 50) {
+  return db.prepare(`
+    SELECT id, user_id, username, note, created_at, snapshot
+    FROM business_versions
+    ORDER BY id DESC
+    LIMIT ?
+  `).all(limit).map(row => ({
+    id: row.id,
+    userId: row.user_id,
+    username: row.username,
+    note: row.note,
+    createdAt: row.created_at,
+    snapshot: JSON.parse(row.snapshot),
+  }));
+}
+
+function getBusinessVersion(id) {
+  const row = db.prepare(`
+    SELECT id, user_id, username, note, created_at, snapshot
+    FROM business_versions WHERE id = ?
+  `).get(id);
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    username: row.username,
+    note: row.note,
+    createdAt: row.created_at,
+    snapshot: JSON.parse(row.snapshot),
+  };
+}
+
+function seedInitialBusinessVersion(currentBusiness) {
+  const count = db.prepare('SELECT COUNT(*) AS n FROM business_versions').get().n;
+  if (count > 0) return;
+  recordBusinessVersion({
+    snapshot: currentBusiness,
+    user: null,
+    note: 'Initial snapshot from business.json',
+  });
+  console.log('Seeded initial business version (v1)');
+}
+
 module.exports = {
   db,
   seedAdminFromEnv,
@@ -72,4 +133,8 @@ module.exports = {
   findSession,
   deleteSession,
   purgeExpiredSessions,
+  recordBusinessVersion,
+  listBusinessVersions,
+  getBusinessVersion,
+  seedInitialBusinessVersion,
 };

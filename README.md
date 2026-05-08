@@ -86,6 +86,8 @@ Either edit `business.json` directly or open `/admin.html` in the browser. The f
 
 Saving from the admin form rebuilds the system prompt immediately — no server restart needed.
 
+Every save is logged to the `business_versions` table in `data.db` with the username and timestamp. The dashboard's "History" panel lists them newest-first; click **Restore** on any earlier version to roll back. A restore is just another write, so it shows up in the log too — you can always undo it.
+
 ## Roadmap
 
 - [x] Day 1 — Server + Claude API connection
@@ -93,7 +95,7 @@ Saving from the admin form rebuilds the system prompt immediately — no server 
 - [x] Day 3 — Chat UI (message bubbles, typing indicator, mobile-responsive)
 - [x] Day 3.5 — Per-business config + admin form
 - [x] Stage 1a — Admin auth wall (SQLite users + sessions, login page)
-- [ ] Stage 1b — Version log of business.json changes + restore UI
+- [x] Stage 1b — Version log of business.json changes + restore UI
 - [ ] Stage 2 — AI assistant in the dashboard that edits business config via tool use
 - [ ] Stage 3 — File uploads + client profiles
 - [ ] Day 4 — Google Calendar integration + `book_appointment` tool
