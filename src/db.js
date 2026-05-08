@@ -109,6 +109,15 @@ db.exec(`
     updated_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 
+  -- WhatsApp inbound message dedup. Meta retries on transient failures
+  -- so we track every processed messageId and skip duplicates.
+  CREATE TABLE IF NOT EXISTS processed_wa_messages (
+    message_id   TEXT PRIMARY KEY,
+    processed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_processed_wa_at ON processed_wa_messages(processed_at);
+
   -- OAuth-based Google connection. Singleton row (id=1) for now; will gain
   -- workspace_id when we go multi-tenant.
   CREATE TABLE IF NOT EXISTS google_connection (
@@ -443,6 +452,20 @@ function clearGoogleConnection() {
   db.prepare('DELETE FROM google_connection WHERE id = 1').run();
 }
 
+function markWhatsAppMessageProcessed(messageId) {
+  try {
+    db.prepare('INSERT INTO processed_wa_messages (message_id) VALUES (?)').run(messageId);
+    return true;
+  } catch (err) {
+    if (err.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') return false;
+    throw err;
+  }
+}
+
+function purgeOldWhatsAppMessages() {
+  db.prepare("DELETE FROM processed_wa_messages WHERE processed_at < datetime('now', '-7 days')").run();
+}
+
 module.exports = {
   db,
   seedAdminFromEnv,
@@ -481,4 +504,6 @@ module.exports = {
   updateGoogleTokens,
   setGoogleSelection,
   clearGoogleConnection,
+  markWhatsAppMessageProcessed,
+  purgeOldWhatsAppMessages,
 };

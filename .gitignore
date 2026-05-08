@@ -19,3 +19,6 @@ ai-frontdesk-*.json.zip
 *-service-account.json
 *-service-account.json.zip
 cloudflared
+
+# Local SQLite backups
+backups/

@@ -81,7 +81,7 @@ function removeDocument(id) {
 function buildDocumentBlocks() {
   const docs = listBusinessDocuments();
   if (docs.length === 0) return [];
-  return docs.map(doc => {
+  const blocks = docs.map(doc => {
     const filePath = storagePathFor(doc.storage_name);
     if (doc.content_type === 'application/pdf') {
       const data = fs.readFileSync(filePath).toString('base64');
@@ -98,6 +98,8 @@ function buildDocumentBlocks() {
       title: doc.filename,
     };
   });
+  blocks[blocks.length - 1].cache_control = { type: 'ephemeral' };
+  return blocks;
 }
 
 const CUSTOMER_ALLOWED_MIME = new Set([

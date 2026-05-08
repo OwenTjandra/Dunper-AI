@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const os = require('os');
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const path = require('path');
 const { askClaude } = require('./config/claude');
 const {
@@ -26,6 +27,8 @@ const {
   getBookingById,
   upsertCustomerSummary,
   getCustomerSummary,
+  markWhatsAppMessageProcessed,
+  purgeOldWhatsAppMessages,
 } = require('./db');
 const { getAvailableSlots, bookSlot } = require('./bookings');
 const googleIntegration = require('./integrations/google');
@@ -35,9 +38,39 @@ const { getBusiness, getSystemPrompt, applyBusinessUpdate } = require('./busines
 const { runAdminChat } = require('./admin_chat');
 const documents = require('./documents');
 
+const { db } = require('./db');
+require('./migrations').runPending(db);
 seedAdminFromEnv();
 purgeExpiredSessions();
+purgeOldWhatsAppMessages();
 seedInitialBusinessVersion(getBusiness());
+
+require('./backup').startBackupSchedule();
+
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  keyGenerator: (req, res) => req.cookies?.frontdesk_customer || ipKeyGenerator(req, res),
+  message: { error: 'Too many messages — please slow down.' },
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+});
+
+const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 200,
+  message: 'Too many webhook calls.',
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+});
+
+const adminApiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 120,
+  message: { error: 'Too many requests.' },
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -49,25 +82,13 @@ app.use(cookieParser());
 app.use(attachUser);
 
 app.use('/api/auth', authRouter);
+app.use('/api', adminApiLimiter);
 
-app.get('/webhooks/whatsapp', (req, res) => {
-  const result = whatsapp.verifyWebhookHandshake(req.query);
-  if (result.ok) return res.status(200).send(result.challenge);
-  return res.status(403).send('Forbidden');
+const webhookRoutes = require('./routes/webhooks').createRouter({
+  webhookLimiter,
+  handleWhatsAppPayload: (payload) => handleWhatsAppPayload(payload),
 });
-
-app.post('/webhooks/whatsapp', async (req, res) => {
-  const sig = req.get('x-hub-signature-256');
-  const verified = whatsapp.verifySignature(req.rawBody || Buffer.alloc(0), sig);
-  if (!verified.ok) {
-    console.warn('[WhatsApp] webhook signature failed:', verified.reason);
-    return res.status(401).send('bad signature');
-  }
-  res.status(200).send('OK');
-  setImmediate(() => handleWhatsAppPayload(req.body).catch(err => {
-    console.error('[WhatsApp] handler error:', err);
-  }));
-});
+app.use('/webhooks', webhookRoutes);
 
 app.use((req, res, next) => {
   if (req.path === '/admin.html') return requireAuth(req, res, next);
@@ -188,7 +209,7 @@ app.get('/api/customer/messages', attachCustomerProfile, (req, res) => {
   res.json({ messages: getCustomerMessages(req.customerProfile.id).map(serializeMessage) });
 });
 
-app.post('/chat', attachCustomerProfile, (req, res) => {
+app.post('/chat', chatLimiter, attachCustomerProfile, (req, res) => {
   documents.customerUpload.array('files', 10)(req, res, async (uploadErr) => {
     try {
       if (uploadErr) return res.status(400).json({ error: uploadErr.message });
@@ -580,6 +601,11 @@ async function handleWhatsAppPayload(payload) {
   for (const msg of messages) {
     if (msg.kind !== 'text') {
       console.log('[WhatsApp] ignoring non-text message:', msg.messageType, 'from', msg.from);
+      continue;
+    }
+
+    if (msg.messageId && !markWhatsAppMessageProcessed(msg.messageId)) {
+      console.log('[WhatsApp] duplicate message, skipping:', msg.messageId);
       continue;
     }
 
