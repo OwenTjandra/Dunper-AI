@@ -1,84 +1,189 @@
-const fs = require('fs');
-const path = require('path');
 const { google } = require('googleapis');
+const {
+  getGoogleConnection,
+  saveGoogleConnection,
+  updateGoogleTokens,
+  setGoogleSelection,
+  clearGoogleConnection,
+} = require('../db');
 
-const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar';
-const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
+const SCOPES = [
+  'https://www.googleapis.com/auth/calendar',
+  'https://www.googleapis.com/auth/spreadsheets',
+  'https://www.googleapis.com/auth/drive.file',
+  'openid',
+  'email',
+];
 
 const BOOKINGS_TAB = 'Bookings';
 const CUSTOMERS_TAB = 'Customers';
-
 const BOOKINGS_HEADER = ['Booked At', 'Service', 'Customer', 'Phone', 'Date', 'Time', 'Duration (min)', 'Status', 'Calendar Event'];
 const CUSTOMERS_HEADER = ['First Seen', 'Last Seen', 'Name', 'Phone', 'Notes', 'Messages', 'Intent', 'Sentiment', 'Summary'];
 
-let cachedAuth = null;
-let cachedClientEmail = null;
-let configError = null;
+function configError() {
+  if (!process.env.GOOGLE_OAUTH_CLIENT_ID) return 'GOOGLE_OAUTH_CLIENT_ID not set in .env';
+  if (!process.env.GOOGLE_OAUTH_CLIENT_SECRET) return 'GOOGLE_OAUTH_CLIENT_SECRET not set in .env';
+  if (!process.env.GOOGLE_OAUTH_REDIRECT_URI) return 'GOOGLE_OAUTH_REDIRECT_URI not set in .env';
+  return null;
+}
 
-function configure() {
-  configError = null;
-  cachedAuth = null;
-  cachedClientEmail = null;
+function newOAuthClient() {
+  return new google.auth.OAuth2(
+    process.env.GOOGLE_OAUTH_CLIENT_ID,
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+    process.env.GOOGLE_OAUTH_REDIRECT_URI
+  );
+}
 
-  const credPath = process.env.GOOGLE_CREDENTIALS_PATH;
-  if (!credPath) {
-    configError = 'GOOGLE_CREDENTIALS_PATH not set';
-    return;
-  }
-  const absolute = path.isAbsolute(credPath) ? credPath : path.join(__dirname, '../..', credPath);
-  if (!fs.existsSync(absolute)) {
-    configError = `Service-account JSON not found at ${absolute}`;
-    return;
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(fs.readFileSync(absolute, 'utf8'));
-  } catch (err) {
-    configError = `Service-account JSON parse error: ${err.message}`;
-    return;
-  }
-
-  cachedClientEmail = parsed.client_email;
-  cachedAuth = new google.auth.GoogleAuth({
-    keyFile: absolute,
-    scopes: [CALENDAR_SCOPE, SHEETS_SCOPE],
+function getAuthUrl(state) {
+  const client = newOAuthClient();
+  return client.generateAuthUrl({
+    access_type: 'offline',
+    prompt: 'consent',
+    scope: SCOPES,
+    state,
   });
 }
 
-configure();
+async function exchangeCode(code, user) {
+  const client = newOAuthClient();
+  const { tokens } = await client.getToken(code);
+  client.setCredentials(tokens);
 
-function isCalendarEnabled() {
-  return Boolean(cachedAuth && process.env.GOOGLE_CALENDAR_ID);
+  let email = null;
+  try {
+    const oauth2 = google.oauth2({ version: 'v2', auth: client });
+    const profile = await oauth2.userinfo.get();
+    email = profile.data.email;
+  } catch (err) {
+    console.warn('[Google OAuth] failed to fetch user email:', err.message);
+  }
+
+  return saveGoogleConnection({
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token,
+    expiresAt: new Date(tokens.expiry_date || Date.now() + 3600 * 1000).toISOString(),
+    scopes: (tokens.scope || SCOPES.join(' ')),
+    email,
+    user,
+  });
 }
 
-function isSheetsEnabled() {
-  return Boolean(cachedAuth && process.env.GOOGLE_SHEET_ID);
+function authorizedClient() {
+  const conn = getGoogleConnection();
+  if (!conn) return null;
+
+  const client = newOAuthClient();
+  client.setCredentials({
+    access_token: conn.access_token,
+    refresh_token: conn.refresh_token,
+    expiry_date: new Date(conn.expires_at).getTime(),
+    scope: conn.scopes,
+  });
+  client.on('tokens', (tokens) => {
+    if (tokens.access_token) {
+      updateGoogleTokens({
+        accessToken: tokens.access_token,
+        expiresAt: new Date(tokens.expiry_date || Date.now() + 3600 * 1000).toISOString(),
+      });
+    }
+  });
+  return client;
+}
+
+async function disconnect() {
+  const client = authorizedClient();
+  if (client) {
+    try { await client.revokeCredentials(); } catch (err) {
+      console.warn('[Google OAuth] revoke failed (clearing anyway):', err.message);
+    }
+  }
+  clearGoogleConnection();
 }
 
 function status() {
+  const cfg = configError();
+  const conn = getGoogleConnection();
   return {
-    serviceAccountEmail: cachedClientEmail,
-    calendarConnected: isCalendarEnabled(),
-    sheetsConnected: isSheetsEnabled(),
-    calendarId: process.env.GOOGLE_CALENDAR_ID || null,
-    sheetId: process.env.GOOGLE_SHEET_ID || null,
-    configError,
+    configError: cfg,
+    connected: Boolean(conn),
+    email: conn?.email || null,
+    calendarId: conn?.calendar_id || null,
+    sheetId: conn?.sheet_id || null,
+    connectedAt: conn?.connected_at || null,
+    connectedBy: conn?.connected_by_username || null,
   };
 }
 
-async function calendarClient() {
-  return google.calendar({ version: 'v3', auth: cachedAuth });
+function isCalendarSelected() {
+  const conn = getGoogleConnection();
+  return Boolean(conn?.calendar_id);
 }
 
-async function sheetsClient() {
-  return google.sheets({ version: 'v4', auth: cachedAuth });
+function isSheetSelected() {
+  const conn = getGoogleConnection();
+  return Boolean(conn?.sheet_id);
+}
+
+async function listCalendars() {
+  const auth = authorizedClient();
+  if (!auth) throw new Error('Google not connected');
+  const cal = google.calendar({ version: 'v3', auth });
+  const res = await cal.calendarList.list({ maxResults: 100 });
+  return (res.data.items || []).map(c => ({
+    id: c.id,
+    summary: c.summary,
+    primary: !!c.primary,
+    accessRole: c.accessRole,
+  }));
+}
+
+async function listSheets() {
+  const auth = authorizedClient();
+  if (!auth) throw new Error('Google not connected');
+  const drive = google.drive({ version: 'v3', auth });
+  const res = await drive.files.list({
+    q: "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+    fields: 'files(id, name, modifiedTime, webViewLink)',
+    pageSize: 100,
+    orderBy: 'modifiedTime desc',
+  });
+  return (res.data.files || []).map(f => ({
+    id: f.id,
+    name: f.name,
+    modifiedAt: f.modifiedTime,
+    url: f.webViewLink,
+  }));
+}
+
+async function createSheet(title) {
+  const auth = authorizedClient();
+  if (!auth) throw new Error('Google not connected');
+  const sheets = google.sheets({ version: 'v4', auth });
+  const res = await sheets.spreadsheets.create({
+    requestBody: { properties: { title: title || 'Frontdesk Bookings' } },
+  });
+  return {
+    id: res.data.spreadsheetId,
+    name: res.data.properties.title,
+    url: res.data.spreadsheetUrl,
+  };
+}
+
+function selectCalendar(calendarId) {
+  return setGoogleSelection({ calendarId });
+}
+
+function selectSheet(sheetId) {
+  return setGoogleSelection({ sheetId });
 }
 
 async function createCalendarEvent(booking, business) {
-  if (!isCalendarEnabled()) return { skipped: true, reason: 'Calendar not configured' };
+  const conn = getGoogleConnection();
+  if (!conn?.calendar_id) return { skipped: true, reason: 'No calendar selected' };
   try {
-    const cal = await calendarClient();
+    const auth = authorizedClient();
+    const cal = google.calendar({ version: 'v3', auth });
     const summary = `${booking.service_name} — ${booking.customer_name}`;
     const description = [
       `Customer: ${booking.customer_name}`,
@@ -89,7 +194,7 @@ async function createCalendarEvent(booking, business) {
     ].filter(Boolean).join('\n');
 
     const res = await cal.events.insert({
-      calendarId: process.env.GOOGLE_CALENDAR_ID,
+      calendarId: conn.calendar_id,
       requestBody: {
         summary,
         description,
@@ -104,40 +209,6 @@ async function createCalendarEvent(booking, business) {
   }
 }
 
-async function ensureSheetTab(tabName, headerRow) {
-  const sheets = await sheetsClient();
-  const sheetId = process.env.GOOGLE_SHEET_ID;
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
-  const exists = meta.data.sheets.some(s => s.properties.title === tabName);
-
-  if (!exists) {
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: sheetId,
-      requestBody: { requests: [{ addSheet: { properties: { title: tabName } } }] },
-    });
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: sheetId,
-      range: `${tabName}!A1`,
-      valueInputOption: 'RAW',
-      requestBody: { values: [headerRow] },
-    });
-    return;
-  }
-
-  const headerCheck = await sheets.spreadsheets.values.get({
-    spreadsheetId: sheetId,
-    range: `${tabName}!A1:${columnLetter(headerRow.length)}1`,
-  });
-  if (!headerCheck.data.values || headerCheck.data.values.length === 0) {
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: sheetId,
-      range: `${tabName}!A1`,
-      valueInputOption: 'RAW',
-      requestBody: { values: [headerRow] },
-    });
-  }
-}
-
 function columnLetter(n) {
   let s = '';
   while (n > 0) {
@@ -148,16 +219,50 @@ function columnLetter(n) {
   return s;
 }
 
+async function ensureSheetTab(sheets, spreadsheetId, tabName, headerRow) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const exists = meta.data.sheets.some(s => s.properties.title === tabName);
+
+  if (!exists) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: { requests: [{ addSheet: { properties: { title: tabName } } }] },
+    });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${tabName}!A1`,
+      valueInputOption: 'RAW',
+      requestBody: { values: [headerRow] },
+    });
+    return;
+  }
+
+  const headerCheck = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${tabName}!A1:${columnLetter(headerRow.length)}1`,
+  });
+  if (!headerCheck.data.values || headerCheck.data.values.length === 0) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${tabName}!A1`,
+      valueInputOption: 'RAW',
+      requestBody: { values: [headerRow] },
+    });
+  }
+}
+
 async function appendBookingRow(booking, calendarLink) {
-  if (!isSheetsEnabled()) return { skipped: true };
+  const conn = getGoogleConnection();
+  if (!conn?.sheet_id) return { skipped: true, reason: 'No sheet selected' };
   try {
-    const sheets = await sheetsClient();
-    await ensureSheetTab(BOOKINGS_TAB, BOOKINGS_HEADER);
+    const auth = authorizedClient();
+    const sheets = google.sheets({ version: 'v4', auth });
+    await ensureSheetTab(sheets, conn.sheet_id, BOOKINGS_TAB, BOOKINGS_HEADER);
     const start = new Date(booking.starts_at);
     const dateStr = start.toLocaleDateString('en-CA');
     const timeStr = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
     await sheets.spreadsheets.values.append({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      spreadsheetId: conn.sheet_id,
       range: `${BOOKINGS_TAB}!A1`,
       valueInputOption: 'USER_ENTERED',
       requestBody: {
@@ -182,14 +287,15 @@ async function appendBookingRow(booking, calendarLink) {
 }
 
 async function upsertCustomerRow(profile, summary) {
-  if (!isSheetsEnabled()) return { skipped: true };
+  const conn = getGoogleConnection();
+  if (!conn?.sheet_id) return { skipped: true, reason: 'No sheet selected' };
   try {
-    const sheets = await sheetsClient();
-    await ensureSheetTab(CUSTOMERS_TAB, CUSTOMERS_HEADER);
+    const auth = authorizedClient();
+    const sheets = google.sheets({ version: 'v4', auth });
+    await ensureSheetTab(sheets, conn.sheet_id, CUSTOMERS_TAB, CUSTOMERS_HEADER);
 
-    const sheetId = process.env.GOOGLE_SHEET_ID;
     const idColumn = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
+      spreadsheetId: conn.sheet_id,
       range: `${CUSTOMERS_TAB}!D2:D`,
     });
 
@@ -211,14 +317,14 @@ async function upsertCustomerRow(profile, summary) {
     if (matchIndex >= 0) {
       const targetRow = matchIndex + 2;
       await sheets.spreadsheets.values.update({
-        spreadsheetId: sheetId,
+        spreadsheetId: conn.sheet_id,
         range: `${CUSTOMERS_TAB}!A${targetRow}:I${targetRow}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [row] },
       });
     } else {
       await sheets.spreadsheets.values.append({
-        spreadsheetId: sheetId,
+        spreadsheetId: conn.sheet_id,
         range: `${CUSTOMERS_TAB}!A1`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [row] },
@@ -233,8 +339,17 @@ async function upsertCustomerRow(profile, summary) {
 
 module.exports = {
   status,
-  isCalendarEnabled,
-  isSheetsEnabled,
+  configError,
+  isCalendarEnabled: isCalendarSelected,
+  isSheetsEnabled: isSheetSelected,
+  getAuthUrl,
+  exchangeCode,
+  disconnect,
+  listCalendars,
+  listSheets,
+  createSheet,
+  selectCalendar,
+  selectSheet,
   createCalendarEvent,
   appendBookingRow,
   upsertCustomerRow,

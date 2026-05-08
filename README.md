@@ -110,6 +110,22 @@ The customer chat has a paperclip button that lets a customer attach an image (J
 
 Owner sees the same images inline in the dashboard's transcript view. The download route (`/api/attachments/:id`) only serves the file if the request comes from the customer's own session cookie or an authenticated owner.
 
+## Google Calendar + Sheets
+
+Owner-driven, OAuth-based. From the dashboard's "Google Calendar & Sheets" card, click **Connect Google** → consent on Google's screen → come back authorized. After connecting, pick a calendar and a sheet from dropdowns (or click "+ Create new" to make a fresh sheet). Tokens are stored in the singleton `google_connection` row in `data.db` and refreshed automatically.
+
+To enable the feature on a deploy, set three env vars (see `.env.example`):
+
+```
+GOOGLE_OAUTH_CLIENT_ID=
+GOOGLE_OAUTH_CLIENT_SECRET=
+GOOGLE_OAUTH_REDIRECT_URI=http://localhost:3000/api/integrations/google/callback
+```
+
+Create the OAuth client in [Google Cloud Console](https://console.cloud.google.com) → **APIs & Services → Credentials** → **Create Credentials** → **OAuth client ID** (Web application). The redirect URI on the OAuth client must match `GOOGLE_OAUTH_REDIRECT_URI` exactly. Enable the Calendar, Sheets, and Drive APIs in the same project.
+
+When connected, every new booking syncs to the chosen calendar (as an event) and to the chosen sheet (rows in `Bookings` / `Customers` tabs, auto-created on first write).
+
 ## Roadmap
 
 - [x] Day 1 — Server + Claude API connection
@@ -122,6 +138,7 @@ Owner sees the same images inline in the dashboard's transcript view. The downlo
 - [x] Stage 3a — Customer profiles + persistent conversation history (server-side, viewable in dashboard)
 - [x] Stage 3b owner docs — Owner uploads PDFs/text/markdown the customer AI grounds answers in
 - [x] Stage 3b customer attachments — Customer attaches images that Claude sees via vision
+- [x] Google Calendar + Sheets sync via OAuth (owner connects from dashboard)
 - [ ] Day 4 — Google Calendar integration + `book_appointment` tool
 - [ ] Day 5 — Business dashboard (bookings, sentiment, customer log)
 - [ ] Day 6 — Cloudflare Tunnel + PM2 for going live

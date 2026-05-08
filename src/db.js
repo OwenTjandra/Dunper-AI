@@ -106,6 +106,21 @@ db.exec(`
     last_message_id INTEGER,
     updated_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+
+  -- OAuth-based Google connection. Singleton row (id=1) for now; will gain
+  -- workspace_id when we go multi-tenant.
+  CREATE TABLE IF NOT EXISTS google_connection (
+    id            INTEGER PRIMARY KEY CHECK (id = 1),
+    access_token  TEXT NOT NULL,
+    refresh_token TEXT,
+    expires_at    TEXT NOT NULL,
+    scopes        TEXT,
+    email         TEXT,
+    calendar_id   TEXT,
+    sheet_id      TEXT,
+    connected_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    connected_by_username TEXT
+  );
 `);
 
 function seedAdminFromEnv() {
@@ -373,6 +388,47 @@ function getCustomerSummary(profileId) {
   return db.prepare('SELECT * FROM customer_summaries WHERE profile_id = ?').get(profileId);
 }
 
+function getGoogleConnection() {
+  return db.prepare('SELECT * FROM google_connection WHERE id = 1').get();
+}
+
+function saveGoogleConnection({ accessToken, refreshToken, expiresAt, scopes, email, user }) {
+  db.prepare(`
+    INSERT INTO google_connection
+      (id, access_token, refresh_token, expires_at, scopes, email, connected_at, connected_by_username)
+    VALUES (1, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      access_token = excluded.access_token,
+      refresh_token = COALESCE(excluded.refresh_token, google_connection.refresh_token),
+      expires_at = excluded.expires_at,
+      scopes = excluded.scopes,
+      email = excluded.email,
+      connected_at = CURRENT_TIMESTAMP,
+      connected_by_username = excluded.connected_by_username
+  `).run(accessToken, refreshToken ?? null, expiresAt, scopes ?? null, email ?? null, user?.username ?? null);
+  return getGoogleConnection();
+}
+
+function updateGoogleTokens({ accessToken, expiresAt }) {
+  db.prepare('UPDATE google_connection SET access_token = ?, expires_at = ? WHERE id = 1')
+    .run(accessToken, expiresAt);
+  return getGoogleConnection();
+}
+
+function setGoogleSelection({ calendarId, sheetId }) {
+  const sets = [];
+  const values = [];
+  if (calendarId !== undefined) { sets.push('calendar_id = ?'); values.push(calendarId); }
+  if (sheetId !== undefined) { sets.push('sheet_id = ?'); values.push(sheetId); }
+  if (sets.length === 0) return getGoogleConnection();
+  db.prepare(`UPDATE google_connection SET ${sets.join(', ')} WHERE id = 1`).run(...values);
+  return getGoogleConnection();
+}
+
+function clearGoogleConnection() {
+  db.prepare('DELETE FROM google_connection WHERE id = 1').run();
+}
+
 module.exports = {
   db,
   seedAdminFromEnv,
@@ -406,4 +462,9 @@ module.exports = {
   cancelBooking,
   upsertCustomerSummary,
   getCustomerSummary,
+  getGoogleConnection,
+  saveGoogleConnection,
+  updateGoogleTokens,
+  setGoogleSelection,
+  clearGoogleConnection,
 };

@@ -755,39 +755,148 @@ async function loadIntegrationStatus() {
     const data = await res.json();
     integrationStatusEl.innerHTML = '';
 
-    const email = document.createElement('div');
-    email.className = 'integration-row';
-    if (data.serviceAccountEmail) {
-      email.innerHTML = `
-        <div class="integration-meta">
-          <strong>Service account email</strong>
-          <code class="copyable">${escapeHtml(data.serviceAccountEmail)}</code>
-        </div>
-        <p class="hint">Share your Google Calendar (Settings → Share with specific people → "Make changes to events") AND a Google Sheet (Editor) with this email. Then set <code>GOOGLE_CALENDAR_ID</code> and <code>GOOGLE_SHEET_ID</code> in <code>.env</code> and restart the server.</p>
-      `;
-    } else {
-      email.innerHTML = `<p class="hint err">Service account not loaded. ${escapeHtml(data.configError || 'Set GOOGLE_CREDENTIALS_PATH in .env to your service-account JSON.')}</p>`;
+    if (data.configError) {
+      const err = document.createElement('p');
+      err.className = 'hint err';
+      err.textContent = `Server-side config: ${data.configError}. Set the GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, and GOOGLE_OAUTH_REDIRECT_URI vars in .env and restart.`;
+      integrationStatusEl.appendChild(err);
+      return;
     }
-    integrationStatusEl.appendChild(email);
 
-    const status = document.createElement('div');
-    status.className = 'integration-grid';
-    status.innerHTML = `
-      <div class="integration-pill ${data.calendarConnected ? 'on' : 'off'}">
-        <strong>Calendar</strong>
-        <span>${data.calendarConnected ? 'Connected' : 'Not connected'}</span>
-        ${data.calendarId ? `<code>${escapeHtml(data.calendarId)}</code>` : '<code class="muted">GOOGLE_CALENDAR_ID not set</code>'}
-      </div>
-      <div class="integration-pill ${data.sheetsConnected ? 'on' : 'off'}">
-        <strong>Sheets</strong>
-        <span>${data.sheetsConnected ? 'Connected' : 'Not connected'}</span>
-        ${data.sheetId ? `<code>${escapeHtml(data.sheetId)}</code>` : '<code class="muted">GOOGLE_SHEET_ID not set</code>'}
+    if (!data.connected) {
+      const wrap = document.createElement('div');
+      wrap.className = 'integration-row';
+      wrap.innerHTML = `
+        <p class="hint">Connect your Google account to sync new bookings into a calendar and a spreadsheet of your choice.</p>
+      `;
+      const connect = document.createElement('a');
+      connect.href = '/api/integrations/google/connect';
+      connect.className = 'primary-btn';
+      connect.textContent = 'Connect Google';
+      wrap.appendChild(connect);
+      integrationStatusEl.appendChild(wrap);
+      return;
+    }
+
+    const head = document.createElement('div');
+    head.className = 'integration-row';
+    head.innerHTML = `
+      <div class="integration-meta">
+        <strong>Connected as</strong>
+        <code class="copyable">${escapeHtml(data.email || '(unknown)')}</code>
       </div>
     `;
-    integrationStatusEl.appendChild(status);
+    const disconnectBtn = document.createElement('button');
+    disconnectBtn.type = 'button';
+    disconnectBtn.className = 'ghost-btn';
+    disconnectBtn.textContent = 'Disconnect';
+    disconnectBtn.addEventListener('click', disconnectGoogle);
+    head.appendChild(disconnectBtn);
+    integrationStatusEl.appendChild(head);
+
+    const grid = document.createElement('div');
+    grid.className = 'integration-grid';
+    grid.innerHTML = `
+      <div class="integration-pill ${data.calendarId ? 'on' : 'off'}">
+        <strong>Calendar</strong>
+        <select data-pick="calendar"><option value="">Loading…</option></select>
+      </div>
+      <div class="integration-pill ${data.sheetId ? 'on' : 'off'}">
+        <strong>Sheet</strong>
+        <select data-pick="sheet"><option value="">Loading…</option></select>
+        <button type="button" class="ghost-btn" data-create-sheet>+ Create new</button>
+      </div>
+    `;
+    integrationStatusEl.appendChild(grid);
+
+    grid.querySelector('[data-pick="calendar"]').addEventListener('change', (e) => {
+      saveSelection({ calendarId: e.target.value });
+    });
+    grid.querySelector('[data-pick="sheet"]').addEventListener('change', (e) => {
+      saveSelection({ sheetId: e.target.value });
+    });
+    grid.querySelector('[data-create-sheet]').addEventListener('click', createNewSheet);
+
+    populateCalendars(grid.querySelector('[data-pick="calendar"]'), data.calendarId);
+    populateSheets(grid.querySelector('[data-pick="sheet"]'), data.sheetId);
   } catch (err) {
     integrationStatusEl.innerHTML = `<p class="hint err">Failed: ${escapeHtml(err.message)}</p>`;
   }
+}
+
+async function populateCalendars(select, currentId) {
+  try {
+    const res = await fetch('/api/integrations/google/calendars');
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to list calendars');
+    select.innerHTML = '<option value="">— Pick a calendar —</option>' + data.calendars.map(c =>
+      `<option value="${escapeHtml(c.id)}" ${c.id === currentId ? 'selected' : ''}>${escapeHtml(c.summary)}${c.primary ? ' (primary)' : ''}</option>`
+    ).join('');
+  } catch (err) {
+    select.innerHTML = `<option value="">Failed: ${escapeHtml(err.message)}</option>`;
+  }
+}
+
+async function populateSheets(select, currentId) {
+  try {
+    const res = await fetch('/api/integrations/google/sheets');
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to list sheets');
+    select.innerHTML = '<option value="">— Pick a sheet —</option>' + data.sheets.map(s =>
+      `<option value="${escapeHtml(s.id)}" ${s.id === currentId ? 'selected' : ''}>${escapeHtml(s.name)}</option>`
+    ).join('');
+  } catch (err) {
+    select.innerHTML = `<option value="">Failed: ${escapeHtml(err.message)}</option>`;
+  }
+}
+
+async function saveSelection(payload) {
+  if (!payload.calendarId && !payload.sheetId) return;
+  try {
+    const res = await fetch('/api/integrations/google/select', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (handleUnauthorized(res)) return;
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || 'Save failed');
+    }
+  } catch (err) {
+    alert(`Failed to save: ${err.message}`);
+  }
+}
+
+async function createNewSheet() {
+  const title = prompt('Name for the new spreadsheet?', 'Frontdesk Bookings');
+  if (!title) return;
+  try {
+    const res = await fetch('/api/integrations/google/sheets/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    });
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Create failed');
+    loadIntegrationStatus();
+  } catch (err) {
+    alert(`Failed: ${err.message}`);
+  }
+}
+
+async function disconnectGoogle() {
+  if (!confirm('Disconnect Google? Future bookings won\'t sync until you connect again.')) return;
+  const res = await fetch('/api/integrations/google/disconnect', { method: 'POST' });
+  if (handleUnauthorized(res)) return;
+  loadIntegrationStatus();
+}
+
+if (location.search.includes('google=connected')) {
+  history.replaceState(null, '', location.pathname);
 }
 
 refreshIntegrationsBtn?.addEventListener('click', loadIntegrationStatus);

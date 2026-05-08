@@ -420,6 +420,75 @@ app.get('/api/integrations/google', requireAuth, (req, res) => {
   res.json(googleIntegration.status());
 });
 
+app.get('/api/integrations/google/connect', requireAuth, (req, res) => {
+  const cfg = googleIntegration.configError();
+  if (cfg) return res.status(400).json({ error: cfg });
+  const state = crypto.randomBytes(16).toString('hex');
+  res.cookie('google_oauth_state', state, { httpOnly: true, sameSite: 'lax', maxAge: 10 * 60 * 1000 });
+  res.redirect(googleIntegration.getAuthUrl(state));
+});
+
+app.get('/api/integrations/google/callback', async (req, res) => {
+  if (!req.user) {
+    return res.redirect('/login.html');
+  }
+  const { code, state, error } = req.query;
+  if (error) {
+    return res.redirect(`/admin.html?google=error&reason=${encodeURIComponent(String(error))}`);
+  }
+  const expected = req.cookies?.google_oauth_state;
+  if (!state || state !== expected) {
+    return res.redirect('/admin.html?google=error&reason=state_mismatch');
+  }
+  res.clearCookie('google_oauth_state');
+  try {
+    await googleIntegration.exchangeCode(String(code), req.user);
+    res.redirect('/admin.html?google=connected');
+  } catch (err) {
+    console.error('Google OAuth callback failed:', err);
+    res.redirect(`/admin.html?google=error&reason=${encodeURIComponent(err.message)}`);
+  }
+});
+
+app.post('/api/integrations/google/disconnect', requireAuth, async (req, res) => {
+  await googleIntegration.disconnect();
+  res.json({ ok: true });
+});
+
+app.get('/api/integrations/google/calendars', requireAuth, async (req, res) => {
+  try {
+    res.json({ calendars: await googleIntegration.listCalendars() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/integrations/google/sheets', requireAuth, async (req, res) => {
+  try {
+    res.json({ sheets: await googleIntegration.listSheets() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/integrations/google/sheets/create', requireAuth, async (req, res) => {
+  try {
+    const title = req.body?.title || `Frontdesk — ${getBusiness().name}`;
+    const sheet = await googleIntegration.createSheet(title);
+    googleIntegration.selectSheet(sheet.id);
+    res.json({ sheet });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/integrations/google/select', requireAuth, (req, res) => {
+  const { calendarId, sheetId } = req.body || {};
+  if (calendarId !== undefined) googleIntegration.selectCalendar(calendarId);
+  if (sheetId !== undefined) googleIntegration.selectSheet(sheetId);
+  res.json({ status: googleIntegration.status() });
+});
+
 function getLanAddresses() {
   return Object.values(os.networkInterfaces())
     .flat()
