@@ -48,6 +48,7 @@ function fillForm(b) {
   if (form.whatsapp_number) form.whatsapp_number.value = b.whatsapp_number || '';
   if (form.whatsapp_prefill_message) form.whatsapp_prefill_message.value = b.whatsapp_prefill_message || '';
   if (form.logo_url) form.logo_url.value = b.logo_url || '';
+  updateLogoPreview(b.logo_url || '');
 
   currentBusinessExtras = {
     hours_structured: b.hours_structured ?? null,
@@ -1199,6 +1200,59 @@ async function loadWhatsAppStatus() {
 
 refreshWhatsappBtn?.addEventListener('click', loadWhatsAppStatus);
 loadWhatsAppStatus();
+
+const logoFileInput = document.getElementById('logo-file-input');
+const logoUploadBtn = document.getElementById('logo-upload-btn');
+const logoClearBtn = document.getElementById('logo-clear-btn');
+const logoUploadStatus = document.getElementById('logo-upload-status');
+const logoPreviewImg = document.getElementById('logo-preview-img');
+const logoPreviewFallback = document.getElementById('logo-preview-fallback');
+
+function updateLogoPreview(url) {
+  if (!logoPreviewImg || !logoPreviewFallback) return;
+  if (url) {
+    logoPreviewImg.src = url;
+    logoPreviewImg.hidden = false;
+    logoPreviewFallback.hidden = true;
+  } else {
+    logoPreviewImg.removeAttribute('src');
+    logoPreviewImg.hidden = true;
+    logoPreviewFallback.hidden = false;
+  }
+}
+
+logoUploadBtn?.addEventListener('click', () => logoFileInput?.click());
+logoClearBtn?.addEventListener('click', () => {
+  if (form.logo_url) form.logo_url.value = '';
+  updateLogoPreview('');
+});
+form.logo_url?.addEventListener('input', (e) => updateLogoPreview(e.target.value.trim()));
+
+logoFileInput?.addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  logoUploadBtn.disabled = true;
+  logoUploadStatus.textContent = 'Uploading…';
+  logoUploadStatus.className = 'status';
+  try {
+    const fd = new FormData();
+    fd.append('logo', file);
+    const res = await fetch('/api/business/logo', { method: 'POST', body: fd });
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    if (form.logo_url) form.logo_url.value = data.logoUrl;
+    updateLogoPreview(data.logoUrl);
+    logoUploadStatus.textContent = 'Uploaded — Save Changes to apply';
+    logoUploadStatus.className = 'status ok';
+  } catch (err) {
+    logoUploadStatus.textContent = err.message;
+    logoUploadStatus.className = 'status err';
+  } finally {
+    logoUploadBtn.disabled = false;
+    logoFileInput.value = '';
+  }
+});
 
 // Collapsible cards — click the head (or h2) to toggle. State persists per-card.
 function setupCollapsibleCards() {

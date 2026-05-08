@@ -5,11 +5,10 @@ const sendBtn = document.getElementById('send-btn');
 const attachmentBtn = document.getElementById('attachment-btn');
 const attachmentInput = document.getElementById('attachment-input');
 const previewEl = document.getElementById('attachment-preview');
-const previewImg = document.getElementById('attachment-preview-img');
-const previewName = document.getElementById('attachment-preview-name');
-const previewClearBtn = document.getElementById('attachment-preview-clear');
 
-let pendingFile = null;
+const MAX_ATTACHMENTS = 10;
+const pendingFiles = [];
+const pendingPreviewUrls = new Map();
 
 function addMessage(role, text, attachments) {
   const div = document.createElement('div');
@@ -46,28 +45,64 @@ function hideTyping() {
   document.getElementById('typing-indicator')?.remove();
 }
 
-function clearAttachment() {
-  pendingFile = null;
+function clearAttachment(file) {
+  if (file) {
+    const idx = pendingFiles.indexOf(file);
+    if (idx >= 0) pendingFiles.splice(idx, 1);
+    const url = pendingPreviewUrls.get(file);
+    if (url) {
+      URL.revokeObjectURL(url);
+      pendingPreviewUrls.delete(file);
+    }
+  } else {
+    pendingFiles.length = 0;
+    pendingPreviewUrls.forEach(URL.revokeObjectURL);
+    pendingPreviewUrls.clear();
+  }
   attachmentInput.value = '';
-  previewEl.hidden = true;
-  if (previewImg.src.startsWith('blob:')) URL.revokeObjectURL(previewImg.src);
-  previewImg.src = '';
-  previewName.textContent = '';
+  renderPreviews();
 }
 
-function setAttachment(file) {
-  pendingFile = file;
-  previewImg.src = URL.createObjectURL(file);
-  previewName.textContent = file.name;
+function renderPreviews() {
+  previewEl.innerHTML = '';
+  if (pendingFiles.length === 0) {
+    previewEl.hidden = true;
+    return;
+  }
   previewEl.hidden = false;
+  pendingFiles.forEach(file => {
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+
+    const img = document.createElement('img');
+    img.src = pendingPreviewUrls.get(file);
+    img.alt = file.name;
+    item.appendChild(img);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'preview-remove';
+    removeBtn.textContent = '×';
+    removeBtn.title = file.name;
+    removeBtn.addEventListener('click', () => clearAttachment(file));
+    item.appendChild(removeBtn);
+
+    previewEl.appendChild(item);
+  });
+}
+
+function addAttachment(file) {
+  if (pendingFiles.length >= MAX_ATTACHMENTS) return;
+  pendingFiles.push(file);
+  pendingPreviewUrls.set(file, URL.createObjectURL(file));
+  renderPreviews();
 }
 
 attachmentBtn.addEventListener('click', () => attachmentInput.click());
 attachmentInput.addEventListener('change', (e) => {
-  const file = e.target.files?.[0];
-  if (file) setAttachment(file);
+  const files = Array.from(e.target.files || []);
+  files.forEach(addAttachment);
 });
-previewClearBtn.addEventListener('click', clearAttachment);
 
 let greetingMessageEl = null;
 let initialGreetingShown = false;
@@ -108,8 +143,12 @@ inputEl.addEventListener('keydown', (e) => {
   }
 });
 
-async function sendMessage(text, file) {
-  const localAttachments = file ? [{ url: URL.createObjectURL(file), filename: file.name }] : null;
+async function sendMessage(text, files) {
+  const filesCopy = files.slice();
+  const localAttachments = filesCopy.map(f => ({
+    url: URL.createObjectURL(f),
+    filename: f.name,
+  }));
   addMessage('user', text, localAttachments);
   inputEl.value = '';
   autoSizeInput();
@@ -121,7 +160,7 @@ async function sendMessage(text, file) {
   try {
     const fd = new FormData();
     fd.append('message', text);
-    if (file) fd.append('file', file);
+    filesCopy.forEach(f => fd.append('files', f));
 
     const res = await fetch('/chat', { method: 'POST', body: fd });
     const data = await res.json();
@@ -145,8 +184,8 @@ async function sendMessage(text, file) {
 formEl.addEventListener('submit', (e) => {
   e.preventDefault();
   const text = inputEl.value.trim();
-  if (!text && !pendingFile) return;
-  sendMessage(text, pendingFile);
+  if (!text && pendingFiles.length === 0) return;
+  sendMessage(text, pendingFiles);
 });
 
 async function loadBusinessBranding() {
@@ -163,12 +202,14 @@ async function loadBusinessBranding() {
       waLink.href = `https://wa.me/${wa}${prefill}`;
       waLink.hidden = false;
     }
-    const logoImg = document.getElementById('brand-logo-img');
-    const logoFallback = document.getElementById('brand-logo-fallback');
-    if (data.logo_url && logoImg && logoFallback) {
-      logoImg.src = data.logo_url;
-      logoImg.hidden = false;
-      logoFallback.hidden = true;
+    const avatarImg = document.getElementById('business-avatar-img');
+    const avatarFallback = document.getElementById('business-avatar-fallback');
+    if (data.logo_url && avatarImg && avatarFallback) {
+      avatarImg.src = data.logo_url;
+      avatarImg.hidden = false;
+      avatarFallback.hidden = true;
+    } else if (data.name && avatarFallback) {
+      avatarFallback.textContent = data.name.trim().charAt(0).toUpperCase();
     }
     if (data.name) {
       const titleEl = document.querySelector('.header-text h1');

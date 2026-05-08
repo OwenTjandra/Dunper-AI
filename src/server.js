@@ -189,16 +189,16 @@ app.get('/api/customer/messages', attachCustomerProfile, (req, res) => {
 });
 
 app.post('/chat', attachCustomerProfile, (req, res) => {
-  documents.customerUpload.single('file')(req, res, async (uploadErr) => {
+  documents.customerUpload.array('files', 10)(req, res, async (uploadErr) => {
     try {
       if (uploadErr) return res.status(400).json({ error: uploadErr.message });
 
       const text = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
-      const file = req.file;
-      if (!text && !file) return res.status(400).json({ error: 'message or file required' });
+      const files = Array.isArray(req.files) ? req.files : [];
+      if (!text && files.length === 0) return res.status(400).json({ error: 'message or file required' });
 
       const messageId = recordCustomerMessage(req.customerProfile.id, 'user', text);
-      if (file) {
+      for (const file of files) {
         addCustomerAttachment({
           messageId,
           profileId: req.customerProfile.id,
@@ -277,6 +277,14 @@ app.delete('/api/business/documents/:id', requireAuth, (req, res) => {
   const ok = documents.removeDocument(Number(req.params.id));
   if (!ok) return res.status(404).json({ error: 'Document not found.' });
   res.json({ ok: true });
+});
+
+app.post('/api/business/logo', requireAuth, (req, res) => {
+  documents.logoUpload.single('logo')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+    res.json({ ok: true, logoUrl: documents.logoPublicUrl(req.file.filename) });
+  });
 });
 
 app.patch('/api/profiles/:id', requireAuth, (req, res) => {

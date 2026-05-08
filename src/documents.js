@@ -12,8 +12,11 @@ const {
 const UPLOADS_ROOT = path.join(__dirname, '..', 'uploads');
 const BUSINESS_DOCS_DIR = path.join(UPLOADS_ROOT, 'business');
 const CUSTOMER_UPLOADS_DIR = path.join(UPLOADS_ROOT, 'customer');
+const PUBLIC_UPLOADS_DIR = path.join(__dirname, '..', 'public', 'uploads');
+const BUSINESS_LOGOS_DIR = path.join(PUBLIC_UPLOADS_DIR, 'business-logos');
 fs.mkdirSync(BUSINESS_DOCS_DIR, { recursive: true });
 fs.mkdirSync(CUSTOMER_UPLOADS_DIR, { recursive: true });
+fs.mkdirSync(BUSINESS_LOGOS_DIR, { recursive: true });
 
 const ALLOWED_MIME = new Set([
   'application/pdf',
@@ -137,6 +140,38 @@ function readCustomerAttachmentBase64(profileId, storageName) {
   return fs.readFileSync(customerAttachmentPath(profileId, storageName)).toString('base64');
 }
 
+const LOGO_ALLOWED_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+]);
+const LOGO_MAX_BYTES = 3 * 1024 * 1024;
+
+const logoStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, BUSINESS_LOGOS_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase().slice(0, 8) || '.png';
+    cb(null, `${crypto.randomUUID()}${ext}`);
+  },
+});
+
+const logoUpload = multer({
+  storage: logoStorage,
+  limits: { fileSize: LOGO_MAX_BYTES },
+  fileFilter: (_req, file, cb) => {
+    if (!LOGO_ALLOWED_MIME.has(file.mimetype)) {
+      return cb(new Error(`Unsupported logo type: ${file.mimetype}. Allowed: JPEG, PNG, GIF, WEBP, SVG.`));
+    }
+    cb(null, true);
+  },
+});
+
+function logoPublicUrl(filename) {
+  return `/uploads/business-logos/${filename}`;
+}
+
 module.exports = {
   upload,
   recordUpload,
@@ -150,4 +185,6 @@ module.exports = {
   readCustomerAttachmentBase64,
   CUSTOMER_ALLOWED_MIME,
   CUSTOMER_MAX_BYTES,
+  logoUpload,
+  logoPublicUrl,
 };

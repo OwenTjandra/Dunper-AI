@@ -10,7 +10,10 @@
 <body>
   <div class="chat-container">
     <header class="chat-header">
-      <div class="avatar"><img src="/img/logo.png" alt="Dunper" /></div>
+      <div class="avatar" id="business-avatar">
+        <img id="business-avatar-img" alt="" hidden />
+        <span id="business-avatar-fallback" class="avatar-fallback">·</span>
+      </div>
       <div class="header-text">
         <h1>Dunper AI</h1>
         <p class="status"><span class="dot"></span> <span data-i18n="online">Online</span></p>
@@ -27,14 +30,10 @@
 
     <main id="messages" class="messages" aria-live="polite"></main>
 
-    <div id="attachment-preview" class="attachment-preview" hidden>
-      <img id="attachment-preview-img" alt="Selected attachment" />
-      <span id="attachment-preview-name"></span>
-      <button type="button" id="attachment-preview-clear" data-i18n-aria-label="removeAttachment" aria-label="Remove attachment">×</button>
-    </div>
+    <div id="attachment-preview" class="attachment-preview" hidden></div>
 
     <form id="chat-form" class="chat-form" autocomplete="off">
-      <input id="attachment-input" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden />
+      <input id="attachment-input" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple hidden />
       <button type="button" id="attachment-btn" class="attachment-btn" data-i18n-aria-label="attachImage" aria-label="Attach image">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57a4 4 0 0 1 5.66 5.66l-8.58 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
       </button>
@@ -52,10 +51,9 @@
           </svg>
         </button>
       </div>
-      <div id="brand-logo" class="brand-logo" title="Your logo">
-        <img id="brand-logo-img" alt="" hidden />
-        <span id="brand-logo-fallback" class="brand-fallback">LOGO</span>
-      </div>
+      <a id="brand-logo" class="brand-logo" href="#" title="Powered by Dunper AI">
+        <img src="/img/logo.png" alt="Dunper" />
+      </a>
     </form>
   </div>
 

@@ -94,11 +94,23 @@
 
       <section class="card">
         <h2>Branding</h2>
+        <p class="hint">Shown as the avatar in the top-left of the customer chat. Upload an image or paste a URL — your choice.</p>
+        <div class="logo-upload-row">
+          <div class="logo-preview">
+            <img id="logo-preview-img" alt="" hidden />
+            <span id="logo-preview-fallback">No logo</span>
+          </div>
+          <div class="logo-controls">
+            <input type="file" id="logo-file-input" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml" hidden />
+            <button type="button" class="ghost-btn" id="logo-upload-btn">Upload image</button>
+            <button type="button" class="ghost-btn" id="logo-clear-btn">Clear</button>
+            <span id="logo-upload-status" class="status"></span>
+          </div>
+        </div>
         <label>
-          <span>Logo URL</span>
-          <input name="logo_url" type="url" placeholder="https://yourdomain.com/logo.png" />
+          <span>Or paste a URL</span>
+          <input name="logo_url" type="text" placeholder="https://yourdomain.com/logo.png  or  /uploads/business-logos/..." />
         </label>
-        <p class="hint">Shown on the customer chat next to the message box. Leave blank to show the dashed placeholder.</p>
       </section>
 
       <section class="card">
