@@ -11,9 +11,9 @@ function addServiceRow(service = { name: '', duration_minutes: 30, price: '' }) 
   const row = document.createElement('div');
   row.className = 'service-row';
   row.innerHTML = `
-    <input type="text" data-field="name" placeholder="Service name" value="" />
-    <input type="number" data-field="duration_minutes" placeholder="Minutes" min="1" value="" />
-    <input type="text" data-field="price" placeholder="Price" value="" />
+    <input type="text" data-field="name" placeholder="Service name" />
+    <input type="number" data-field="duration_minutes" placeholder="Minutes" min="1" />
+    <input type="text" data-field="price" placeholder="Price" />
     <button type="button" class="icon-btn" aria-label="Remove">×</button>
   `;
   row.querySelector('[data-field="name"]').value = service.name;
@@ -27,7 +27,7 @@ function addRuleRow(rule = '') {
   const row = document.createElement('div');
   row.className = 'rule-row';
   row.innerHTML = `
-    <input type="text" placeholder="e.g. Minimum 24 hours advance notice." value="" />
+    <input type="text" placeholder="e.g. Minimum 24 hours advance notice." />
     <button type="button" class="icon-btn" aria-label="Remove">×</button>
   `;
   row.querySelector('input').value = rule;

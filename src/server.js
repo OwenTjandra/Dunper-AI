@@ -8,8 +8,17 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const BUSINESS_PATH = path.join(__dirname, '../business.json');
 
-let business = JSON.parse(fs.readFileSync(BUSINESS_PATH, 'utf8'));
-let SYSTEM_PROMPT = buildSystemPrompt(business);
+function loadBusiness() {
+  try {
+    return JSON.parse(fs.readFileSync(BUSINESS_PATH, 'utf8'));
+  } catch (err) {
+    console.error(`Failed to load ${BUSINESS_PATH}: ${err.message}`);
+    process.exit(1);
+  }
+}
+
+let business = loadBusiness();
+let systemPrompt = buildSystemPrompt(business);
 
 function buildSystemPrompt(b) {
   const services = (b.services || [])
@@ -77,7 +86,7 @@ app.post('/api/business', (req, res) => {
   try {
     fs.writeFileSync(BUSINESS_PATH, JSON.stringify(updated, null, 2));
     business = updated;
-    SYSTEM_PROMPT = buildSystemPrompt(business);
+    systemPrompt = buildSystemPrompt(business);
     res.json({ ok: true, business });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -90,7 +99,7 @@ app.post('/chat', async (req, res) => {
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: 'messages array required' });
     }
-    const reply = await askClaude(messages, SYSTEM_PROMPT);
+    const reply = await askClaude(messages, systemPrompt);
     res.json({ reply });
   } catch (err) {
     console.error('Chat error:', err.message);
