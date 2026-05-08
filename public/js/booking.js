@@ -7,6 +7,7 @@ const dateEl = document.getElementById('booking-date');
 const slotsEl = document.getElementById('booking-slots');
 const nameEl = document.getElementById('booking-name');
 const phoneEl = document.getElementById('booking-phone');
+const emailEl = document.getElementById('booking-email');
 const submitBtn = document.getElementById('booking-submit');
 const statusEl = document.getElementById('booking-status');
 
@@ -122,6 +123,7 @@ form.addEventListener('submit', async (e) => {
         time: selectedSlot,
         name: nameEl.value.trim(),
         phone: phoneEl.value.trim(),
+        email: emailEl.value.trim(),
       }),
     });
     const data = await res.json();

@@ -17,8 +17,8 @@ const SCOPES = [
 
 const BOOKINGS_TAB = 'Bookings';
 const CUSTOMERS_TAB = 'Customers';
-const BOOKINGS_HEADER = ['Booked At', 'Service', 'Customer', 'Phone', 'Date', 'Time', 'Duration (min)', 'Status', 'Calendar Event'];
-const CUSTOMERS_HEADER = ['First Seen', 'Last Seen', 'Name', 'Phone', 'Notes', 'Messages', 'Intent', 'Sentiment', 'Summary'];
+const BOOKINGS_HEADER = ['Booked At', 'Service', 'Customer', 'Phone', 'Email', 'Date', 'Time', 'Duration (min)', 'Status', 'Calendar Event'];
+const CUSTOMERS_HEADER = ['First Seen', 'Last Seen', 'Name', 'Phone', 'Email', 'Notes', 'Messages', 'Intent', 'Sentiment', 'Summary'];
 
 function configError() {
   if (!process.env.GOOGLE_OAUTH_CLIENT_ID) return 'GOOGLE_OAUTH_CLIENT_ID not set in .env';
@@ -207,6 +207,7 @@ async function createCalendarEvent(booking, business) {
     const description = [
       `Customer: ${booking.customer_name}`,
       `Phone: ${booking.customer_phone}`,
+      booking.customer_email ? `Email: ${booking.customer_email}` : null,
       `Service: ${booking.service_name} (${booking.duration_minutes} min)`,
       booking.notes ? `Notes: ${booking.notes}` : null,
       `Booked via ${business.name} frontdesk chatbot`,
@@ -350,6 +351,7 @@ async function appendBookingRow(booking, calendarLink) {
           shown(booking.service_name),
           shown(booking.customer_name),
           shown(booking.customer_phone),
+          shown(booking.customer_email),
           dateStr,
           timeStr,
           booking.duration_minutes,
@@ -386,6 +388,7 @@ async function upsertCustomerRow(profile, summary) {
       profile.last_seen_at,
       shown(profile.name),
       shown(profile.phone),
+      shown(profile.email),
       shown(profile.notes),
       profile.message_count ?? 0,
       shown(summary?.intent),
@@ -397,7 +400,7 @@ async function upsertCustomerRow(profile, summary) {
       const targetRow = matchIndex + 2;
       await sheets.spreadsheets.values.update({
         spreadsheetId: conn.sheet_id,
-        range: `${CUSTOMERS_TAB}!A${targetRow}:I${targetRow}`,
+        range: `${CUSTOMERS_TAB}!A${targetRow}:J${targetRow}`,
         valueInputOption: 'RAW',
         requestBody: { values: [row] },
       });

@@ -86,7 +86,7 @@ function getAvailableSlots(dateStr, serviceName) {
   return { slots };
 }
 
-function bookSlot({ profileId, customerName, customerPhone, serviceName, dateStr, time, notes }) {
+function bookSlot({ profileId, customerName, customerPhone, customerEmail, serviceName, dateStr, time, notes }) {
   const business = getBusiness();
   const service = findService(business, serviceName);
   if (!service) return { error: 'Unknown service.', status: 400 };
@@ -120,6 +120,7 @@ function bookSlot({ profileId, customerName, customerPhone, serviceName, dateStr
     profileId: profileId ?? null,
     customerName: customerName.trim(),
     customerPhone: customerPhone.trim(),
+    customerEmail: customerEmail ? customerEmail.trim() : null,
     serviceName: service.name,
     durationMinutes: service.duration_minutes,
     startsAt,

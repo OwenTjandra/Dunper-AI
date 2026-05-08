@@ -437,10 +437,12 @@ async function expandCustomer(profileId, row) {
     editRow.innerHTML = `
       <label><span>Name</span><input type="text" data-field="name" /></label>
       <label><span>Phone</span><input type="text" data-field="phone" /></label>
+      <label><span>Email</span><input type="email" data-field="email" /></label>
       <button type="button" class="primary-btn" data-save>Save</button>
     `;
     editRow.querySelector('[data-field="name"]').value = data.profile.name || '';
     editRow.querySelector('[data-field="phone"]').value = data.profile.phone || '';
+    editRow.querySelector('[data-field="email"]').value = data.profile.email || '';
     detail.appendChild(editRow);
 
     const summaryBox = document.createElement('div');
@@ -485,6 +487,7 @@ async function expandCustomer(profileId, row) {
       const payload = {
         name: editRow.querySelector('[data-field="name"]').value.trim(),
         phone: editRow.querySelector('[data-field="phone"]').value.trim(),
+        email: editRow.querySelector('[data-field="email"]').value.trim(),
         notes: notesLabel.querySelector('textarea').value.trim(),
       };
       const r = await fetch(`/api/profiles/${profileId}`, {

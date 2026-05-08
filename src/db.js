@@ -41,6 +41,7 @@ db.exec(`
     session_id   TEXT NOT NULL UNIQUE,
     name         TEXT,
     phone        TEXT,
+    email        TEXT,
     notes        TEXT,
     created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -85,6 +86,7 @@ db.exec(`
     profile_id       INTEGER REFERENCES customer_profiles(id) ON DELETE SET NULL,
     customer_name    TEXT NOT NULL,
     customer_phone   TEXT NOT NULL,
+    customer_email   TEXT,
     service_name     TEXT NOT NULL,
     duration_minutes INTEGER NOT NULL,
     starts_at        TEXT NOT NULL,
@@ -122,6 +124,17 @@ db.exec(`
     connected_by_username TEXT
   );
 `);
+
+// Migrations for existing data.db files where the table predates a column.
+function ensureColumn(table, column, def) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!cols.find(c => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${def}`);
+    console.log(`Migrated: added ${column} to ${table}`);
+  }
+}
+ensureColumn('customer_profiles', 'email', 'TEXT');
+ensureColumn('bookings', 'customer_email', 'TEXT');
 
 function seedAdminFromEnv() {
   const username = process.env.ADMIN_USERNAME;
@@ -303,7 +316,7 @@ function deleteBusinessDocument(id) {
 }
 
 function updateCustomerProfile(id, fields) {
-  const allowed = ['name', 'phone', 'notes'];
+  const allowed = ['name', 'phone', 'email', 'notes'];
   const sets = [];
   const values = [];
   for (const key of allowed) {
@@ -321,12 +334,13 @@ function updateCustomerProfile(id, fields) {
 function createBooking(b) {
   const result = db.prepare(`
     INSERT INTO bookings
-      (profile_id, customer_name, customer_phone, service_name, duration_minutes, starts_at, ends_at, status, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (profile_id, customer_name, customer_phone, customer_email, service_name, duration_minutes, starts_at, ends_at, status, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     b.profileId ?? null,
     b.customerName,
     b.customerPhone,
+    b.customerEmail ?? null,
     b.serviceName,
     b.durationMinutes,
     b.startsAt,

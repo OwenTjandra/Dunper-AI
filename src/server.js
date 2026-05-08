@@ -283,7 +283,7 @@ app.patch('/api/profiles/:id', requireAuth, (req, res) => {
   const id = Number(req.params.id);
   if (!getCustomerProfile(id)) return res.status(404).json({ error: 'Profile not found' });
   const fields = {};
-  for (const key of ['name', 'phone', 'notes']) {
+  for (const key of ['name', 'phone', 'email', 'notes']) {
     if (key in req.body) fields[key] = req.body[key] === '' ? null : req.body[key];
   }
   updateCustomerProfile(id, fields);
@@ -315,14 +315,19 @@ app.get('/api/customer/availability', attachCustomerProfile, (req, res) => {
 });
 
 app.post('/api/customer/bookings', attachCustomerProfile, (req, res) => {
-  const { service, date, time, name, phone, notes } = req.body || {};
-  if (!service || !date || !time || !name || !phone) {
-    return res.status(400).json({ error: 'service, date, time, name, phone are required' });
+  const { service, date, time, name, phone, email, notes } = req.body || {};
+  if (!service || !date || !time || !name || !phone || !email) {
+    return res.status(400).json({ error: 'service, date, time, name, phone, email are required' });
+  }
+  const trimmedEmail = String(email).trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    return res.status(400).json({ error: 'Please enter a valid email address.' });
   }
   const result = bookSlot({
     profileId: req.customerProfile.id,
     customerName: String(name),
     customerPhone: String(phone),
+    customerEmail: trimmedEmail,
     serviceName: String(service),
     dateStr: String(date),
     time: String(time),
@@ -330,10 +335,11 @@ app.post('/api/customer/bookings', attachCustomerProfile, (req, res) => {
   });
   if (result.error) return res.status(result.status || 400).json({ error: result.error });
 
-  if (!req.customerProfile.name || !req.customerProfile.phone) {
+  if (!req.customerProfile.name || !req.customerProfile.phone || !req.customerProfile.email) {
     updateCustomerProfile(req.customerProfile.id, {
       name: req.customerProfile.name || String(name),
       phone: req.customerProfile.phone || String(phone),
+      email: req.customerProfile.email || trimmedEmail,
     });
   }
 
