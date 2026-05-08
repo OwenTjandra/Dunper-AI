@@ -35,6 +35,8 @@ function addRuleRow(rule = '') {
   rulesList.appendChild(row);
 }
 
+let currentBusinessExtras = {};
+
 function fillForm(b) {
   form.name.value = b.name || '';
   form.type.value = b.type || '';
@@ -43,6 +45,13 @@ function fillForm(b) {
   form.phone.value = b.phone || '';
   form.tone.value = b.tone || '';
   form.fallback_contact.value = b.fallback_contact || '';
+  if (form.whatsapp_number) form.whatsapp_number.value = b.whatsapp_number || '';
+  if (form.whatsapp_prefill_message) form.whatsapp_prefill_message.value = b.whatsapp_prefill_message || '';
+  if (form.logo_url) form.logo_url.value = b.logo_url || '';
+
+  currentBusinessExtras = {
+    hours_structured: b.hours_structured ?? null,
+  };
 
   servicesList.innerHTML = '';
   (b.services || []).forEach(addServiceRow);
@@ -64,7 +73,7 @@ function collectForm() {
     .map(i => i.value.trim())
     .filter(Boolean);
 
-  return {
+  const out = {
     name: form.name.value.trim(),
     type: form.type.value.trim(),
     hours: form.hours.value.trim(),
@@ -72,9 +81,16 @@ function collectForm() {
     phone: form.phone.value.trim(),
     tone: form.tone.value.trim(),
     fallback_contact: form.fallback_contact.value.trim(),
+    whatsapp_number: form.whatsapp_number?.value.trim() || '',
+    whatsapp_prefill_message: form.whatsapp_prefill_message?.value.trim() || '',
+    logo_url: form.logo_url?.value.trim() || '',
     services,
     booking_rules,
   };
+  if (currentBusinessExtras.hours_structured) {
+    out.hours_structured = currentBusinessExtras.hours_structured;
+  }
+  return out;
 }
 
 function setStatus(text, kind) {
@@ -726,3 +742,53 @@ function escapeHtml(s) {
 
 refreshBookingsBtn?.addEventListener('click', loadBookings);
 loadBookings();
+
+const integrationStatusEl = document.getElementById('integration-status');
+const refreshIntegrationsBtn = document.getElementById('refresh-integrations');
+
+async function loadIntegrationStatus() {
+  if (!integrationStatusEl) return;
+  integrationStatusEl.innerHTML = '<p class="hint">Loading…</p>';
+  try {
+    const res = await fetch('/api/integrations/google');
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    integrationStatusEl.innerHTML = '';
+
+    const email = document.createElement('div');
+    email.className = 'integration-row';
+    if (data.serviceAccountEmail) {
+      email.innerHTML = `
+        <div class="integration-meta">
+          <strong>Service account email</strong>
+          <code class="copyable">${escapeHtml(data.serviceAccountEmail)}</code>
+        </div>
+        <p class="hint">Share your Google Calendar (Settings → Share with specific people → "Make changes to events") AND a Google Sheet (Editor) with this email. Then set <code>GOOGLE_CALENDAR_ID</code> and <code>GOOGLE_SHEET_ID</code> in <code>.env</code> and restart the server.</p>
+      `;
+    } else {
+      email.innerHTML = `<p class="hint err">Service account not loaded. ${escapeHtml(data.configError || 'Set GOOGLE_CREDENTIALS_PATH in .env to your service-account JSON.')}</p>`;
+    }
+    integrationStatusEl.appendChild(email);
+
+    const status = document.createElement('div');
+    status.className = 'integration-grid';
+    status.innerHTML = `
+      <div class="integration-pill ${data.calendarConnected ? 'on' : 'off'}">
+        <strong>Calendar</strong>
+        <span>${data.calendarConnected ? 'Connected' : 'Not connected'}</span>
+        ${data.calendarId ? `<code>${escapeHtml(data.calendarId)}</code>` : '<code class="muted">GOOGLE_CALENDAR_ID not set</code>'}
+      </div>
+      <div class="integration-pill ${data.sheetsConnected ? 'on' : 'off'}">
+        <strong>Sheets</strong>
+        <span>${data.sheetsConnected ? 'Connected' : 'Not connected'}</span>
+        ${data.sheetId ? `<code>${escapeHtml(data.sheetId)}</code>` : '<code class="muted">GOOGLE_SHEET_ID not set</code>'}
+      </div>
+    `;
+    integrationStatusEl.appendChild(status);
+  } catch (err) {
+    integrationStatusEl.innerHTML = `<p class="hint err">Failed: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+refreshIntegrationsBtn?.addEventListener('click', loadIntegrationStatus);
+loadIntegrationStatus();

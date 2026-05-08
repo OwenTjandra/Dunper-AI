@@ -124,7 +124,36 @@ formEl.addEventListener('submit', (e) => {
   sendMessage(text, pendingFile);
 });
 
-window.addEventListener('load', loadExisting);
+async function loadBusinessBranding() {
+  try {
+    const res = await fetch('/api/customer/business');
+    if (!res.ok) return;
+    const data = await res.json();
+    const wa = (data.whatsapp_number || '').replace(/[^\d]/g, '');
+    const waLink = document.getElementById('whatsapp-link');
+    if (wa && waLink) {
+      const prefill = data.whatsapp_prefill_message
+        ? `?text=${encodeURIComponent(data.whatsapp_prefill_message)}`
+        : '';
+      waLink.href = `https://wa.me/${wa}${prefill}`;
+      waLink.hidden = false;
+    }
+    const logoImg = document.getElementById('brand-logo-img');
+    const logoFallback = document.getElementById('brand-logo-fallback');
+    if (data.logo_url && logoImg && logoFallback) {
+      logoImg.src = data.logo_url;
+      logoImg.hidden = false;
+      logoFallback.hidden = true;
+    }
+    if (data.name) {
+      const titleEl = document.querySelector('.header-text h1');
+      if (titleEl) titleEl.textContent = data.name;
+      document.title = `${data.name} — Frontdesk`;
+    }
+  } catch {}
+}
+
+window.addEventListener('load', () => { loadBusinessBranding(); loadExisting(); });
 
 window.appendBookingConfirmation = function (booking) {
   const start = new Date(booking.starts_at);

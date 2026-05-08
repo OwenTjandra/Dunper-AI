@@ -2,6 +2,49 @@
 
 All notable changes to this project. Entries are in reverse chronological order (newest first). Each entry lists what changed and which files to look at if a regression appears.
 
+## 2026-05-08 (later) — Google Calendar/Sheets sync, WhatsApp button, chat-form polish
+
+### Added
+- **Google Calendar + Sheets integration** (optional — gracefully no-ops when not configured).
+  - On every new booking: server creates a Calendar event AND appends a row to a "Bookings" tab in your Google Sheet.
+  - On booking + AI summary generation: server upserts a row in a "Customers" tab (keyed by phone number, so one row per real-world customer; gets updated as the AI summary, intent, and sentiment evolve).
+  - Sheet tabs are auto-created with header rows on first use — no manual setup needed inside the sheet itself.
+  - Auth uses the existing `ai-frontdesk-495621-c1c679e97a5c.json` service account (kept out of git).
+  - Files: [src/integrations/google.js](src/integrations/google.js), wired in [src/server.js](src/server.js).
+- **`/api/integrations/google` endpoint + admin Integrations panel** showing the service-account email (so the user knows what to share their Calendar/Sheet with), connection status, and configured Calendar/Sheet IDs.
+- **WhatsApp click-to-chat** — when `whatsapp_number` is set in business config, a green WhatsApp button shows in the customer chat header. Tap → opens WhatsApp directly via `https://wa.me/<number>?text=<prefilled>`. No Meta Business API setup required (intentional — the real WhatsApp Business API needs Meta verification, message templates, weeks of approval; click-to-chat covers the actual customer-facing use case).
+  - New optional fields: `whatsapp_number`, `whatsapp_prefill_message`.
+  - Editable from the dashboard's new "WhatsApp" card.
+- **Brand logo slot** in the customer chat — appears next to the message box where the send button used to be. Shows the `logo_url` image if set, otherwise a dashed "LOGO" placeholder. Editable from the dashboard's new "Branding" card.
+- **Customer chat now reads `name` from business config** for the header title and tab title (so each client deployment looks branded without code changes).
+- New `.env` knobs: `GOOGLE_CREDENTIALS_PATH`, `GOOGLE_CALENDAR_ID`, `GOOGLE_SHEET_ID`.
+
+### Changed
+- **Send button moved INSIDE the input field** (right edge of the input, with rounded-icon style). The standalone send button slot was repurposed as the brand logo slot.
+- **Booking + customer endpoints** now also push to Google in the background (non-blocking — the chat UI gets its response immediately even if Google is slow or down).
+
+### Setup steps the user must do AFTER deploying
+For Google integration to actually do anything:
+1. Open the service-account JSON in `ai-frontdesk-495621-c1c679e97a5c.json` and copy the value of `client_email` (it's also shown in the dashboard Integrations panel).
+2. In Google Calendar: Settings → Share with specific people → add the service-account email with "Make changes to events" permission. Note the calendar's ID (or just use `primary`).
+3. Create a Google Sheet (any blank one). Click Share, add the service-account email as Editor. Copy the sheet ID from the URL (between `/d/` and `/edit`).
+4. Set `GOOGLE_CALENDAR_ID` and `GOOGLE_SHEET_ID` in `.env`. Restart server.
+5. Hit Refresh in the dashboard Integrations panel — both pills should turn green.
+
+### Known issues / things to watch
+- **Calendar timezone:** events use the booking's stored ISO timestamp, which is in server-local time. If the server runs in a different timezone than the business, calendar events may show at the wrong wall-clock time. Same caveat as before — fine for single-laptop deployments.
+- **Sheets writes are best-effort:** Calendar/Sheets failures are logged to the server console and silently swallowed for the user (booking still succeeds). If a sheet is missing or auth expires, no in-app error is surfaced — check server logs.
+- **Customer dedup uses phone column:** the upsert logic keys on phone number. If a customer changes their phone number you'll get a duplicate row. Acceptable tradeoff for v1.
+- **WhatsApp number format:** must be international, no `+` or spaces (e.g. `6281234567890`). The form hint says this. Bad formats produce a broken `wa.me` URL.
+- **No outbound WhatsApp messaging.** Click-to-chat is one-way — customer initiates. If you need automated outbound (booking confirmations sent via WhatsApp from a verified business number), that's a separate effort using the real Meta WhatsApp Business Cloud API.
+
+### Rollback notes
+- Google integration is fully isolated to `src/integrations/google.js`. Removing the four `googleIntegration.*` calls in `src/server.js` and reverting the env additions cleanly removes it. Existing bookings stay in SQLite.
+- The chat-form layout change is contained to a new `<div class="input-wrap">` wrapping the input + send button, plus the new `.brand-logo` div. Reverting `public/index.html` and the modified CSS rules in `public/css/style.css` restores the old three-column layout.
+- WhatsApp button reverts cleanly by removing the `<a id="whatsapp-link">` element and the `loadBusinessBranding` block in `public/js/chat.js`.
+
+---
+
 ## 2026-05-08 — Bookings, AI customer summary, customer/owner page split
 
 ### Added

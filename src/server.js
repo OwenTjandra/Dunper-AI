@@ -28,6 +28,7 @@ const {
   getCustomerSummary,
 } = require('./db');
 const { getAvailableSlots, bookSlot } = require('./bookings');
+const googleIntegration = require('./integrations/google');
 const { router: authRouter, attachUser, requireAuth } = require('./auth');
 const { getBusiness, getSystemPrompt, applyBusinessUpdate } = require('./business');
 const { runAdminChat } = require('./admin_chat');
@@ -272,6 +273,9 @@ app.get('/api/customer/business', attachCustomerProfile, (req, res) => {
   res.json({
     name: b.name,
     type: b.type,
+    logo_url: b.logo_url || null,
+    whatsapp_number: b.whatsapp_number || null,
+    whatsapp_prefill_message: b.whatsapp_prefill_message || null,
     services: (b.services || []).map(s => ({
       name: s.name,
       duration_minutes: s.duration_minutes,
@@ -310,6 +314,21 @@ app.post('/api/customer/bookings', attachCustomerProfile, (req, res) => {
       phone: req.customerProfile.phone || String(phone),
     });
   }
+
+  (async () => {
+    try {
+      const calRes = await googleIntegration.createCalendarEvent(result.booking, getBusiness());
+      const calLink = calRes?.htmlLink || null;
+      await googleIntegration.appendBookingRow(result.booking, calLink);
+      const refreshed = getCustomerProfile(req.customerProfile.id);
+      await googleIntegration.upsertCustomerRow(
+        { ...refreshed, message_count: getCustomerMessages(refreshed.id).length },
+        null
+      );
+    } catch (err) {
+      console.error('Google integration error (booking):', err.message);
+    }
+  })();
 
   res.json({ ok: true, booking: result.booking });
 });
@@ -371,6 +390,19 @@ ${transcript}`;
       intent: parsed.intent || null,
       lastMessageId,
     });
+
+    (async () => {
+      try {
+        const refreshed = getCustomerProfile(profileId);
+        await googleIntegration.upsertCustomerRow(
+          { ...refreshed, message_count: messages.length },
+          stored
+        );
+      } catch (err) {
+        console.error('Google integration error (summary):', err.message);
+      }
+    })();
+
     res.json({ summary: stored });
   } catch (err) {
     console.error('Summarize error:', err);
@@ -382,6 +414,10 @@ app.get('/api/profiles/:id/summary', requireAuth, (req, res) => {
   const summary = getCustomerSummary(Number(req.params.id));
   if (!summary) return res.status(404).json({ error: 'No summary yet.' });
   res.json({ summary });
+});
+
+app.get('/api/integrations/google', requireAuth, (req, res) => {
+  res.json(googleIntegration.status());
 });
 
 function getLanAddresses() {

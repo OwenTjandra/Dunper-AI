@@ -88,11 +88,44 @@
         </label>
       </section>
 
+      <section class="card">
+        <h2>Branding</h2>
+        <label>
+          <span>Logo URL</span>
+          <input name="logo_url" type="url" placeholder="https://yourdomain.com/logo.png" />
+        </label>
+        <p class="hint">Shown on the customer chat next to the message box. Leave blank to show the dashed placeholder.</p>
+      </section>
+
+      <section class="card">
+        <h2>WhatsApp</h2>
+        <p class="hint">If you put a WhatsApp number here, customers will see a green WhatsApp button in the chat header. Tapping it opens WhatsApp directly to your number (uses wa.me — no API setup needed).</p>
+        <label>
+          <span>WhatsApp number (international format, no + or spaces — e.g. 6281234567890)</span>
+          <input name="whatsapp_number" type="text" placeholder="6281234567890" />
+        </label>
+        <label>
+          <span>Pre-filled message (optional)</span>
+          <input name="whatsapp_prefill_message" type="text" placeholder="Hi, I have a question about my booking..." />
+        </label>
+      </section>
+
       <div class="actions">
         <button type="submit" class="primary-btn" id="save-btn">Save Changes</button>
         <span id="status" class="status"></span>
       </div>
     </form>
+
+    <section class="card integrations-card">
+      <div class="card-head">
+        <h2>Google Calendar &amp; Sheets</h2>
+        <button type="button" class="ghost-btn" id="refresh-integrations">Refresh</button>
+      </div>
+      <p class="hint">When connected, every new booking is added to your Google Calendar and a Google Sheet — and customer profiles (with summaries) are kept in sync. Sheet tabs created automatically: <strong>Bookings</strong> and <strong>Customers</strong>.</p>
+      <div id="integration-status" class="integration-status">
+        <p class="hint">Loading…</p>
+      </div>
+    </section>
 
     <section class="card documents-card">
       <div class="card-head">
