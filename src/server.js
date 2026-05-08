@@ -1,4 +1,5 @@
 require('dotenv').config();
+const crypto = require('crypto');
 const os = require('os');
 const express = require('express');
 const cookieParser = require('cookie-parser');
@@ -10,6 +11,12 @@ const {
   listBusinessVersions,
   getBusinessVersion,
   seedInitialBusinessVersion,
+  getOrCreateProfileBySession,
+  recordCustomerMessage,
+  getCustomerMessages,
+  listCustomerProfiles,
+  getCustomerProfile,
+  updateCustomerProfile,
 } = require('./db');
 const { router: authRouter, attachUser, requireAuth } = require('./auth');
 const { getBusiness, getSystemPrompt, applyBusinessUpdate } = require('./business');
@@ -92,18 +99,72 @@ app.post('/api/admin/chat', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/chat', async (req, res) => {
+const CUSTOMER_COOKIE = 'frontdesk_customer';
+const CUSTOMER_COOKIE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+function attachCustomerProfile(req, res, next) {
+  let sid = req.cookies?.[CUSTOMER_COOKIE];
+  if (!sid) {
+    sid = crypto.randomBytes(32).toString('hex');
+    res.cookie(CUSTOMER_COOKIE, sid, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: CUSTOMER_COOKIE_TTL_MS,
+    });
+  }
+  req.customerProfile = getOrCreateProfileBySession(sid);
+  next();
+}
+
+function serializeMessage(m) {
+  return { role: m.role, content: m.content, createdAt: m.created_at };
+}
+
+app.get('/api/customer/messages', attachCustomerProfile, (req, res) => {
+  res.json({ messages: getCustomerMessages(req.customerProfile.id).map(serializeMessage) });
+});
+
+app.post('/chat', attachCustomerProfile, async (req, res) => {
   try {
-    const { messages } = req.body;
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return res.status(400).json({ error: 'messages array required' });
-    }
+    const text = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+    if (!text) return res.status(400).json({ error: 'message required' });
+
+    recordCustomerMessage(req.customerProfile.id, 'user', text);
+
+    const stored = getCustomerMessages(req.customerProfile.id);
+    const messages = stored.map(m => ({ role: m.role, content: m.content }));
+
     const reply = await askClaude(messages, getSystemPrompt());
+
+    recordCustomerMessage(req.customerProfile.id, 'assistant', reply);
+
     res.json({ reply });
   } catch (err) {
     console.error('Chat error:', err.message);
     res.status(500).json({ error: err.message });
   }
+});
+
+app.get('/api/profiles', requireAuth, (req, res) => {
+  res.json({ profiles: listCustomerProfiles() });
+});
+
+app.get('/api/profiles/:id', requireAuth, (req, res) => {
+  const profile = getCustomerProfile(Number(req.params.id));
+  if (!profile) return res.status(404).json({ error: 'Profile not found' });
+  const messages = getCustomerMessages(profile.id).map(serializeMessage);
+  res.json({ profile, messages });
+});
+
+app.patch('/api/profiles/:id', requireAuth, (req, res) => {
+  const id = Number(req.params.id);
+  if (!getCustomerProfile(id)) return res.status(404).json({ error: 'Profile not found' });
+  const fields = {};
+  for (const key of ['name', 'phone', 'notes']) {
+    if (key in req.body) fields[key] = req.body[key] === '' ? null : req.body[key];
+  }
+  updateCustomerProfile(id, fields);
+  res.json({ profile: getCustomerProfile(id) });
 });
 
 function getLanAddresses() {

@@ -3,8 +3,6 @@ const formEl = document.getElementById('chat-form');
 const inputEl = document.getElementById('chat-input');
 const sendBtn = document.getElementById('send-btn');
 
-const history = [];
-
 function addMessage(role, text) {
   const div = document.createElement('div');
   div.className = `message ${role}`;
@@ -27,10 +25,23 @@ function hideTyping() {
   document.getElementById('typing-indicator')?.remove();
 }
 
-async function sendMessage(text) {
-  history.push({ role: 'user', content: text });
-  addMessage('user', text);
+async function loadExisting() {
+  try {
+    const res = await fetch('/api/customer/messages');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.messages?.length) {
+      data.messages.forEach(m => addMessage(m.role, m.content));
+    } else {
+      addMessage('assistant', "Hi! I'm your frontdesk assistant. How can I help you today?");
+    }
+  } catch (err) {
+    addMessage('error', `Couldn't load history: ${err.message}`);
+  }
+}
 
+async function sendMessage(text) {
+  addMessage('user', text);
   inputEl.value = '';
   sendBtn.disabled = true;
   showTyping();
@@ -39,22 +50,19 @@ async function sendMessage(text) {
     const res = await fetch('/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: history }),
+      body: JSON.stringify({ message: text }),
     });
     const data = await res.json();
     hideTyping();
 
-    if (data.error) {
-      addMessage('error', `Error: ${data.error}`);
-      history.pop();
+    if (!res.ok || data.error) {
+      addMessage('error', `Error: ${data.error || `HTTP ${res.status}`}`);
     } else {
-      history.push({ role: 'assistant', content: data.reply });
       addMessage('assistant', data.reply);
     }
   } catch (err) {
     hideTyping();
     addMessage('error', `Network error: ${err.message}`);
-    history.pop();
   } finally {
     sendBtn.disabled = false;
     inputEl.focus();
@@ -67,6 +75,4 @@ formEl.addEventListener('submit', (e) => {
   if (text) sendMessage(text);
 });
 
-window.addEventListener('load', () => {
-  addMessage('assistant', "Hi! I'm your frontdesk assistant. How can I help you today?");
-});
+window.addEventListener('load', loadExisting);

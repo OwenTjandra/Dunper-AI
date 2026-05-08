@@ -92,6 +92,12 @@ Every save is logged to the `business_versions` table in `data.db` with the user
 
 The "Edit with AI" panel at the top of the dashboard is a chat interface that can mutate the config via tool use. Type natural-language requests ("add a deep cleaning, Rp 750,000, 75 min", "drop the no-Sundays rule", "change our hours to Mon–Sat 8–6") and the assistant calls `update_business_field`, `add_service`, `update_service`, `remove_service`, `add_rule`, or `remove_rule` as appropriate. Each successful tool call goes through the same `applyBusinessUpdate` path as the form save, so the version log captures everything. Ambiguous requests trigger a clarifying question rather than a guess.
 
+## Customers
+
+Every customer browser gets a long-lived `frontdesk_customer` cookie on first chat. That cookie maps to a row in `customer_profiles`, and every message they exchange is stored in `customer_messages`. The customer chat sends just the new message text — the server reads the prior history from the database, so a page reload no longer loses the conversation.
+
+The dashboard's "Customers" panel lists everyone who's chatted, newest activity first. Click a row to expand and read the full transcript. You can fill in the customer's name, phone number, and free-form internal notes — those don't go to the AI, they're just for you.
+
 ## Roadmap
 
 - [x] Day 1 — Server + Claude API connection
@@ -101,7 +107,8 @@ The "Edit with AI" panel at the top of the dashboard is a chat interface that ca
 - [x] Stage 1a — Admin auth wall (SQLite users + sessions, login page)
 - [x] Stage 1b — Version log of business.json changes + restore UI
 - [x] Stage 2 — AI assistant in the dashboard that edits business config via tool use
-- [ ] Stage 3 — File uploads + client profiles
+- [x] Stage 3a — Customer profiles + persistent conversation history (server-side, viewable in dashboard)
+- [ ] Stage 3b — File uploads (customer images/docs + owner knowledge docs)
 - [ ] Day 4 — Google Calendar integration + `book_appointment` tool
 - [ ] Day 5 — Business dashboard (bookings, sentiment, customer log)
 - [ ] Day 6 — Cloudflare Tunnel + PM2 for going live

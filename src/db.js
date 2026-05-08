@@ -35,6 +35,26 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_business_versions_created_at ON business_versions(created_at);
+
+  CREATE TABLE IF NOT EXISTS customer_profiles (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id   TEXT NOT NULL UNIQUE,
+    name         TEXT,
+    phone        TEXT,
+    notes        TEXT,
+    created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS customer_messages (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    profile_id INTEGER NOT NULL REFERENCES customer_profiles(id) ON DELETE CASCADE,
+    role       TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+    content    TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_customer_messages_profile ON customer_messages(profile_id, created_at);
 `);
 
 function seedAdminFromEnv() {
@@ -125,6 +145,63 @@ function seedInitialBusinessVersion(currentBusiness) {
   console.log('Seeded initial business version (v1)');
 }
 
+function getOrCreateProfileBySession(sessionId) {
+  let row = db.prepare('SELECT * FROM customer_profiles WHERE session_id = ?').get(sessionId);
+  if (row) {
+    db.prepare('UPDATE customer_profiles SET last_seen_at = CURRENT_TIMESTAMP WHERE id = ?').run(row.id);
+    return row;
+  }
+  const result = db.prepare('INSERT INTO customer_profiles (session_id) VALUES (?)').run(sessionId);
+  return db.prepare('SELECT * FROM customer_profiles WHERE id = ?').get(result.lastInsertRowid);
+}
+
+function recordCustomerMessage(profileId, role, content) {
+  db.prepare('INSERT INTO customer_messages (profile_id, role, content) VALUES (?, ?, ?)')
+    .run(profileId, role, content);
+}
+
+function getCustomerMessages(profileId) {
+  return db.prepare(`
+    SELECT id, role, content, created_at
+    FROM customer_messages
+    WHERE profile_id = ?
+    ORDER BY id ASC
+  `).all(profileId);
+}
+
+function listCustomerProfiles() {
+  return db.prepare(`
+    SELECT
+      p.id, p.session_id, p.name, p.phone, p.notes,
+      p.created_at, p.last_seen_at,
+      (SELECT COUNT(*) FROM customer_messages WHERE profile_id = p.id) AS message_count,
+      (SELECT content FROM customer_messages WHERE profile_id = p.id ORDER BY id DESC LIMIT 1) AS last_message
+    FROM customer_profiles p
+    ORDER BY p.last_seen_at DESC
+    LIMIT 200
+  `).all();
+}
+
+function getCustomerProfile(id) {
+  return db.prepare('SELECT * FROM customer_profiles WHERE id = ?').get(id);
+}
+
+function updateCustomerProfile(id, fields) {
+  const allowed = ['name', 'phone', 'notes'];
+  const sets = [];
+  const values = [];
+  for (const key of allowed) {
+    if (key in fields) {
+      sets.push(`${key} = ?`);
+      values.push(fields[key]);
+    }
+  }
+  if (sets.length === 0) return false;
+  values.push(id);
+  const info = db.prepare(`UPDATE customer_profiles SET ${sets.join(', ')} WHERE id = ?`).run(...values);
+  return info.changes > 0;
+}
+
 module.exports = {
   db,
   seedAdminFromEnv,
@@ -137,4 +214,10 @@ module.exports = {
   listBusinessVersions,
   getBusinessVersion,
   seedInitialBusinessVersion,
+  getOrCreateProfileBySession,
+  recordCustomerMessage,
+  getCustomerMessages,
+  listCustomerProfiles,
+  getCustomerProfile,
+  updateCustomerProfile,
 };

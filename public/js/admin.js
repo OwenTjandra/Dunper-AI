@@ -284,6 +284,181 @@ assistantResetBtn?.addEventListener('click', () => {
   assistantMessagesEl.innerHTML = '';
 });
 
+const customersListEl = document.getElementById('customers-list');
+const refreshCustomersBtn = document.getElementById('refresh-customers');
+const openCustomerIds = new Set();
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const d = new Date(iso.endsWith('Z') ? iso : iso.replace(' ', 'T') + 'Z');
+  const ms = Date.now() - d.getTime();
+  if (Number.isNaN(ms)) return iso;
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  if (day < 30) return `${day}d ago`;
+  return d.toLocaleDateString();
+}
+
+function renderCustomerSummary(p) {
+  const summary = document.createElement('div');
+  summary.className = 'customer-summary';
+
+  const meta = document.createElement('div');
+  meta.className = 'customer-meta';
+
+  const top = document.createElement('div');
+  top.className = 'top';
+  const pid = document.createElement('span');
+  pid.className = 'pid';
+  pid.textContent = `#${p.id}`;
+  top.appendChild(pid);
+  const nameEl = document.createElement('span');
+  nameEl.textContent = p.name || '(unnamed)';
+  top.appendChild(nameEl);
+  if (p.phone) {
+    const phoneEl = document.createElement('span');
+    phoneEl.style.color = '#6b7280';
+    phoneEl.style.fontSize = '13px';
+    phoneEl.textContent = `· ${p.phone}`;
+    top.appendChild(phoneEl);
+  }
+  meta.appendChild(top);
+
+  const sub = document.createElement('div');
+  sub.className = 'sub';
+  sub.textContent = `Last seen ${timeAgo(p.last_seen_at)}`;
+  meta.appendChild(sub);
+
+  if (p.last_message) {
+    const last = document.createElement('div');
+    last.className = 'last';
+    last.textContent = p.last_message;
+    meta.appendChild(last);
+  }
+
+  summary.appendChild(meta);
+
+  const count = document.createElement('span');
+  count.className = 'customer-count';
+  count.textContent = `${p.message_count} msg${p.message_count === 1 ? '' : 's'}`;
+  summary.appendChild(count);
+
+  return summary;
+}
+
+function renderConversation(messages) {
+  const wrap = document.createElement('div');
+  wrap.className = 'customer-conversation';
+  messages.forEach(m => {
+    const el = document.createElement('div');
+    el.className = `conv-msg ${m.role}`;
+    el.textContent = m.content;
+    const ts = document.createElement('span');
+    ts.className = 'ts';
+    ts.textContent = timeAgo(m.createdAt);
+    el.appendChild(ts);
+    wrap.appendChild(el);
+  });
+  return wrap;
+}
+
+async function expandCustomer(profileId, row) {
+  let detail = row.querySelector('.customer-detail');
+  if (detail) {
+    detail.remove();
+    row.classList.remove('open');
+    openCustomerIds.delete(profileId);
+    return;
+  }
+  row.classList.add('open');
+  openCustomerIds.add(profileId);
+
+  detail = document.createElement('div');
+  detail.className = 'customer-detail';
+  detail.innerHTML = '<p class="hint">Loading…</p>';
+  row.appendChild(detail);
+
+  try {
+    const res = await fetch(`/api/profiles/${profileId}`);
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to load');
+
+    detail.innerHTML = '';
+
+    const editRow = document.createElement('div');
+    editRow.className = 'customer-edit-row';
+    editRow.innerHTML = `
+      <label><span>Name</span><input type="text" data-field="name" /></label>
+      <label><span>Phone</span><input type="text" data-field="phone" /></label>
+      <button type="button" class="primary-btn" data-save>Save</button>
+    `;
+    editRow.querySelector('[data-field="name"]').value = data.profile.name || '';
+    editRow.querySelector('[data-field="phone"]').value = data.profile.phone || '';
+    detail.appendChild(editRow);
+
+    const notesLabel = document.createElement('label');
+    notesLabel.innerHTML = '<span>Internal notes</span><textarea rows="2" placeholder="Anything you want to remember about this customer…"></textarea>';
+    notesLabel.querySelector('textarea').value = data.profile.notes || '';
+    detail.appendChild(notesLabel);
+
+    editRow.querySelector('[data-save]').addEventListener('click', async () => {
+      const payload = {
+        name: editRow.querySelector('[data-field="name"]').value.trim(),
+        phone: editRow.querySelector('[data-field="phone"]').value.trim(),
+        notes: notesLabel.querySelector('textarea').value.trim(),
+      };
+      const r = await fetch(`/api/profiles/${profileId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (handleUnauthorized(r)) return;
+      if (r.ok) loadCustomers();
+    });
+
+    detail.appendChild(renderConversation(data.messages));
+  } catch (err) {
+    detail.innerHTML = `<p class="hint">Failed: ${err.message}</p>`;
+  }
+}
+
+async function loadCustomers() {
+  try {
+    const res = await fetch('/api/profiles');
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    customersListEl.innerHTML = '';
+    if (!data.profiles?.length) {
+      customersListEl.innerHTML = '<p class="hint">No conversations yet.</p>';
+      return;
+    }
+    data.profiles.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'customer-row';
+      row.dataset.profileId = String(p.id);
+      const summary = renderCustomerSummary(p);
+      summary.addEventListener('click', () => expandCustomer(p.id, row));
+      row.appendChild(summary);
+      customersListEl.appendChild(row);
+      if (openCustomerIds.has(p.id)) {
+        openCustomerIds.delete(p.id);
+        expandCustomer(p.id, row);
+      }
+    });
+  } catch (err) {
+    customersListEl.innerHTML = `<p class="hint">Failed to load: ${err.message}</p>`;
+  }
+}
+
+refreshCustomersBtn?.addEventListener('click', loadCustomers);
+loadCustomers();
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   saveBtn.disabled = true;
