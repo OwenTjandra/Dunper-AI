@@ -758,6 +758,142 @@ function escapeHtml(s) {
 refreshBookingsBtn?.addEventListener('click', loadBookings);
 loadBookings();
 
+// --- Admin "+ New booking" modal ---
+const adminBookingModal = document.getElementById('admin-booking-modal');
+const newBookingBtn = document.getElementById('new-booking-btn');
+const adminBookingClose = document.getElementById('admin-booking-close');
+const adminBookingForm = document.getElementById('admin-booking-form');
+const adminBookingService = document.getElementById('admin-booking-service');
+const adminBookingDate = document.getElementById('admin-booking-date');
+const adminBookingSlots = document.getElementById('admin-booking-slots');
+const adminBookingName = document.getElementById('admin-booking-name');
+const adminBookingPhone = document.getElementById('admin-booking-phone');
+const adminBookingEmail = document.getElementById('admin-booking-email');
+const adminBookingNotes = document.getElementById('admin-booking-notes');
+const adminBookingSubmit = document.getElementById('admin-booking-submit');
+const adminBookingStatus = document.getElementById('admin-booking-status');
+
+let adminBookingServices = [];
+let adminBookingSelectedSlot = null;
+
+function adminBookingTodayStr() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+function adminBookingMaxStr() {
+  const d = new Date();
+  d.setDate(d.getDate() + 30);
+  return d.toISOString().slice(0, 10);
+}
+function setAdminBookingStatus(text, kind) {
+  adminBookingStatus.textContent = text;
+  adminBookingStatus.className = `status ${kind || ''}`;
+}
+async function loadAdminBookingServices() {
+  if (adminBookingServices.length) return;
+  const res = await fetch('/api/business');
+  if (handleUnauthorized(res)) return;
+  const b = await res.json();
+  adminBookingServices = b.services || [];
+  adminBookingService.innerHTML = adminBookingServices
+    .map(s => `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)} — ${s.duration_minutes} min, ${escapeHtml(s.price)}</option>`)
+    .join('');
+}
+async function refreshAdminBookingSlots() {
+  adminBookingSelectedSlot = null;
+  adminBookingSubmit.disabled = true;
+  if (!adminBookingDate.value || !adminBookingService.value) {
+    adminBookingSlots.innerHTML = '<p class="hint">Pick a date and service to see times.</p>';
+    return;
+  }
+  adminBookingSlots.innerHTML = '<p class="hint">Loading…</p>';
+  try {
+    const url = `/api/customer/availability?date=${encodeURIComponent(adminBookingDate.value)}&service=${encodeURIComponent(adminBookingService.value)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    if (data.reason || (data.slots && data.slots.length === 0)) {
+      adminBookingSlots.innerHTML = `<p class="hint">${data.reason || 'No available times — try another day.'}</p>`;
+      return;
+    }
+    adminBookingSlots.innerHTML = '';
+    data.slots.forEach(time => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'slot';
+      btn.textContent = time;
+      btn.addEventListener('click', () => {
+        adminBookingSlots.querySelectorAll('.slot').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        adminBookingSelectedSlot = time;
+        adminBookingSubmit.disabled = false;
+      });
+      adminBookingSlots.appendChild(btn);
+    });
+  } catch (err) {
+    adminBookingSlots.innerHTML = `<p class="hint err">${escapeHtml(err.message)}</p>`;
+  }
+}
+function openAdminBookingModal() {
+  adminBookingModal.hidden = false;
+  document.body.style.overflow = 'hidden';
+  setAdminBookingStatus('', '');
+  loadAdminBookingServices().then(() => {
+    if (!adminBookingDate.value) {
+      adminBookingDate.min = adminBookingTodayStr();
+      adminBookingDate.max = adminBookingMaxStr();
+      adminBookingDate.value = adminBookingTodayStr();
+    }
+    refreshAdminBookingSlots();
+  });
+}
+function closeAdminBookingModal() {
+  adminBookingModal.hidden = true;
+  document.body.style.overflow = '';
+}
+newBookingBtn?.addEventListener('click', openAdminBookingModal);
+adminBookingClose?.addEventListener('click', closeAdminBookingModal);
+adminBookingModal?.addEventListener('click', (e) => { if (e.target === adminBookingModal) closeAdminBookingModal(); });
+adminBookingService?.addEventListener('change', refreshAdminBookingSlots);
+adminBookingDate?.addEventListener('change', refreshAdminBookingSlots);
+
+adminBookingForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!adminBookingSelectedSlot) return;
+  adminBookingSubmit.disabled = true;
+  setAdminBookingStatus('Booking…', '');
+  try {
+    const res = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service: adminBookingService.value,
+        date: adminBookingDate.value,
+        time: adminBookingSelectedSlot,
+        name: adminBookingName.value.trim(),
+        phone: adminBookingPhone.value.trim(),
+        email: adminBookingEmail.value.trim(),
+        notes: adminBookingNotes.value.trim(),
+      }),
+    });
+    if (handleUnauthorized(res)) return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    setAdminBookingStatus('Booked ✓', 'ok');
+    loadBookings();
+    setTimeout(() => {
+      closeAdminBookingModal();
+      adminBookingForm.reset();
+      adminBookingSelectedSlot = null;
+    }, 600);
+  } catch (err) {
+    setAdminBookingStatus(err.message, 'err');
+    adminBookingSubmit.disabled = false;
+    refreshAdminBookingSlots();
+  }
+});
+
 const integrationStatusEl = document.getElementById('integration-status');
 const refreshIntegrationsBtn = document.getElementById('refresh-integrations');
 

@@ -157,13 +157,63 @@
     <section class="card bookings-card">
       <div class="card-head">
         <h2>Bookings</h2>
-        <button type="button" class="ghost-btn" id="refresh-bookings">Refresh</button>
+        <div class="header-actions">
+          <button type="button" class="primary-btn" id="new-booking-btn">+ New booking</button>
+          <button type="button" class="ghost-btn" id="refresh-bookings">Refresh</button>
+        </div>
       </div>
-      <p class="hint">Appointments customers have scheduled through the chat.</p>
+      <p class="hint">Appointments customers have scheduled through the chat — and ones you create here. Both sync to Google Calendar and the Bookings sheet.</p>
       <div id="bookings-list" class="bookings-list">
         <p class="hint">Loading…</p>
       </div>
     </section>
+
+    <div id="admin-booking-modal" class="modal" hidden>
+      <div class="modal-card">
+        <header class="modal-head">
+          <h2>Create booking</h2>
+          <button type="button" class="modal-close" id="admin-booking-close" aria-label="Close">×</button>
+        </header>
+        <form id="admin-booking-form" class="modal-body">
+          <label>
+            <span>Service</span>
+            <select id="admin-booking-service" required></select>
+          </label>
+          <label>
+            <span>Date</span>
+            <input type="date" id="admin-booking-date" required />
+          </label>
+          <div class="slots-wrap">
+            <span class="slots-label">Available times</span>
+            <div id="admin-booking-slots" class="slots">
+              <p class="hint">Pick a date and service to see times.</p>
+            </div>
+          </div>
+          <div class="row-2">
+            <label>
+              <span>Customer name</span>
+              <input type="text" id="admin-booking-name" required />
+            </label>
+            <label>
+              <span>Phone</span>
+              <input type="tel" id="admin-booking-phone" required />
+            </label>
+          </div>
+          <label>
+            <span>Email</span>
+            <input type="email" id="admin-booking-email" required placeholder="customer@example.com" />
+          </label>
+          <label>
+            <span>Notes (optional)</span>
+            <textarea id="admin-booking-notes" rows="2"></textarea>
+          </label>
+          <div class="modal-actions">
+            <button type="submit" id="admin-booking-submit" class="primary-btn" disabled>Confirm booking</button>
+            <span id="admin-booking-status" class="status"></span>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <section class="card customers-card">
       <div class="card-head">

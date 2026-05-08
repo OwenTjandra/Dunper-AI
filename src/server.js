@@ -343,23 +343,31 @@ app.post('/api/customer/bookings', attachCustomerProfile, (req, res) => {
     });
   }
 
+  syncBookingToGoogle(result.booking, req.customerProfile.id);
+
+  res.json({ ok: true, booking: result.booking });
+});
+
+function syncBookingToGoogle(booking, profileId) {
   (async () => {
     try {
-      const calRes = await googleIntegration.createCalendarEvent(result.booking, getBusiness());
+      const calRes = await googleIntegration.createCalendarEvent(booking, getBusiness());
       const calLink = calRes?.htmlLink || null;
-      await googleIntegration.appendBookingRow(result.booking, calLink);
-      const refreshed = getCustomerProfile(req.customerProfile.id);
-      await googleIntegration.upsertCustomerRow(
-        { ...refreshed, message_count: getCustomerMessages(refreshed.id).length },
-        null
-      );
+      await googleIntegration.appendBookingRow(booking, calLink);
+      if (profileId) {
+        const refreshed = getCustomerProfile(profileId);
+        if (refreshed) {
+          await googleIntegration.upsertCustomerRow(
+            { ...refreshed, message_count: getCustomerMessages(refreshed.id).length },
+            null
+          );
+        }
+      }
     } catch (err) {
       console.error('Google integration error (booking):', err.message);
     }
   })();
-
-  res.json({ ok: true, booking: result.booking });
-});
+}
 
 app.get('/api/customer/bookings', attachCustomerProfile, (req, res) => {
   res.json({ bookings: listBookingsForProfile(req.customerProfile.id) });
@@ -367,6 +375,32 @@ app.get('/api/customer/bookings', attachCustomerProfile, (req, res) => {
 
 app.get('/api/bookings', requireAuth, (req, res) => {
   res.json({ bookings: listBookings() });
+});
+
+app.post('/api/bookings', requireAuth, (req, res) => {
+  const { service, date, time, name, phone, email, notes } = req.body || {};
+  if (!service || !date || !time || !name || !phone || !email) {
+    return res.status(400).json({ error: 'service, date, time, name, phone, email are required' });
+  }
+  const trimmedEmail = String(email).trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    return res.status(400).json({ error: 'Please enter a valid email address.' });
+  }
+  const result = bookSlot({
+    profileId: null,
+    customerName: String(name),
+    customerPhone: String(phone),
+    customerEmail: trimmedEmail,
+    serviceName: String(service),
+    dateStr: String(date),
+    time: String(time),
+    notes: notes ? String(notes) : null,
+  });
+  if (result.error) return res.status(result.status || 400).json({ error: result.error });
+
+  syncBookingToGoogle(result.booking, null);
+
+  res.json({ ok: true, booking: result.booking });
 });
 
 app.post('/api/bookings/:id/cancel', requireAuth, (req, res) => {
