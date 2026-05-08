@@ -163,8 +163,27 @@ async function createSheet(title) {
   const res = await sheets.spreadsheets.create({
     requestBody: { properties: { title: title || 'Frontdesk Bookings' } },
   });
+  const spreadsheetId = res.data.spreadsheetId;
+
+  // Pre-create both tabs with formatting, and drop the default "Sheet1"
+  // so the spreadsheet looks ready-to-use the moment the owner opens it.
+  await ensureSheetTab(sheets, spreadsheetId, BOOKINGS_TAB, BOOKINGS_HEADER);
+  await ensureSheetTab(sheets, spreadsheetId, CUSTOMERS_TAB, CUSTOMERS_HEADER);
+  try {
+    const meta = await sheets.spreadsheets.get({ spreadsheetId });
+    const defaultSheet = meta.data.sheets.find(s => s.properties.title === 'Sheet1');
+    if (defaultSheet) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: { requests: [{ deleteSheet: { sheetId: defaultSheet.properties.sheetId } }] },
+      });
+    }
+  } catch (err) {
+    console.warn('[Google Sheets] could not delete default Sheet1:', err.message);
+  }
+
   return {
-    id: res.data.spreadsheetId,
+    id: spreadsheetId,
     name: res.data.properties.title,
     url: res.data.spreadsheetUrl,
   };
@@ -209,6 +228,12 @@ async function createCalendarEvent(booking, business) {
   }
 }
 
+function shown(v) {
+  if (v === null || v === undefined) return 'Not Given';
+  const s = String(v).trim();
+  return s ? s : 'Not Given';
+}
+
 function columnLetter(n) {
   let s = '';
   while (n > 0) {
@@ -219,21 +244,74 @@ function columnLetter(n) {
   return s;
 }
 
+async function applyTabFormatting(sheets, spreadsheetId, sheetId, headerCount) {
+  const requests = [
+    {
+      repeatCell: {
+        range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
+        cell: {
+          userEnteredFormat: {
+            backgroundColor: { red: 0.12, green: 0.16, blue: 0.22 },
+            textFormat: {
+              foregroundColor: { red: 1, green: 1, blue: 1 },
+              bold: true,
+              fontSize: 11,
+            },
+            verticalAlignment: 'MIDDLE',
+            padding: { top: 6, bottom: 6, left: 8, right: 8 },
+          },
+        },
+        fields: 'userEnteredFormat(backgroundColor,textFormat,verticalAlignment,padding)',
+      },
+    },
+    {
+      updateSheetProperties: {
+        properties: { sheetId, gridProperties: { frozenRowCount: 1 } },
+        fields: 'gridProperties.frozenRowCount',
+      },
+    },
+    {
+      addBanding: {
+        bandedRange: {
+          range: { sheetId, startRowIndex: 1 },
+          rowProperties: {
+            firstBandColor: { red: 1, green: 1, blue: 1 },
+            secondBandColor: { red: 0.97, green: 0.98, blue: 0.99 },
+          },
+        },
+      },
+    },
+    {
+      autoResizeDimensions: {
+        dimensions: { sheetId, dimension: 'COLUMNS', startIndex: 0, endIndex: headerCount },
+      },
+    },
+  ];
+  try {
+    await sheets.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests } });
+  } catch (err) {
+    // Banding may already exist if the tab was reformatted — non-fatal.
+    console.warn('[Google Sheets] formatting partially applied:', err.message);
+  }
+}
+
 async function ensureSheetTab(sheets, spreadsheetId, tabName, headerRow) {
   const meta = await sheets.spreadsheets.get({ spreadsheetId });
-  const exists = meta.data.sheets.some(s => s.properties.title === tabName);
+  const existing = meta.data.sheets.find(s => s.properties.title === tabName);
 
-  if (!exists) {
-    await sheets.spreadsheets.batchUpdate({
+  if (!existing) {
+    const addRes = await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
       requestBody: { requests: [{ addSheet: { properties: { title: tabName } } }] },
     });
+    const newSheetId = addRes.data.replies[0].addSheet.properties.sheetId;
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `${tabName}!A1`,
       valueInputOption: 'RAW',
       requestBody: { values: [headerRow] },
     });
+    await applyTabFormatting(sheets, spreadsheetId, newSheetId, headerRow.length);
     return;
   }
 
@@ -248,6 +326,7 @@ async function ensureSheetTab(sheets, spreadsheetId, tabName, headerRow) {
       valueInputOption: 'RAW',
       requestBody: { values: [headerRow] },
     });
+    await applyTabFormatting(sheets, spreadsheetId, existing.properties.sheetId, headerRow.length);
   }
 }
 
@@ -268,14 +347,14 @@ async function appendBookingRow(booking, calendarLink) {
       requestBody: {
         values: [[
           new Date().toISOString(),
-          booking.service_name,
-          booking.customer_name,
-          booking.customer_phone,
+          shown(booking.service_name),
+          shown(booking.customer_name),
+          shown(booking.customer_phone),
           dateStr,
           timeStr,
           booking.duration_minutes,
-          booking.status,
-          calendarLink || '',
+          shown(booking.status),
+          calendarLink || 'Not Given',
         ]],
       },
     });
@@ -305,13 +384,13 @@ async function upsertCustomerRow(profile, summary) {
     const row = [
       profile.created_at,
       profile.last_seen_at,
-      profile.name || '',
-      profile.phone || '',
-      profile.notes || '',
-      profile.message_count ?? '',
-      summary?.intent || '',
-      summary?.sentiment || '',
-      summary?.summary || '',
+      shown(profile.name),
+      shown(profile.phone),
+      shown(profile.notes),
+      profile.message_count ?? 0,
+      shown(summary?.intent),
+      shown(summary?.sentiment),
+      shown(summary?.summary),
     ];
 
     if (matchIndex >= 0) {
