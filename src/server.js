@@ -17,6 +17,9 @@ const {
   listCustomerProfiles,
   getCustomerProfile,
   updateCustomerProfile,
+  addCustomerAttachment,
+  getAttachmentsForMessage,
+  getAttachmentById,
 } = require('./db');
 const { router: authRouter, attachUser, requireAuth } = require('./auth');
 const { getBusiness, getSystemPrompt, applyBusinessUpdate } = require('./business');
@@ -117,41 +120,103 @@ function attachCustomerProfile(req, res, next) {
   next();
 }
 
+function serializeAttachment(a) {
+  return {
+    id: a.id,
+    filename: a.original_filename,
+    contentType: a.content_type,
+    size: a.size,
+    url: `/api/attachments/${a.id}`,
+  };
+}
+
 function serializeMessage(m) {
-  return { role: m.role, content: m.content, createdAt: m.created_at };
+  return {
+    id: m.id,
+    role: m.role,
+    content: m.content,
+    createdAt: m.created_at,
+    attachments: getAttachmentsForMessage(m.id).map(serializeAttachment),
+  };
+}
+
+function buildClaudeMessageContent(message, attachments) {
+  if (!attachments?.length) return message.content;
+  const blocks = attachments.map(a => ({
+    type: 'image',
+    source: {
+      type: 'base64',
+      media_type: a.content_type,
+      data: documents.readCustomerAttachmentBase64(a.profile_id, a.storage_name),
+    },
+  }));
+  if (message.content) blocks.push({ type: 'text', text: message.content });
+  return blocks;
 }
 
 app.get('/api/customer/messages', attachCustomerProfile, (req, res) => {
   res.json({ messages: getCustomerMessages(req.customerProfile.id).map(serializeMessage) });
 });
 
-app.post('/chat', attachCustomerProfile, async (req, res) => {
-  try {
-    const text = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
-    if (!text) return res.status(400).json({ error: 'message required' });
+app.post('/chat', attachCustomerProfile, (req, res) => {
+  documents.customerUpload.single('file')(req, res, async (uploadErr) => {
+    try {
+      if (uploadErr) return res.status(400).json({ error: uploadErr.message });
 
-    recordCustomerMessage(req.customerProfile.id, 'user', text);
+      const text = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+      const file = req.file;
+      if (!text && !file) return res.status(400).json({ error: 'message or file required' });
 
-    const stored = getCustomerMessages(req.customerProfile.id);
-    const messages = stored.map(m => ({ role: m.role, content: m.content }));
+      const messageId = recordCustomerMessage(req.customerProfile.id, 'user', text);
+      if (file) {
+        addCustomerAttachment({
+          messageId,
+          profileId: req.customerProfile.id,
+          originalFilename: file.originalname,
+          contentType: file.mimetype,
+          size: file.size,
+          storageName: file.filename,
+        });
+      }
 
-    const docBlocks = documents.buildDocumentBlocks();
-    if (docBlocks.length > 0 && messages.length > 0 && messages[0].role === 'user') {
-      messages[0] = {
-        role: 'user',
-        content: [...docBlocks, { type: 'text', text: messages[0].content }],
-      };
+      const stored = getCustomerMessages(req.customerProfile.id);
+      const messages = stored.map(m => {
+        const atts = getAttachmentsForMessage(m.id);
+        return { role: m.role, content: buildClaudeMessageContent(m, atts) };
+      });
+
+      const docBlocks = documents.buildDocumentBlocks();
+      if (docBlocks.length > 0 && messages.length > 0 && messages[0].role === 'user') {
+        const firstContent = Array.isArray(messages[0].content)
+          ? messages[0].content
+          : [{ type: 'text', text: messages[0].content }];
+        messages[0] = { role: 'user', content: [...docBlocks, ...firstContent] };
+      }
+
+      const reply = await askClaude(messages, getSystemPrompt());
+      recordCustomerMessage(req.customerProfile.id, 'assistant', reply);
+
+      res.json({ reply });
+    } catch (err) {
+      console.error('Chat error:', err);
+      res.status(500).json({ error: err.message });
     }
+  });
+});
 
-    const reply = await askClaude(messages, getSystemPrompt());
+app.get('/api/attachments/:id', attachCustomerProfile, (req, res) => {
+  const att = getAttachmentById(Number(req.params.id));
+  if (!att) return res.status(404).json({ error: 'Attachment not found.' });
 
-    recordCustomerMessage(req.customerProfile.id, 'assistant', reply);
-
-    res.json({ reply });
-  } catch (err) {
-    console.error('Chat error:', err.message);
-    res.status(500).json({ error: err.message });
+  const isOwnerByProfile = req.customerProfile?.id === att.profile_id;
+  const isAdmin = !!req.user;
+  if (!isOwnerByProfile && !isAdmin) {
+    return res.status(403).json({ error: 'Forbidden.' });
   }
+
+  res.setHeader('Content-Type', att.content_type);
+  res.setHeader('Content-Disposition', `inline; filename="${att.original_filename}"`);
+  res.sendFile(documents.customerAttachmentPath(att.profile_id, att.storage_name));
 });
 
 app.get('/api/profiles', requireAuth, (req, res) => {

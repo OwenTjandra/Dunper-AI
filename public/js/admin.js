@@ -357,7 +357,20 @@ function renderConversation(messages) {
   messages.forEach(m => {
     const el = document.createElement('div');
     el.className = `conv-msg ${m.role}`;
-    el.textContent = m.content;
+    if (m.attachments?.length) {
+      m.attachments.forEach(a => {
+        const img = document.createElement('img');
+        img.className = 'conv-attached';
+        img.src = a.url;
+        img.alt = a.filename;
+        el.appendChild(img);
+      });
+    }
+    if (m.content) {
+      const span = document.createElement('span');
+      span.textContent = m.content;
+      el.appendChild(span);
+    }
     const ts = document.createElement('span');
     ts.className = 'ts';
     ts.textContent = timeAgo(m.createdAt);

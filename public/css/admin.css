@@ -493,6 +493,15 @@ textarea:focus {
   margin-top: 4px;
 }
 
+.conv-attached {
+  display: block;
+  max-width: 220px;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
 .history-list {
   display: flex;
   flex-direction: column;

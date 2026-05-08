@@ -104,6 +104,12 @@ The dashboard's "Customers" panel lists everyone who's chatted, newest activity 
 
 Upload PDFs, plain text, or markdown files in the dashboard's "Knowledge documents" panel — price sheets, policies, FAQs, anything the customer-facing AI should answer from. On every customer chat, the server prepends each document as an Anthropic `document` content block to the first user message of the conversation. Claude can read them directly (PDFs are sent natively, no text extraction step), and once a doc is removed it stops appearing in chats. Files live under `uploads/business/` (gitignored), 10MB max each.
 
+## Customer attachments
+
+The customer chat has a paperclip button that lets a customer attach an image (JPEG / PNG / GIF / WEBP, 5MB max) to a message. The server stores the file under `uploads/customer/<profile_id>/<uuid>.<ext>` and links it to the message. When Claude is called, the image is included as an `image` content block alongside the text — Sonnet sees and reasons about it. Attachments persist across page reloads, just like text messages.
+
+Owner sees the same images inline in the dashboard's transcript view. The download route (`/api/attachments/:id`) only serves the file if the request comes from the customer's own session cookie or an authenticated owner.
+
 ## Roadmap
 
 - [x] Day 1 — Server + Claude API connection
@@ -115,7 +121,7 @@ Upload PDFs, plain text, or markdown files in the dashboard's "Knowledge documen
 - [x] Stage 2 — AI assistant in the dashboard that edits business config via tool use
 - [x] Stage 3a — Customer profiles + persistent conversation history (server-side, viewable in dashboard)
 - [x] Stage 3b owner docs — Owner uploads PDFs/text/markdown the customer AI grounds answers in
-- [ ] Stage 3b customer attachments — Customer attaches images that Claude sees via vision
+- [x] Stage 3b customer attachments — Customer attaches images that Claude sees via vision
 - [ ] Day 4 — Google Calendar integration + `book_appointment` tool
 - [ ] Day 5 — Business dashboard (bookings, sentiment, customer log)
 - [ ] Day 6 — Cloudflare Tunnel + PM2 for going live

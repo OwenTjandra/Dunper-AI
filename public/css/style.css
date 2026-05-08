@@ -201,6 +201,66 @@ body {
   cursor: not-allowed;
 }
 
+.attachment-btn {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.attachment-btn:hover { background: #e5e7eb; color: #1f2937; }
+
+.attachment-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  font-size: 13px;
+}
+
+.attachment-preview img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.attachment-preview span {
+  flex: 1;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-preview button {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.attachment-preview button:hover { color: #ef4444; }
+
+.message img.attached {
+  display: block;
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+.message.user img.attached { margin-left: auto; }
+
 @media (max-width: 520px) {
   body { padding: 0; }
   .chat-container {

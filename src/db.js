@@ -56,6 +56,19 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_customer_messages_profile ON customer_messages(profile_id, created_at);
 
+  CREATE TABLE IF NOT EXISTS customer_message_attachments (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    message_id        INTEGER NOT NULL REFERENCES customer_messages(id) ON DELETE CASCADE,
+    profile_id        INTEGER NOT NULL REFERENCES customer_profiles(id) ON DELETE CASCADE,
+    original_filename TEXT NOT NULL,
+    content_type      TEXT NOT NULL,
+    size              INTEGER NOT NULL,
+    storage_name      TEXT NOT NULL UNIQUE,
+    created_at        TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_customer_attachments_message ON customer_message_attachments(message_id);
+
   CREATE TABLE IF NOT EXISTS business_documents (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     filename     TEXT NOT NULL,
@@ -167,8 +180,31 @@ function getOrCreateProfileBySession(sessionId) {
 }
 
 function recordCustomerMessage(profileId, role, content) {
-  db.prepare('INSERT INTO customer_messages (profile_id, role, content) VALUES (?, ?, ?)')
+  const result = db.prepare('INSERT INTO customer_messages (profile_id, role, content) VALUES (?, ?, ?)')
     .run(profileId, role, content);
+  return result.lastInsertRowid;
+}
+
+function addCustomerAttachment({ messageId, profileId, originalFilename, contentType, size, storageName }) {
+  const result = db.prepare(`
+    INSERT INTO customer_message_attachments
+      (message_id, profile_id, original_filename, content_type, size, storage_name)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(messageId, profileId, originalFilename, contentType, size, storageName);
+  return result.lastInsertRowid;
+}
+
+function getAttachmentsForMessage(messageId) {
+  return db.prepare(`
+    SELECT id, message_id, profile_id, original_filename, content_type, size, storage_name, created_at
+    FROM customer_message_attachments
+    WHERE message_id = ?
+    ORDER BY id ASC
+  `).all(messageId);
+}
+
+function getAttachmentById(id) {
+  return db.prepare('SELECT * FROM customer_message_attachments WHERE id = ?').get(id);
 }
 
 function getCustomerMessages(profileId) {
@@ -262,4 +298,7 @@ module.exports = {
   listBusinessDocuments,
   getBusinessDocument,
   deleteBusinessDocument,
+  addCustomerAttachment,
+  getAttachmentsForMessage,
+  getAttachmentById,
 };

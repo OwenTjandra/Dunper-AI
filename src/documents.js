@@ -9,8 +9,11 @@ const {
   deleteBusinessDocument,
 } = require('./db');
 
-const BUSINESS_DOCS_DIR = path.join(__dirname, '..', 'uploads', 'business');
+const UPLOADS_ROOT = path.join(__dirname, '..', 'uploads');
+const BUSINESS_DOCS_DIR = path.join(UPLOADS_ROOT, 'business');
+const CUSTOMER_UPLOADS_DIR = path.join(UPLOADS_ROOT, 'customer');
 fs.mkdirSync(BUSINESS_DOCS_DIR, { recursive: true });
+fs.mkdirSync(CUSTOMER_UPLOADS_DIR, { recursive: true });
 
 const ALLOWED_MIME = new Set([
   'application/pdf',
@@ -94,6 +97,46 @@ function buildDocumentBlocks() {
   });
 }
 
+const CUSTOMER_ALLOWED_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+]);
+const CUSTOMER_MAX_BYTES = 5 * 1024 * 1024;
+
+const customerStorage = multer.diskStorage({
+  destination: (req, _file, cb) => {
+    if (!req.customerProfile?.id) return cb(new Error('No customer profile.'));
+    const dir = path.join(CUSTOMER_UPLOADS_DIR, String(req.customerProfile.id));
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase().slice(0, 8);
+    cb(null, `${crypto.randomUUID()}${ext}`);
+  },
+});
+
+const customerUpload = multer({
+  storage: customerStorage,
+  limits: { fileSize: CUSTOMER_MAX_BYTES },
+  fileFilter: (_req, file, cb) => {
+    if (!CUSTOMER_ALLOWED_MIME.has(file.mimetype)) {
+      return cb(new Error(`Unsupported attachment type: ${file.mimetype}. Images only (JPEG, PNG, GIF, WEBP).`));
+    }
+    cb(null, true);
+  },
+});
+
+function customerAttachmentPath(profileId, storageName) {
+  return path.join(CUSTOMER_UPLOADS_DIR, String(profileId), storageName);
+}
+
+function readCustomerAttachmentBase64(profileId, storageName) {
+  return fs.readFileSync(customerAttachmentPath(profileId, storageName)).toString('base64');
+}
+
 module.exports = {
   upload,
   recordUpload,
@@ -102,4 +145,9 @@ module.exports = {
   buildDocumentBlocks,
   ALLOWED_MIME,
   MAX_BYTES,
+  customerUpload,
+  customerAttachmentPath,
+  readCustomerAttachmentBase64,
+  CUSTOMER_ALLOWED_MIME,
+  CUSTOMER_MAX_BYTES,
 };
