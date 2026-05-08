@@ -264,7 +264,7 @@ async function appendBookingRow(booking, calendarLink) {
     await sheets.spreadsheets.values.append({
       spreadsheetId: conn.sheet_id,
       range: `${BOOKINGS_TAB}!A1`,
-      valueInputOption: 'USER_ENTERED',
+      valueInputOption: 'RAW',
       requestBody: {
         values: [[
           new Date().toISOString(),
@@ -319,14 +319,14 @@ async function upsertCustomerRow(profile, summary) {
       await sheets.spreadsheets.values.update({
         spreadsheetId: conn.sheet_id,
         range: `${CUSTOMERS_TAB}!A${targetRow}:I${targetRow}`,
-        valueInputOption: 'USER_ENTERED',
+        valueInputOption: 'RAW',
         requestBody: { values: [row] },
       });
     } else {
       await sheets.spreadsheets.values.append({
         spreadsheetId: conn.sheet_id,
         range: `${CUSTOMERS_TAB}!A1`,
-        valueInputOption: 'USER_ENTERED',
+        valueInputOption: 'RAW',
         requestBody: { values: [row] },
       });
     }
