@@ -17,8 +17,8 @@ const SCOPES = [
 
 const BOOKINGS_TAB = 'Bookings';
 const CUSTOMERS_TAB = 'Customers';
-const BOOKINGS_HEADER = ['ID', 'Booked At', 'Service', 'Customer', 'Phone', 'Email', 'Date', 'Time', 'Duration (min)', 'Status', 'Notes', 'Calendar Event'];
-const BOOKINGS_STATUS_COL = 'J'; // 10th column = Status
+const BOOKINGS_HEADER = ['Booking At', 'Service', 'Customer Name', 'Phone Number', 'Email', 'Date', 'Time', 'Duration (min)', 'Status', 'Calendar Event'];
+const BOOKINGS_STATUS_COL = 'I'; // 9th column = Status
 const CUSTOMERS_HEADER = ['First Seen', 'Last Seen', 'Name', 'Phone', 'Email', 'Notes', 'Messages', 'Intent', 'Sentiment', 'Summary'];
 
 function configError() {
@@ -400,7 +400,6 @@ async function appendBookingRow(booking, calendarLink) {
       valueInputOption: 'RAW',
       requestBody: {
         values: [[
-          booking.id,
           new Date().toISOString(),
           shown(booking.service_name),
           shown(booking.customer_name),
@@ -410,7 +409,6 @@ async function appendBookingRow(booking, calendarLink) {
           timeStr,
           booking.duration_minutes,
           shown(booking.status),
-          shown(booking.notes),
           calendarLink || 'Not Given',
         ]],
       },
@@ -422,19 +420,32 @@ async function appendBookingRow(booking, calendarLink) {
   }
 }
 
-async function updateBookingStatus(bookingId, newStatus) {
+async function updateBookingStatus(booking, newStatus) {
   const conn = getGoogleConnection();
   if (!conn?.sheet_id) return { skipped: true, reason: 'No sheet selected' };
   try {
     const auth = authorizedClient();
     const sheets = google.sheets({ version: 'v4', auth });
-    const idCol = await sheets.spreadsheets.values.get({
+    // Match the row by composite (Phone Number + Date + Time) — these together
+    // uniquely identify a booking (the slot logic forbids overlapping times).
+    // Columns: D=Phone Number, F=Date, G=Time.
+    const dataRange = `${BOOKINGS_TAB}!D2:G`;
+    const cols = await sheets.spreadsheets.values.get({
       spreadsheetId: conn.sheet_id,
-      range: `${BOOKINGS_TAB}!A2:A`,
+      range: dataRange,
     });
-    const rows = idCol.data.values || [];
-    const idx = rows.findIndex(r => r?.[0] !== undefined && Number(r[0]) === Number(bookingId));
-    if (idx < 0) return { ok: false, reason: 'Booking row not found in sheet (may pre-date the ID column)' };
+    const start = new Date(booking.starts_at);
+    const targetDate = start.toLocaleDateString('en-CA');
+    const targetTime = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    const targetPhone = String(booking.customer_phone || '').trim();
+    const rows = cols.data.values || [];
+    const idx = rows.findIndex(r => {
+      const phone = (r?.[0] || '').trim();
+      const date = (r?.[2] || '').trim();
+      const time = (r?.[3] || '').trim();
+      return phone === targetPhone && date === targetDate && time === targetTime;
+    });
+    if (idx < 0) return { ok: false, reason: 'Matching row not found' };
     const targetRow = idx + 2;
     await sheets.spreadsheets.values.update({
       spreadsheetId: conn.sheet_id,

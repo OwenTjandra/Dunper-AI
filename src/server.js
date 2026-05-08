@@ -405,9 +405,10 @@ app.post('/api/bookings', requireAuth, (req, res) => {
 
 app.post('/api/bookings/:id/cancel', requireAuth, (req, res) => {
   const id = Number(req.params.id);
-  if (!getBookingById(id)) return res.status(404).json({ error: 'Booking not found' });
+  const booking = getBookingById(id);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
   cancelBooking(id);
-  googleIntegration.updateBookingStatus(id, 'cancelled').catch(err =>
+  googleIntegration.updateBookingStatus(booking, 'cancelled').catch(err =>
     console.error('Sheet cancel sync failed:', err.message));
   res.json({ ok: true });
 });
