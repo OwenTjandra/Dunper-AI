@@ -600,6 +600,113 @@ function getMetricsSnapshot() {
   };
 }
 
+function listSalesClients() {
+  return db.prepare(`
+    SELECT * FROM sales_clients
+    ORDER BY
+      CASE status
+        WHEN 'active'         THEN 1
+        WHEN 'proposal_sent'  THEN 2
+        WHEN 'demo_done'      THEN 3
+        WHEN 'demo_scheduled' THEN 4
+        WHEN 'lead'           THEN 5
+        WHEN 'churned'        THEN 6
+        WHEN 'lost'           THEN 7
+        ELSE 8
+      END,
+      next_step_at IS NULL,
+      next_step_at ASC,
+      updated_at DESC
+  `).all();
+}
+
+function getSalesClient(id) {
+  return db.prepare('SELECT * FROM sales_clients WHERE id = ?').get(id);
+}
+
+function createSalesClient(c) {
+  const result = db.prepare(`
+    INSERT INTO sales_clients
+      (business_name, contact_name, contact_email, contact_phone, vertical, status, plan, mrr_usd, notes, next_step, next_step_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    c.businessName,
+    c.contactName ?? null,
+    c.contactEmail ?? null,
+    c.contactPhone ?? null,
+    c.vertical ?? null,
+    c.status || 'lead',
+    c.plan ?? null,
+    c.mrrUsd ?? null,
+    c.notes ?? null,
+    c.nextStep ?? null,
+    c.nextStepAt ?? null,
+  );
+  return getSalesClient(result.lastInsertRowid);
+}
+
+function updateSalesClient(id, fields) {
+  const allowed = ['business_name', 'contact_name', 'contact_email', 'contact_phone', 'vertical', 'status', 'plan', 'mrr_usd', 'notes', 'next_step', 'next_step_at'];
+  const sets = [];
+  const values = [];
+  for (const key of allowed) {
+    const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    if (camelKey in fields) {
+      sets.push(`${key} = ?`);
+      values.push(fields[camelKey]);
+    }
+  }
+  if (sets.length === 0) return false;
+  sets.push(`updated_at = CURRENT_TIMESTAMP`);
+  values.push(id);
+  const info = db.prepare(`UPDATE sales_clients SET ${sets.join(', ')} WHERE id = ?`).run(...values);
+  return info.changes > 0;
+}
+
+function deleteSalesClient(id) {
+  const info = db.prepare('DELETE FROM sales_clients WHERE id = ?').run(id);
+  return info.changes > 0;
+}
+
+function getSalesPipelineStats() {
+  const byStatus = db.prepare(`
+    SELECT status, COUNT(*) AS n, COALESCE(SUM(mrr_usd), 0) AS mrr
+    FROM sales_clients
+    GROUP BY status
+  `).all();
+
+  const totals = {
+    leads: 0, demoScheduled: 0, demoDone: 0, proposalSent: 0,
+    active: 0, churned: 0, lost: 0,
+    activeMrr: 0,
+  };
+  const map = {
+    'lead': 'leads',
+    'demo_scheduled': 'demoScheduled',
+    'demo_done': 'demoDone',
+    'proposal_sent': 'proposalSent',
+    'active': 'active',
+    'churned': 'churned',
+    'lost': 'lost',
+  };
+  byStatus.forEach(r => {
+    const k = map[r.status];
+    if (k) totals[k] = r.n;
+    if (r.status === 'active') totals.activeMrr = r.mrr || 0;
+  });
+
+  const upcoming = db.prepare(`
+    SELECT id, business_name, status, next_step, next_step_at
+    FROM sales_clients
+    WHERE next_step_at IS NOT NULL AND next_step_at <= datetime('now', '+14 days')
+      AND status NOT IN ('lost', 'churned')
+    ORDER BY next_step_at ASC
+    LIMIT 10
+  `).all();
+
+  return { byStatus, totals, upcoming };
+}
+
 function recordAnthropicUsage({ callSite, profileId, model, inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens, costUsd }) {
   db.prepare(`
     INSERT INTO anthropic_usage_log
@@ -765,4 +872,10 @@ module.exports = {
   getMetricsSnapshot,
   recordAnthropicUsage,
   getUsageSnapshot,
+  listSalesClients,
+  getSalesClient,
+  createSalesClient,
+  updateSalesClient,
+  deleteSalesClient,
+  getSalesPipelineStats,
 };

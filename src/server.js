@@ -41,6 +41,12 @@ const {
   getMetricsSnapshot,
   recordAnthropicUsage,
   getUsageSnapshot,
+  listSalesClients,
+  getSalesClient,
+  createSalesClient,
+  updateSalesClient,
+  deleteSalesClient,
+  getSalesPipelineStats,
 } = require('./db');
 const { getAvailableSlots, bookSlot } = require('./bookings');
 const googleIntegration = require('./integrations/google');
@@ -105,7 +111,9 @@ const webhookRoutes = require('./routes/webhooks').createRouter({
 app.use('/webhooks', webhookRoutes);
 
 app.use((req, res, next) => {
-  if (req.path === '/admin.html') return requireAuth(req, res, next);
+  if (req.path === '/admin.html' || req.path === '/operator.html') {
+    return requireAuth(req, res, next);
+  }
   next();
 });
 app.use(express.static(path.join(__dirname, '../public')));
@@ -579,6 +587,85 @@ app.get('/api/metrics', requireAuth, (req, res) => {
 
 app.get('/api/usage', requireAuth, (req, res) => {
   res.json(getUsageSnapshot());
+});
+
+app.get('/api/operator/overview', requireAuth, (req, res) => {
+  const business = getBusiness();
+  const metrics = getMetricsSnapshot();
+  const usage = getUsageSnapshot();
+  const pipeline = getSalesPipelineStats();
+  res.json({
+    businesses: [{
+      id: 1,
+      name: business.name,
+      type: business.type,
+      hours: business.hours,
+      services: business.services?.length ?? 0,
+      conversations: metrics.conversations,
+      messages: metrics.customerMessages,
+      bookings: metrics.totalBookings,
+      bookingsThisMonth: metrics.monthBookings,
+      cancelledBookings: metrics.cancelledBookings,
+      conversionRate: metrics.conversionRate,
+      openEscalations: metrics.openEscalations,
+      openUnanswered: metrics.openUnanswered,
+      anthropicSpendMonth: usage.month.cost,
+      anthropicSpendAllTime: usage.totals.cost_usd,
+      adminUrl: '/admin.html',
+    }],
+    aggregate: {
+      totalConversations: metrics.conversations,
+      totalBookings: metrics.totalBookings,
+      anthropicSpendMonth: usage.month.cost,
+      anthropicSpendAllTime: usage.totals.cost_usd,
+      cacheHitRate: usage.cacheHitRate,
+    },
+    pipeline,
+  });
+});
+
+app.get('/api/operator/clients', requireAuth, (req, res) => {
+  res.json({ clients: listSalesClients() });
+});
+
+app.post('/api/operator/clients', requireAuth, (req, res) => {
+  const b = req.body || {};
+  if (!b.businessName || !String(b.businessName).trim()) {
+    return res.status(400).json({ error: 'businessName required' });
+  }
+  const created = createSalesClient({
+    businessName: String(b.businessName).trim(),
+    contactName: b.contactName ?? null,
+    contactEmail: b.contactEmail ?? null,
+    contactPhone: b.contactPhone ?? null,
+    vertical: b.vertical ?? null,
+    status: b.status || 'lead',
+    plan: b.plan ?? null,
+    mrrUsd: b.mrrUsd ? Number(b.mrrUsd) : null,
+    notes: b.notes ?? null,
+    nextStep: b.nextStep ?? null,
+    nextStepAt: b.nextStepAt ?? null,
+  });
+  res.json({ client: created });
+});
+
+app.patch('/api/operator/clients/:id', requireAuth, (req, res) => {
+  const id = Number(req.params.id);
+  if (!getSalesClient(id)) return res.status(404).json({ error: 'Client not found' });
+  const fields = {};
+  const camel = ['businessName', 'contactName', 'contactEmail', 'contactPhone', 'vertical', 'status', 'plan', 'mrrUsd', 'notes', 'nextStep', 'nextStepAt'];
+  for (const k of camel) if (k in (req.body || {})) fields[k] = req.body[k];
+  if (fields.mrrUsd != null && fields.mrrUsd !== '') fields.mrrUsd = Number(fields.mrrUsd);
+  if (fields.mrrUsd === '') fields.mrrUsd = null;
+  updateSalesClient(id, fields);
+  res.json({ client: getSalesClient(id) });
+});
+
+app.delete('/api/operator/clients/:id', requireAuth, (req, res) => {
+  const id = Number(req.params.id);
+  const ok = deleteSalesClient(id);
+  if (!ok) return res.status(404).json({ error: 'Client not found' });
+  res.json({ ok: true });
 });
 
 app.get('/api/email/outbox', requireAuth, (req, res) => {

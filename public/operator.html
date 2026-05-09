@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Founder Dashboard — Dunper AI</title>
+  <link rel="icon" type="image/png" href="/img/logo.png" />
+  <link rel="stylesheet" href="/css/admin.css" />
+  <link rel="stylesheet" href="/css/operator.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <div class="page-title">
+        <img src="/img/logo.png" class="brand-mark" alt="Dunper" />
+        <div>
+          <h1>Founder Dashboard</h1>
+          <p class="subtitle">Your eagle-eye view of every business on Dunper and your sales pipeline.</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="/admin.html" class="link-btn">→ Business dashboard</a>
+        <button type="button" id="logout-btn" class="link-btn">Sign out</button>
+      </div>
+    </header>
+
+    <p class="hint" style="margin-bottom: 16px;">
+      <strong>Note:</strong> Right now Dunper is single-tenant — one server = one business. There's <strong>1 business</strong> on this deployment. When you go multi-tenant (around customer #15 per the <a href="https://github.com/OwenTjandra/FrontDesk/blob/main/docs/scaling-roadmap.md" target="_blank">scaling roadmap</a>), this list auto-populates with every tenant.
+    </p>
+
+    <section class="card">
+      <h2>Aggregate snapshot</h2>
+      <div id="aggregate-grid" class="metrics-grid">
+        <p class="hint">Loading…</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Businesses on Dunper</h2>
+        <button type="button" class="ghost-btn" id="refresh-overview">Refresh</button>
+      </div>
+      <p class="hint">Each row is a real running deployment. Click "Open dashboard" to manage that business directly.</p>
+      <div id="businesses-list" class="business-list">
+        <p class="hint">Loading…</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Sales pipeline</h2>
+        <div class="header-actions">
+          <button type="button" class="primary-btn" id="open-add-client">+ New prospect</button>
+          <button type="button" class="ghost-btn" id="refresh-clients">Refresh</button>
+        </div>
+      </div>
+      <p class="hint">Track leads, demos, and customers. Free-form CRM. As you sell, add rows here.</p>
+
+      <div id="pipeline-tiles" class="pipeline-tiles"></div>
+
+      <div id="upcoming-list" class="upcoming-list"></div>
+
+      <div id="clients-table-wrap" class="clients-table-wrap">
+        <p class="hint">Loading…</p>
+      </div>
+    </section>
+  </div>
+
+  <div id="client-modal" class="modal" hidden>
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2 id="client-modal-title">Add prospect</h2>
+        <button type="button" class="modal-close" id="client-modal-close" aria-label="Close">×</button>
+      </header>
+      <form id="client-form" class="modal-body">
+        <input type="hidden" id="client-id" />
+        <label>
+          <span>Business name *</span>
+          <input type="text" id="client-business-name" required />
+        </label>
+        <div class="row-2">
+          <label>
+            <span>Contact name</span>
+            <input type="text" id="client-contact-name" />
+          </label>
+          <label>
+            <span>Contact email</span>
+            <input type="email" id="client-contact-email" />
+          </label>
+        </div>
+        <div class="row-2">
+          <label>
+            <span>Contact phone</span>
+            <input type="tel" id="client-contact-phone" />
+          </label>
+          <label>
+            <span>Vertical</span>
+            <input type="text" id="client-vertical" placeholder="dental, salon, restaurant…" />
+          </label>
+        </div>
+        <div class="row-2">
+          <label>
+            <span>Status</span>
+            <select id="client-status">
+              <option value="lead">Lead</option>
+              <option value="demo_scheduled">Demo scheduled</option>
+              <option value="demo_done">Demo done</option>
+              <option value="proposal_sent">Proposal sent</option>
+              <option value="active">Active customer</option>
+              <option value="churned">Churned</option>
+              <option value="lost">Lost</option>
+            </select>
+          </label>
+          <label>
+            <span>Plan</span>
+            <select id="client-plan">
+              <option value="">—</option>
+              <option value="starter">Starter</option>
+              <option value="pro">Pro</option>
+              <option value="max">Max</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          <span>MRR (USD/mo)</span>
+          <input type="number" id="client-mrr" min="0" step="0.01" placeholder="0.00" />
+        </label>
+        <div class="row-2">
+          <label>
+            <span>Next step</span>
+            <input type="text" id="client-next-step" placeholder="e.g. Demo at 3pm Friday" />
+          </label>
+          <label>
+            <span>Next step date</span>
+            <input type="date" id="client-next-step-at" />
+          </label>
+        </div>
+        <label>
+          <span>Notes</span>
+          <textarea id="client-notes" rows="3" placeholder="Anything you want to remember…"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button type="submit" class="primary-btn" id="client-save-btn">Save</button>
+          <button type="button" class="ghost-btn" id="client-delete-btn" hidden>Delete</button>
+          <span id="client-form-status" class="status"></span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/operator.js"></script>
+</body>
+</html>
