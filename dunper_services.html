@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dunper AI — Services</title>
+<link rel="icon" type="image/png" href="/img/logo.png" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#0D1B2A;--blue-mid:#2563A8;--blue-soft:#5B8ED4;
+    --blue-pale:#A8C7F0;--white:#F0F6FF;--accent:#4FC3F7;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--navy);color:var(--white);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+
+  nav{position:fixed;top:0;width:100%;z-index:100;display:flex;align-items:center;gap:20px;padding:13px 44px;background:rgba(13,27,42,.85);backdrop-filter:blur(18px);border-bottom:1px solid rgba(91,142,212,.15);}
+  .nav-logo{display:flex;align-items:center;gap:10px;flex-shrink:0;text-decoration:none;color:inherit;}
+  .logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--blue-mid),var(--accent));clip-path:polygon(50% 0%,95% 30%,80% 100%,20% 100%,5% 30%);}
+  .logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:19px;}
+  .nav-chatbar{display:flex;align-items:center;background:rgba(27,58,107,.42);border:1px solid rgba(91,142,212,.28);border-radius:50px;overflow:hidden;flex:1;max-width:460px;}
+  .nav-chatbar input{flex:1;background:none;border:none;outline:none;padding:9px 18px;color:var(--white);font-family:'DM Sans',sans-serif;font-size:14px;}
+  .nav-chatbar input::placeholder{color:var(--blue-soft);}
+  .chatbar-send{background:linear-gradient(135deg,var(--blue-mid),var(--accent));border:none;cursor:pointer;width:34px;height:34px;border-radius:50%;margin:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .chatbar-send svg{width:14px;height:14px;fill:white;}
+  .nav-links{display:flex;gap:26px;list-style:none;flex-shrink:0;}
+  .nav-links a{color:var(--blue-pale);text-decoration:none;font-size:13px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;transition:color .2s;}
+  .nav-links a:hover{color:var(--white);}
+  .nav-links a.active{color:var(--accent);}
+  .nav-cta{background:linear-gradient(135deg,var(--blue-mid),var(--accent));color:var(--white);border:none;cursor:pointer;padding:9px 22px;border-radius:50px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;flex-shrink:0;}
+
+  .page{padding:140px 60px 80px;max-width:1100px;margin:0 auto;}
+  .page-label{color:var(--accent);font-size:11px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:12px;}
+  .page-title{font-family:'Syne',sans-serif;font-size:clamp(36px,6vw,64px);font-weight:800;line-height:1.05;margin-bottom:16px;}
+  .page-sub{color:var(--blue-pale);font-size:17px;font-weight:300;max-width:560px;line-height:1.7;margin-bottom:70px;}
+
+  .section-label{color:var(--accent);font-size:11px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:14px;}
+  .section-title{font-family:'Syne',sans-serif;font-size:clamp(26px,3.5vw,38px);font-weight:800;margin-bottom:36px;line-height:1.15;}
+
+  /* MAIN FEATURES */
+  .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-bottom:80px;}
+  .feature-card{
+    padding:32px 26px;border-radius:20px;
+    border:1px solid rgba(91,142,212,.18);
+    background:linear-gradient(145deg,rgba(27,58,107,.22),rgba(13,27,42,.5));
+    transition:transform .3s, border-color .3s;
+    cursor:default;
+  }
+  .feature-card:hover{transform:translateY(-6px);border-color:rgba(79,195,247,.35);}
+  .feature-icon{width:50px;height:50px;border-radius:13px;background:linear-gradient(135deg,var(--blue-mid),var(--accent));display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px;}
+  .feature-card h3{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:10px;}
+  .feature-card p{font-size:14px;color:var(--blue-pale);line-height:1.7;}
+
+  /* CHATBOT FEATURES SECTION */
+  .chatbot-section{
+    padding:64px;border-radius:28px;
+    background:linear-gradient(135deg,rgba(27,58,107,.3),rgba(13,27,42,.7));
+    border:1px solid rgba(91,142,212,.2);
+    margin-bottom:80px;
+    display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;
+  }
+  .chatbot-text p{color:var(--blue-pale);line-height:1.75;margin-bottom:28px;font-size:16px;}
+  .feature-list{display:flex;flex-direction:column;gap:12px;}
+  .feature-item{
+    display:flex;align-items:flex-start;gap:12px;
+    padding:14px 16px;border-radius:12px;
+    background:rgba(27,58,107,.3);border:1px solid rgba(91,142,212,.12);
+    transition:border-color .2s;
+  }
+  .feature-item:hover{border-color:rgba(79,195,247,.3);}
+  .fi-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:5px;flex-shrink:0;}
+  .fi-text strong{display:block;font-size:14px;font-weight:500;margin-bottom:2px;}
+  .fi-text span{font-size:13px;color:var(--blue-pale);}
+
+  /* BOOKING SECTION */
+  .booking-section{margin-bottom:80px;}
+  .booking-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;}
+  .booking-card{
+    padding:28px;border-radius:18px;
+    background:rgba(27,58,107,.18);border:1px solid rgba(91,142,212,.15);
+    display:flex;gap:18px;align-items:flex-start;
+    transition:border-color .3s,transform .3s;
+  }
+  .booking-card:hover{border-color:rgba(79,195,247,.3);transform:translateX(4px);}
+  .bc-icon{font-size:28px;flex-shrink:0;}
+  .bc-text h4{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px;}
+  .bc-text p{font-size:13px;color:var(--blue-pale);line-height:1.65;}
+
+  /* FAQs */
+  .faq-section{margin-bottom:80px;}
+  .faq-list{display:flex;flex-direction:column;gap:14px;}
+  .faq-item{
+    background:rgba(27,58,107,.18);border:1px solid rgba(91,142,212,.15);
+    border-radius:14px;overflow:hidden;
+  }
+  .faq-q{
+    padding:20px 24px;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:15px;font-weight:500;transition:background .2s;
+  }
+  .faq-q:hover{background:rgba(27,58,107,.3);}
+  .faq-arrow{color:var(--accent);font-size:18px;transition:transform .3s;flex-shrink:0;}
+  .faq-a{
+    max-height:0;overflow:hidden;
+    padding:0 24px;color:var(--blue-pale);font-size:14px;line-height:1.75;
+    transition:max-height .3s ease,padding .3s ease;
+  }
+  .faq-item.open .faq-a{max-height:300px;padding:0 24px 20px;}
+  .faq-item.open .faq-arrow{transform:rotate(45deg);}
+
+  /* CTA */
+  .cta-box{
+    text-align:center;padding:72px 48px;border-radius:28px;
+    background:linear-gradient(135deg,rgba(27,58,107,.4),rgba(13,27,42,.7));
+    border:1px solid rgba(91,142,212,.2);position:relative;overflow:hidden;
+  }
+  .cta-box::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:500px;height:200px;background:radial-gradient(ellipse,rgba(79,195,247,.07),transparent 70%);}
+  .cta-box h2{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;margin-bottom:14px;}
+  .cta-box p{color:var(--blue-pale);max-width:520px;margin:0 auto 32px;line-height:1.7;}
+  .btn-primary{display:inline-block;background:linear-gradient(135deg,var(--blue-mid),var(--accent));color:white;text-decoration:none;padding:14px 36px;border-radius:50px;font-weight:500;font-size:15px;transition:opacity .2s,transform .2s;}
+  .btn-primary:hover{opacity:.85;transform:scale(1.03);}
+
+  .bg-orb{position:fixed;border-radius:50%;filter:blur(110px);pointer-events:none;z-index:-1;}
+  .bg1{width:500px;height:500px;top:-100px;right:-150px;background:rgba(30,58,110,.18);}
+  .bg2{width:350px;height:350px;bottom:0;left:-100px;background:rgba(58,180,242,.05);}
+
+  footer{padding:48px 60px;border-top:1px solid rgba(91,142,212,.12);display:flex;justify-content:space-between;align-items:center;color:rgba(91,142,212,.6);font-size:13px;gap: 20px; flex-wrap: wrap;}
+
+  @media (max-width: 980px) {
+    nav { gap: 12px; padding: 12px 20px; flex-wrap: wrap; }
+    .nav-chatbar { order: 3; max-width: 100%; flex-basis: 100%; }
+    .nav-links { gap: 14px; }
+    .page { padding: 120px 20px 60px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .chatbot-section { grid-template-columns: 1fr; padding: 32px 20px; gap: 32px; }
+    .booking-grid { grid-template-columns: 1fr; }
+    footer { padding: 32px 20px; flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-orb bg1"></div>
+<div class="bg-orb bg2"></div>
+
+<nav>
+  <a class="nav-logo" href="dunper_home.html"><div class="logo-icon"></div><span class="logo-text">dunper</span></a>
+  <form class="nav-chatbar" id="nav-chatbar"><input type="text" placeholder="Ask our chatbot anything…"/><button class="chatbar-send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button></form>
+  <ul class="nav-links">
+    <li><a href="dunper_home.html">Home</a></li>
+    <li><a href="dunper_about.html">About</a></li>
+    <li><a href="dunper_services.html" class="active">Services</a></li>
+    <li><a href="dunper_contact.html">Contact</a></li>
+    <li><a href="dunper_join.html">Join Us</a></li>
+  </ul>
+  <a href="dunper_signin.html" style="text-decoration:none"><button class="nav-cta">Sign In</button></a>
+</nav>
+
+<div class="page">
+  <div class="page-label">Discover Our Services</div>
+  <h1 class="page-title">Everything your business<br>needs in one chatbot</h1>
+  <p class="page-sub">Dunper AI handles your customer interactions end-to-end — from answering questions to booking appointments and tracking performance.</p>
+
+  <!-- MAIN FEATURES -->
+  <div class="features-grid">
+    <div class="feature-card"><div class="feature-icon">🎧</div><h3>Customer Service</h3><p>Answer FAQs, resolve issues, and handle inquiries automatically — 24/7, in any language.</p></div>
+    <div class="feature-card"><div class="feature-icon">📅</div><h3>Booking & Scheduling</h3><p>Let customers book services, appointments, or products directly through the chatbot with full calendar integration.</p></div>
+    <div class="feature-card"><div class="feature-icon">🌍</div><h3>Multilingual Support</h3><p>One chatbot, dozens of languages. Dunper detects the customer's language and responds naturally.</p></div>
+    <div class="feature-card"><div class="feature-icon">🧠</div><h3>Memory & Personalization</h3><p>Dunper remembers user habits, preferences, and past interactions to deliver personalized experiences.</p></div>
+    <div class="feature-card"><div class="feature-icon">🔗</div><h3>Real-World Integration</h3><p>Connect to Google Calendar, CRMs, and third-party tools. Dunper fits your existing workflow.</p></div>
+    <div class="feature-card"><div class="feature-icon">🖼️</div><h3>Visual Features</h3><p>Handle image uploads, attachments, documents, and videos within the chat — no external tools needed.</p></div>
+  </div>
+
+  <!-- CHATBOT FEATURES -->
+  <div class="chatbot-section">
+    <div class="chatbot-text">
+      <div class="section-label">Chatbot Intelligence</div>
+      <h2 class="section-title">A chatbot that<br>thinks for your brand</h2>
+      <p>Configure every aspect of how Dunper behaves — from its personality to what happens when it doesn't know an answer.</p>
+    </div>
+    <div class="feature-list">
+      <div class="feature-item"><div class="fi-dot"></div><div class="fi-text"><strong>Fallout Message</strong><span>Custom response when AI doesn't know an answer</span></div></div>
+      <div class="feature-item"><div class="fi-dot"></div><div class="fi-text"><strong>Starter Message</strong><span>Set a branded greeting for every new conversation</span></div></div>
+      <div class="feature-item"><div class="fi-dot"></div><div class="fi-text"><strong>Tone Control</strong><span>Professional, friendly, casual — you choose</span></div></div>
+      <div class="feature-item"><div class="fi-dot"></div><div class="fi-text"><strong>Business Policy</strong><span>Embed your refund, booking, and support rules</span></div></div>
+      <div class="feature-item"><div class="fi-dot"></div><div class="fi-text"><strong>Human Handoff</strong><span>Escalate to a live agent automatically when needed</span></div></div>
+      <div class="feature-item"><div class="fi-dot"></div><div class="fi-text"><strong>AI Boundaries</strong><span>Define exactly what topics Dunper should avoid</span></div></div>
+    </div>
+  </div>
+
+  <!-- BOOKING FEATURES -->
+  <div class="booking-section">
+    <div class="section-label">Booking System</div>
+    <h2 class="section-title">Automate your entire<br>booking pipeline</h2>
+    <div class="booking-grid">
+      <div class="booking-card"><div class="bc-icon">📲</div><div class="bc-text"><h4>Embedded Widget</h4><p>A floating icon on your site or a landing page embedded on third-party platforms — customers interact right where they are.</p></div></div>
+      <div class="booking-card"><div class="bc-icon">🗓️</div><div class="bc-text"><h4>Calendar Sync</h4><p>Connect to Google Calendar or your booking system. Dunper checks availability in real time and confirms slots instantly.</p></div></div>
+      <div class="booking-card"><div class="bc-icon">🛒</div><div class="bc-text"><h4>Product Options</h4><p>Display your services, packages, and products directly in the chat. Customers browse and book without leaving the conversation.</p></div></div>
+      <div class="booking-card"><div class="bc-icon">📷</div><div class="bc-text"><h4>File & Media Uploads</h4><p>Customers can upload images, docs, or videos directly in chat — useful for custom orders, consultations, and support.</p></div></div>
+    </div>
+  </div>
+
+  <!-- FAQs -->
+  <div class="faq-section">
+    <div class="section-label">FAQs</div>
+    <h2 class="section-title">Common questions</h2>
+    <div class="faq-list" id="faqList">
+      <div class="faq-item">
+        <div class="faq-q">How long does it take to set up Dunper AI? <span class="faq-arrow">+</span></div>
+        <div class="faq-a">Most businesses are up and running within a day. Our onboarding is guided, and embedding the chatbot only requires pasting one line of code.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I use Dunper on my third-party booking site? <span class="faq-arrow">+</span></div>
+        <div class="faq-a">Yes — Dunper can be embedded as a floating widget on any website, including third-party platforms like booking portals, and even integrates a branded landing page within those sites.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What languages does Dunper support? <span class="faq-arrow">+</span></div>
+        <div class="faq-a">Dunper supports 40+ languages and auto-detects the customer's preferred language. You can also set a default language in the AI settings.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Is my customer data secure? <span class="faq-arrow">+</span></div>
+        <div class="faq-a">Absolutely. All data is encrypted in transit and at rest. Dunper is GDPR-compliant and you control what data is stored and for how long.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-box">
+    <div class="section-label" style="display:block;text-align:center;margin-bottom:10px">Ready to start?</div>
+    <h2>Add Dunper AI to your business today</h2>
+    <p>Start with a free plan and scale as you grow. No credit card required.</p>
+    <a href="dunper_join.html" class="btn-primary">Get Started Free →</a>
+  </div>
+</div>
+
+<footer>
+  <a class="nav-logo" href="dunper_home.html"><div class="logo-icon"></div><span class="logo-text">dunper</span></a>
+  <span>© 2026 Dunper AI. All rights reserved.</span>
+  <span>contact@dunper.ai &nbsp;·&nbsp; @dunperai</span>
+</footer>
+
+<script>
+  document.querySelectorAll('.faq-q').forEach(q=>{
+    q.addEventListener('click',()=>{
+      const item=q.parentElement;
+      const wasOpen=item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));
+      if(!wasOpen) item.classList.add('open');
+    });
+  });
+</script>
+<script src="/js/common.js"></script>
+</body>
+</html>
