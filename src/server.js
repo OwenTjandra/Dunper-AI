@@ -866,11 +866,39 @@ function getLanAddresses() {
     .map(i => i.address);
 }
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Configured for: ${getBusiness().name}`);
   console.log(`Local:  http://localhost:${PORT}`);
   for (const addr of getLanAddresses()) {
     console.log(`LAN:    http://${addr}:${PORT}`);
   }
   console.log(`Admin:  http://localhost:${PORT}/admin.html`);
+});
+
+let shuttingDown = false;
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`\n[shutdown] received ${signal}, closing server…`);
+  // Stop accepting new HTTP connections; let in-flight requests finish.
+  server.close(err => {
+    if (err) console.error('[shutdown] server.close error:', err);
+    try { db.close(); console.log('[shutdown] db closed'); }
+    catch (e) { console.error('[shutdown] db close error:', e); }
+    process.exit(err ? 1 : 0);
+  });
+  // Hard-exit fallback if a request hangs past 10s.
+  setTimeout(() => {
+    console.error('[shutdown] forced exit after 10s timeout');
+    process.exit(1);
+  }, 10_000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
+process.on('uncaughtException', err => {
+  console.error('[uncaughtException]', err);
+  shutdown('uncaughtException');
+});
+process.on('unhandledRejection', reason => {
+  console.error('[unhandledRejection]', reason);
 });

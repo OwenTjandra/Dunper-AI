@@ -7,6 +7,28 @@ const {
   clearGoogleConnection,
 } = require('../db');
 
+// Retry transient Google API failures (5xx, 429, network blips) with
+// exponential backoff. Auth errors and 4xx (other than 429) fail fast.
+const RETRYABLE_HTTP = new Set([429, 500, 502, 503, 504]);
+const RETRYABLE_CODES = new Set(['ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED', 'EAI_AGAIN', 'ENOTFOUND']);
+async function withRetry(fn, { attempts = 3, baseMs = 250, label = 'google' } = {}) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const status = err?.response?.status || err?.code;
+      const transient = RETRYABLE_HTTP.has(Number(status)) || RETRYABLE_CODES.has(String(status));
+      if (!transient || i === attempts - 1) throw err;
+      const wait = baseMs * Math.pow(2, i);
+      console.warn(`[${label}] transient error ${status} — retrying in ${wait}ms (attempt ${i + 2}/${attempts})`);
+      await new Promise(r => setTimeout(r, wait));
+    }
+  }
+  throw lastErr;
+}
+
 const SCOPES = [
   'https://www.googleapis.com/auth/calendar',
   'https://www.googleapis.com/auth/spreadsheets',
@@ -214,7 +236,7 @@ async function createCalendarEvent(booking, business) {
       `Booked via ${business.name} frontdesk chatbot`,
     ].filter(Boolean).join('\n');
 
-    const res = await cal.events.insert({
+    const res = await withRetry(() => cal.events.insert({
       calendarId: conn.calendar_id,
       requestBody: {
         summary,
@@ -222,7 +244,7 @@ async function createCalendarEvent(booking, business) {
         start: { dateTime: booking.starts_at },
         end: { dateTime: booking.ends_at },
       },
-    });
+    }), { label: 'calendar.events.insert' });
     return { ok: true, eventId: res.data.id, htmlLink: res.data.htmlLink };
   } catch (err) {
     console.error('[Google Calendar] create event failed:', err.message);
@@ -394,7 +416,7 @@ async function appendBookingRow(booking, calendarLink) {
     const start = new Date(booking.starts_at);
     const dateStr = start.toLocaleDateString('en-CA');
     const timeStr = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-    await sheets.spreadsheets.values.append({
+    await withRetry(() => sheets.spreadsheets.values.append({
       spreadsheetId: conn.sheet_id,
       range: `${BOOKINGS_TAB}!A1`,
       valueInputOption: 'RAW',
@@ -412,7 +434,7 @@ async function appendBookingRow(booking, calendarLink) {
           calendarLink || 'Not Given',
         ]],
       },
-    });
+    }), { label: 'sheets.appendBooking' });
     return { ok: true };
   } catch (err) {
     console.error('[Google Sheets] append booking failed:', err.message);
@@ -447,12 +469,12 @@ async function updateBookingStatus(booking, newStatus) {
     });
     if (idx < 0) return { ok: false, reason: 'Matching row not found' };
     const targetRow = idx + 2;
-    await sheets.spreadsheets.values.update({
+    await withRetry(() => sheets.spreadsheets.values.update({
       spreadsheetId: conn.sheet_id,
       range: `${BOOKINGS_TAB}!${BOOKINGS_STATUS_COL}${targetRow}`,
       valueInputOption: 'RAW',
       requestBody: { values: [[newStatus]] },
-    });
+    }), { label: 'sheets.updateBookingStatus' });
     return { ok: true };
   } catch (err) {
     console.error('[Google Sheets] updateBookingStatus failed:', err.message);
@@ -491,19 +513,19 @@ async function upsertCustomerRow(profile, summary) {
 
     if (matchIndex >= 0) {
       const targetRow = matchIndex + 2;
-      await sheets.spreadsheets.values.update({
+      await withRetry(() => sheets.spreadsheets.values.update({
         spreadsheetId: conn.sheet_id,
         range: `${CUSTOMERS_TAB}!A${targetRow}:J${targetRow}`,
         valueInputOption: 'RAW',
         requestBody: { values: [row] },
-      });
+      }), { label: 'sheets.upsertCustomer.update' });
     } else {
-      await sheets.spreadsheets.values.append({
+      await withRetry(() => sheets.spreadsheets.values.append({
         spreadsheetId: conn.sheet_id,
         range: `${CUSTOMERS_TAB}!A1`,
         valueInputOption: 'RAW',
         requestBody: { values: [row] },
-      });
+      }), { label: 'sheets.upsertCustomer.append' });
     }
     return { ok: true };
   } catch (err) {
