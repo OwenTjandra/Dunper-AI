@@ -3,6 +3,7 @@ const {
   getConversationCompaction,
   upsertConversationCompaction,
   getAttachmentsForMessage,
+  recordAnthropicUsage,
 } = require('./db');
 const { askClaude } = require('./config/claude');
 
@@ -84,11 +85,26 @@ async function compactConversation(profileId) {
     .map(m => `${m.role.toUpperCase()}: ${m.content}${attachmentsBriefForCompaction(m.id)}`)
     .join('\n');
 
-  const summary = await askClaude(
+  const { text: summary, usage } = await askClaude(
     [{ role: 'user', content: prompt }],
     SUMMARIZE_SYSTEM_PROMPT,
     { max_tokens: 400 }
   );
+
+  try {
+    recordAnthropicUsage({
+      callSite: 'compaction',
+      profileId,
+      model: usage.model,
+      inputTokens: usage.input_tokens,
+      outputTokens: usage.output_tokens,
+      cacheCreationTokens: usage.cache_creation_tokens,
+      cacheReadTokens: usage.cache_read_tokens,
+      costUsd: usage.cost_usd,
+    });
+  } catch (err) {
+    console.error('[Usage] compaction log failed:', err.message);
+  }
 
   upsertConversationCompaction({
     profileId,

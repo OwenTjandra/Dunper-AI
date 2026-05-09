@@ -688,6 +688,31 @@ textarea:focus {
 .tag.sentiment.frustrated { background: #fef3c7; color: #92400e; border-color: #fde68a; }
 .hint.err { color: #b91c1c; }
 
+.usage-extras { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+.usage-section h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.usage-rows { display: flex; flex-direction: column; gap: 4px; }
+.usage-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fafafa;
+  align-items: center;
+}
+.usage-row .usage-label { color: #111827; font-weight: 500; word-break: break-word; }
+.usage-row .usage-mid { color: #6b7280; font-size: 12px; }
+.usage-row .usage-val { color: #4338ca; font-weight: 600; }
+
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));

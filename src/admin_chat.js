@@ -1,5 +1,7 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const { getBusiness, applyBusinessUpdate } = require('./business');
+const { recordAnthropicUsage } = require('./db');
+const { estimateCost } = require('./config/claude');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-sonnet-4-6';
@@ -208,6 +210,22 @@ async function runAdminChat(userMessages, user) {
       tools,
       messages,
     });
+
+    try {
+      const u = response.usage || {};
+      recordAnthropicUsage({
+        callSite: 'admin_chat',
+        profileId: null,
+        model: MODEL,
+        inputTokens: u.input_tokens || 0,
+        outputTokens: u.output_tokens || 0,
+        cacheCreationTokens: u.cache_creation_input_tokens || 0,
+        cacheReadTokens: u.cache_read_input_tokens || 0,
+        costUsd: estimateCost(MODEL, u),
+      });
+    } catch (err) {
+      console.error('[Usage] admin_chat log failed:', err.message);
+    }
 
     if (response.stop_reason !== 'tool_use') {
       return {

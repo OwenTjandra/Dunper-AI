@@ -1465,3 +1465,67 @@ loadMetrics();
 loadEscalations();
 loadUnanswered();
 loadEmails();
+
+const usageGridEl = document.getElementById('usage-grid');
+const usageExtrasEl = document.getElementById('usage-extras');
+const refreshUsageBtn = document.getElementById('refresh-usage');
+
+function fmtCost(n) {
+  if (n == null || isNaN(n)) return '$0.00';
+  if (n < 0.01) return `$${n.toFixed(4)}`;
+  if (n < 1) return `$${n.toFixed(3)}`;
+  return `$${n.toFixed(2)}`;
+}
+function fmtTokens(n) {
+  const v = Number(n) || 0;
+  if (v < 1000) return String(v);
+  if (v < 1_000_000) return `${(v / 1000).toFixed(1)}K`;
+  return `${(v / 1_000_000).toFixed(2)}M`;
+}
+
+async function loadUsage() {
+  if (!usageGridEl) return;
+  usageGridEl.innerHTML = '<p class="hint">Loading…</p>';
+  if (usageExtrasEl) usageExtrasEl.innerHTML = '';
+  try {
+    const res = await fetch('/api/usage');
+    if (handleUnauthorized(res)) return;
+    const u = await res.json();
+
+    usageGridEl.innerHTML = [
+      metricCard('Today', fmtCost(u.today.cost), `${u.today.calls} calls`),
+      metricCard('Last 7 days', fmtCost(u.week.cost), `${u.week.calls} calls`),
+      metricCard('Last 30 days', fmtCost(u.month.cost), `${u.month.calls} calls`),
+      metricCard('All time', fmtCost(u.totals.cost_usd), `${u.totals.calls} calls`),
+      metricCard('Input tokens', fmtTokens(u.totals.input_tokens)),
+      metricCard('Output tokens', fmtTokens(u.totals.output_tokens)),
+      metricCard('Cache reads', fmtTokens(u.totals.cache_read_tokens), 'cheaper than fresh input'),
+      metricCard('Cache hit rate', `${u.cacheHitRate}%`, 'higher = saves money'),
+    ].join('');
+
+    if (usageExtrasEl) {
+      let html = '';
+      if (u.byCallSite?.length) {
+        html += '<div class="usage-section"><h4>By call site (last 30d)</h4><div class="usage-rows">';
+        u.byCallSite.forEach(r => {
+          html += `<div class="usage-row"><span class="usage-label">${escapeHtml(r.call_site)}</span><span class="usage-mid">${r.calls} calls</span><span class="usage-val">${escapeHtml(fmtCost(r.cost))}</span></div>`;
+        });
+        html += '</div></div>';
+      }
+      if (u.topProfiles?.length) {
+        html += '<div class="usage-section"><h4>Top customers by spend (last 30d)</h4><div class="usage-rows">';
+        u.topProfiles.forEach(r => {
+          const label = r.name || `Profile #${r.profile_id}`;
+          html += `<div class="usage-row"><span class="usage-label">${escapeHtml(label)}</span><span class="usage-mid">${r.calls} calls</span><span class="usage-val">${escapeHtml(fmtCost(r.cost))}</span></div>`;
+        });
+        html += '</div></div>';
+      }
+      usageExtrasEl.innerHTML = html;
+    }
+  } catch (err) {
+    usageGridEl.innerHTML = `<p class="hint err">Failed: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+refreshUsageBtn?.addEventListener('click', loadUsage);
+loadUsage();

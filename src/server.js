@@ -39,6 +39,8 @@ const {
   recordOutboxEmail,
   listOutboxEmails,
   getMetricsSnapshot,
+  recordAnthropicUsage,
+  getUsageSnapshot,
 } = require('./db');
 const { getAvailableSlots, bookSlot } = require('./bookings');
 const googleIntegration = require('./integrations/google');
@@ -259,7 +261,8 @@ app.post('/chat', chatLimiter, attachCustomerProfile, (req, res) => {
         messages[0] = { role: 'user', content: [...docBlocks, ...firstContent] };
       }
 
-      const reply = await askClaude(messages, getSystemPrompt());
+      const { text: reply, usage } = await askClaude(messages, getSystemPrompt());
+      logUsage('chat', req.customerProfile.id, usage);
       recordCustomerMessage(req.customerProfile.id, 'assistant', reply);
       conversation.maybeCompactInBackground(req.customerProfile.id);
       maybeFlagUnanswered({ profileId: req.customerProfile.id, messageId, questionText: text, replyText: reply });
@@ -489,10 +492,11 @@ app.post('/api/profiles/:id/summarize', requireAuth, async (req, res) => {
 TRANSCRIPT:
 ${transcript}`;
 
-    const reply = await askClaude(
+    const { text: reply, usage } = await askClaude(
       [{ role: 'user', content: summaryPrompt }],
       'You output only valid JSON. No prose. No markdown fences.'
     );
+    logUsage('summarize', profileId, usage);
 
     let parsed;
     try {
@@ -571,6 +575,10 @@ app.post('/api/unanswered/:id/review', requireAuth, (req, res) => {
 
 app.get('/api/metrics', requireAuth, (req, res) => {
   res.json(getMetricsSnapshot());
+});
+
+app.get('/api/usage', requireAuth, (req, res) => {
+  res.json(getUsageSnapshot());
 });
 
 app.get('/api/email/outbox', requireAuth, (req, res) => {
@@ -678,6 +686,24 @@ function repliesIndicateUncertainty(replyText) {
   return UNCERTAINTY_PHRASES.some(rx => rx.test(replyText));
 }
 
+function logUsage(callSite, profileId, usage) {
+  if (!usage) return;
+  try {
+    recordAnthropicUsage({
+      callSite,
+      profileId: profileId ?? null,
+      model: usage.model,
+      inputTokens: usage.input_tokens,
+      outputTokens: usage.output_tokens,
+      cacheCreationTokens: usage.cache_creation_tokens,
+      cacheReadTokens: usage.cache_read_tokens,
+      costUsd: usage.cost_usd,
+    });
+  } catch (err) {
+    console.error('[Usage] log failed:', err.message);
+  }
+}
+
 function maybeFlagUnanswered({ profileId, messageId, questionText, replyText }) {
   if (!questionText || !questionText.trim()) return;
   if (!repliesIndicateUncertainty(replyText)) return;
@@ -727,7 +753,9 @@ async function handleWhatsAppPayload(payload) {
 
     let reply;
     try {
-      reply = await askClaude(claudeMessages, getSystemPrompt());
+      const { text, usage } = await askClaude(claudeMessages, getSystemPrompt());
+      reply = text;
+      logUsage('whatsapp', profile.id, usage);
     } catch (err) {
       console.error('[WhatsApp] Claude error:', err.message);
       reply = "Sorry, I'm having trouble right now. Please try again in a moment.";

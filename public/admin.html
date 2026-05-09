@@ -181,6 +181,18 @@
       </div>
     </section>
 
+    <section class="card metrics-card">
+      <div class="card-head">
+        <h2>Anthropic API usage</h2>
+        <button type="button" class="ghost-btn" id="refresh-usage">Refresh</button>
+      </div>
+      <p class="hint">What you've spent on Claude API calls. Tracks cache hit rate (higher = cheaper). Use this to spot runaway customers early.</p>
+      <div id="usage-grid" class="metrics-grid">
+        <p class="hint">Loading…</p>
+      </div>
+      <div id="usage-extras" class="usage-extras"></div>
+    </section>
+
     <section class="card alerts-card">
       <div class="card-head">
         <h2>Customers waiting for an agent</h2>

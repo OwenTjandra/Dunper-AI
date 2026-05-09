@@ -600,6 +600,87 @@ function getMetricsSnapshot() {
   };
 }
 
+function recordAnthropicUsage({ callSite, profileId, model, inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens, costUsd }) {
+  db.prepare(`
+    INSERT INTO anthropic_usage_log
+      (call_site, profile_id, model, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cost_usd)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    callSite,
+    profileId ?? null,
+    model || null,
+    inputTokens || 0,
+    outputTokens || 0,
+    cacheCreationTokens || 0,
+    cacheReadTokens || 0,
+    costUsd || 0
+  );
+}
+
+function getUsageSnapshot() {
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 7);
+  const monthStart = new Date(); monthStart.setMonth(monthStart.getMonth() - 1);
+
+  const totals = db.prepare(`
+    SELECT
+      COALESCE(SUM(input_tokens), 0) AS input_tokens,
+      COALESCE(SUM(output_tokens), 0) AS output_tokens,
+      COALESCE(SUM(cache_creation_tokens), 0) AS cache_creation_tokens,
+      COALESCE(SUM(cache_read_tokens), 0) AS cache_read_tokens,
+      COALESCE(SUM(cost_usd), 0) AS cost_usd,
+      COUNT(*) AS calls
+    FROM anthropic_usage_log
+  `).get();
+
+  const today = db.prepare(`
+    SELECT COALESCE(SUM(cost_usd), 0) AS cost, COUNT(*) AS calls
+    FROM anthropic_usage_log WHERE created_at >= ?
+  `).get(todayStart.toISOString());
+  const week = db.prepare(`
+    SELECT COALESCE(SUM(cost_usd), 0) AS cost, COUNT(*) AS calls
+    FROM anthropic_usage_log WHERE created_at >= ?
+  `).get(weekStart.toISOString());
+  const month = db.prepare(`
+    SELECT COALESCE(SUM(cost_usd), 0) AS cost, COUNT(*) AS calls
+    FROM anthropic_usage_log WHERE created_at >= ?
+  `).get(monthStart.toISOString());
+
+  const byCallSite = db.prepare(`
+    SELECT call_site, COUNT(*) AS calls, COALESCE(SUM(cost_usd), 0) AS cost
+    FROM anthropic_usage_log
+    WHERE created_at >= ?
+    GROUP BY call_site
+    ORDER BY cost DESC
+  `).all(monthStart.toISOString());
+
+  const topProfiles = db.prepare(`
+    SELECT u.profile_id, p.name, p.phone, COUNT(*) AS calls, COALESCE(SUM(u.cost_usd), 0) AS cost
+    FROM anthropic_usage_log u
+    LEFT JOIN customer_profiles p ON p.id = u.profile_id
+    WHERE u.created_at >= ? AND u.profile_id IS NOT NULL
+    GROUP BY u.profile_id
+    ORDER BY cost DESC
+    LIMIT 10
+  `).all(monthStart.toISOString());
+
+  const cacheReads = totals.cache_read_tokens || 0;
+  const cacheCreates = totals.cache_creation_tokens || 0;
+  const cacheHitRate = (cacheReads + cacheCreates) > 0
+    ? Math.round((cacheReads / (cacheReads + cacheCreates)) * 100)
+    : 0;
+
+  return {
+    totals,
+    today: { cost: today.cost, calls: today.calls },
+    week: { cost: week.cost, calls: week.calls },
+    month: { cost: month.cost, calls: month.calls },
+    byCallSite,
+    topProfiles,
+    cacheHitRate,
+  };
+}
+
 function getConversationCompaction(profileId) {
   return db.prepare('SELECT * FROM conversation_compactions WHERE profile_id = ?').get(profileId);
 }
@@ -682,4 +763,6 @@ module.exports = {
   recordOutboxEmail,
   listOutboxEmails,
   getMetricsSnapshot,
+  recordAnthropicUsage,
+  getUsageSnapshot,
 };
