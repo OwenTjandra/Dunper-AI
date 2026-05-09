@@ -1,61 +1,62 @@
 # Dunper AI marketing site (dunper.com)
 
-Static landing page. No build step — just HTML/CSS/JS. Deploys via Cloudflare Pages.
+Multi-page static site, plain HTML/CSS/JS, no build step. Deploys via Cloudflare Pages.
+
+## Pages
+
+- `index.html` → redirects to `dunper_home.html` (so `dunper.com/` works)
+- `dunper_home.html` — landing page (hero, facts, how it works, demo)
+- `dunper_about.html` — mission, values, timeline, team
+- `dunper_services.html` — features, chatbot intelligence, booking, FAQs
+- `dunper_join.html` — pricing tiers + monthly/yearly toggle + comparison table
+- `dunper_contact.html` — contact form (formsubmit.co → dunperai@gmail.com)
+- `dunper_signin.html` — sign in / sign up tabs
+
+Shared JS at `js/common.js` handles the nav chatbar (opens the live demo in a new tab).
 
 ## Local preview
 
-Open `website/index.html` in your browser. (Or run a tiny static server: `npx serve website`.)
+```bash
+npx serve website
+# or
+python3 -m http.server 3001 --directory website
+```
+
+Then open http://localhost:3001/dunper_home.html.
 
 ## Deploy to Cloudflare Pages
 
-1. Push this repo to GitHub (already done).
-2. Go to https://dash.cloudflare.com/ → log in (or sign up — free).
-3. Sidebar → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
-4. Authorize Cloudflare to read the `OwenTjandra/FrontDesk` repo.
-5. Project settings:
-   - **Framework preset:** None
-   - **Build command:** *(leave blank)*
-   - **Build output directory:** `website`
-   - **Root directory (advanced):** `website`
-6. Click **Save and Deploy**. ~30 seconds later you have a URL like `dunper-ai.pages.dev`.
+1. Push to GitHub (already done — `OwenTjandra/FrontDesk`).
+2. Cloudflare dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
+3. Select `OwenTjandra/FrontDesk`. Project settings:
+   - Framework preset: **None**
+   - Build command: *(blank)*
+   - Build output directory: `website`
+   - Root directory (advanced): `website`
+4. **Save and Deploy** → ~30 seconds → temporary URL like `dunper-ai.pages.dev`.
 
-## Connect dunper.com (custom domain)
+## Connect dunper.com
 
-The domain is currently registered at GoDaddy. Cleanest path is to move DNS to Cloudflare — you keep GoDaddy as the registrar but Cloudflare handles DNS (this gives you free CDN, SSL, email forwarding, etc.).
+The domain is currently registered at GoDaddy. Cleanest path: move DNS to Cloudflare.
 
-### Step 1 — Add the domain to Cloudflare
+1. Cloudflare dashboard → **Add a site** → enter `dunper.com` → Free plan.
+2. Cloudflare gives you 2 nameservers. Copy them.
+3. GoDaddy → My Products → dunper.com → DNS → **Nameservers** → Change → "I'll use my own nameservers" → paste the two from Cloudflare.
+4. Wait for propagation (usually < 1 hour).
+5. Cloudflare Pages project → **Custom domains** → Set up → enter `dunper.com` (and `www.dunper.com`).
+6. SSL provisions automatically. Site is live.
 
-1. In Cloudflare dashboard → **Add a site** → enter `dunper.com` → Free plan.
-2. Cloudflare scans your existing DNS records. Confirm.
-3. Cloudflare gives you **two nameservers** like `lola.ns.cloudflare.com` / `nick.ns.cloudflare.com`.
+## Things to update before sharing publicly
 
-### Step 2 — Switch nameservers at GoDaddy
-
-1. Log into https://www.godaddy.com/.
-2. **My Products** → find dunper.com → **DNS**.
-3. Find **Nameservers** section → **Change**.
-4. Choose **I'll use my own nameservers** → paste the two Cloudflare nameservers from above.
-5. Save. Propagation takes 5 min – 24 hours, usually under 1 hour.
-
-### Step 3 — Attach the custom domain to the Pages project
-
-1. Cloudflare dashboard → **Workers & Pages** → your Dunper project → **Custom domains** → **Set up a custom domain**.
-2. Enter `dunper.com` (and also `www.dunper.com` if you want both).
-3. Cloudflare creates the right CNAME automatically. SSL provisions in ~1 minute.
-
-You're live.
-
-## Things you'll want to update before sharing publicly
-
-- **Hero tagline** — currently shows `[Tagline goes here]` placeholder in `index.html`.
-- **Demo URL** — the `window.DUNPER_DEMO_URL` line at the top of `index.html`. The Cloudflare quick-tunnel URL changes every restart. For permanent deployment, set up a Cloudflare named tunnel pointing at `chat.dunper.com` and put that here.
-- **Pricing** — currently all "TBD". Set actual numbers once you decide.
-- **Form deliverability** — first time someone submits the form, FormSubmit.co sends a confirmation email to `dunperai@gmail.com`. Click the link in that email once to activate the form.
+- **Demo iframe URL** — in `js/common.js` the constant `DEMO_URL` points at the rotating Cloudflare quick-tunnel. Update when you switch to a permanent named tunnel like `app.dunper.com`.
+- **Pricing numbers** — currently `$0 / $29 / $79` and yearly `$23 / $63`. Edit in `dunper_join.html` once you have real prices.
+- **Contact email** — `dunperai@gmail.com` is wired throughout. If you set up `hello@dunper.com` via Cloudflare Email Routing, do a find-replace.
+- **First-time form activation** — first time anyone submits the contact form (or the sign-up form), FormSubmit.co sends a confirmation email to `dunperai@gmail.com`. Click that link once to activate the form for real.
 
 ## Optional: hello@dunper.com email
 
 Free via Cloudflare Email Routing once the domain is on Cloudflare:
-1. Cloudflare dashboard → your domain → **Email** → **Email Routing**.
-2. Enable. Add a destination address (e.g. `dunperai@gmail.com`).
-3. Add a route: `hello@dunper.com` → forward to `dunperai@gmail.com`.
-4. Update `index.html` and `style.css` references from `dunperai@gmail.com` to `hello@dunper.com`.
+1. Cloudflare → your domain → **Email** → **Email Routing** → enable.
+2. Add destination `dunperai@gmail.com` (verify it).
+3. Add route `hello@dunper.com` → forward to `dunperai@gmail.com`.
+4. Find-replace `dunperai@gmail.com` → `hello@dunper.com` across `*.html`.

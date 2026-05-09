@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dunper AI — Home</title>
+<link rel="icon" type="image/png" href="/img/logo.png" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0D1B2A;
+    --blue-deep: #1B3A6B;
+    --blue-mid: #2563A8;
+    --blue-soft: #5B8ED4;
+    --blue-pale: #A8C7F0;
+    --sky: #C1E1FF;
+    --white: #F0F6FF;
+    --accent: #4FC3F7;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--navy); color:var(--white); font-family:'DM Sans',sans-serif; overflow-x:hidden; }
+
+  nav {
+    position:fixed; top:0; width:100%; z-index:100;
+    display:flex; align-items:center; gap:20px;
+    padding:13px 44px;
+    background:rgba(13,27,42,0.85);
+    backdrop-filter:blur(18px);
+    border-bottom:1px solid rgba(91,142,212,0.15);
+  }
+  .nav-logo { display:flex; align-items:center; gap:10px; flex-shrink:0; text-decoration:none; color:inherit; }
+  .logo-icon {
+    width:34px; height:34px;
+    background:linear-gradient(135deg,var(--blue-mid),var(--accent));
+    clip-path:polygon(50% 0%,95% 30%,80% 100%,20% 100%,5% 30%);
+  }
+  .logo-text { font-family:'Syne',sans-serif; font-weight:800; font-size:19px; letter-spacing:0.03em; }
+
+  .nav-chatbar {
+    display:flex; align-items:center;
+    background:rgba(27,58,107,0.42);
+    border:1px solid rgba(91,142,212,0.28);
+    border-radius:50px; overflow:hidden;
+    flex:1; max-width:460px;
+    transition:border-color .25s, box-shadow .25s;
+  }
+  .nav-chatbar:focus-within {
+    border-color:rgba(79,195,247,0.55);
+    box-shadow:0 0 0 3px rgba(79,195,247,0.07);
+  }
+  .nav-chatbar input {
+    flex:1; background:none; border:none; outline:none;
+    padding:9px 18px; color:var(--white);
+    font-family:'DM Sans',sans-serif; font-size:14px;
+  }
+  .nav-chatbar input::placeholder { color:var(--blue-soft); }
+  .chatbar-send {
+    background:linear-gradient(135deg,var(--blue-mid),var(--accent));
+    border:none; cursor:pointer;
+    width:34px; height:34px; border-radius:50%;
+    margin:4px; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; transition:transform .2s;
+  }
+  .chatbar-send:hover { transform:scale(1.1); }
+  .chatbar-send svg { width:14px; height:14px; fill:white; }
+
+  .nav-links { display:flex; gap:26px; list-style:none; flex-shrink:0; }
+  .nav-links a {
+    color:var(--blue-pale); text-decoration:none;
+    font-size:13px; font-weight:500; letter-spacing:.05em;
+    text-transform:uppercase; transition:color .2s;
+  }
+  .nav-links a:hover { color:var(--white); }
+  .nav-links a.active { color:var(--accent); }
+  .nav-cta {
+    background:linear-gradient(135deg,var(--blue-mid),var(--accent));
+    color:var(--white); border:none; cursor:pointer;
+    padding:9px 22px; border-radius:50px;
+    font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500;
+    flex-shrink:0; transition:opacity .2s, transform .2s;
+  }
+  .nav-cta:hover { opacity:.85; transform:scale(1.03); }
+
+  /* HERO */
+  .hero {
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    justify-content:center; align-items:center;
+    text-align:center; padding:140px 40px 80px;
+    position:relative; overflow:hidden;
+  }
+  .hero-bg {
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 45%,rgba(37,99,168,.22) 0%,transparent 70%),
+      radial-gradient(ellipse 40% 30% at 20% 70%,rgba(79,195,247,.09) 0%,transparent 60%),
+      radial-gradient(ellipse 50% 40% at 80% 20%,rgba(27,58,107,.28) 0%,transparent 60%);
+  }
+  .hero-orb { position:absolute; border-radius:50%; filter:blur(80px); animation:pulse 6s ease-in-out infinite; }
+  .orb1 { width:500px; height:500px; top:-100px; left:-100px; background:rgba(37,99,168,.12); }
+  .orb2 { width:400px; height:400px; bottom:-80px; right:-80px; background:rgba(79,195,247,.07); animation-delay:2s; }
+  @keyframes pulse { 0%,100%{transform:scale(1);opacity:.6} 50%{transform:scale(1.1);opacity:1} }
+
+  .hero-badge {
+    display:inline-block;
+    background:rgba(79,195,247,.1); border:1px solid rgba(79,195,247,.3);
+    color:var(--accent); padding:5px 16px; border-radius:50px;
+    font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    margin-bottom:26px; animation:fadeUp .8s ease both;
+  }
+  .hero h1 {
+    font-family:'Syne',sans-serif;
+    font-size:clamp(46px,8vw,92px);
+    font-weight:800; line-height:1.0; letter-spacing:-.02em;
+    margin-bottom:10px; animation:fadeUp .8s ease .1s both;
+  }
+  .hero h1 span {
+    background:linear-gradient(135deg,var(--blue-soft),var(--accent),var(--sky));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .hero-sub {
+    font-size:clamp(15px,2.2vw,20px); color:var(--blue-pale); font-weight:300;
+    max-width:540px; line-height:1.65; margin:0 auto 42px;
+    animation:fadeUp .8s ease .2s both;
+  }
+  .hero-actions {
+    display:flex; gap:14px; justify-content:center; flex-wrap:wrap;
+    animation:fadeUp .8s ease .3s both;
+  }
+  .btn-primary {
+    display:inline-block;
+    background:linear-gradient(135deg,var(--blue-mid),var(--accent));
+    color:white; text-decoration:none;
+    padding:14px 34px; border-radius:50px;
+    font-weight:500; font-size:15px; transition:opacity .2s, transform .2s;
+  }
+  .btn-primary:hover { opacity:.85; transform:scale(1.03); }
+  .btn-outline {
+    display:inline-block; border:1px solid rgba(91,142,212,.4);
+    color:var(--blue-pale); text-decoration:none;
+    padding:14px 34px; border-radius:50px; font-size:15px;
+    transition:border-color .2s, color .2s;
+  }
+  .btn-outline:hover { border-color:var(--accent); color:var(--white); }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+
+  /* FACTS */
+  .facts-strip {
+    padding:56px 60px;
+    display:grid; grid-template-columns:repeat(3,1fr); gap:28px;
+    border-top:1px solid rgba(91,142,212,.15);
+    border-bottom:1px solid rgba(91,142,212,.15);
+  }
+  .fact {
+    text-align:center; padding:26px; border-radius:16px;
+    border:1px solid rgba(91,142,212,.1); background:rgba(27,58,107,.14);
+    transition:border-color .3s, transform .3s;
+  }
+  .fact:hover { border-color:rgba(79,195,247,.38); transform:translateY(-4px); }
+  .fact-num {
+    font-family:'Syne',sans-serif; font-size:40px; font-weight:800;
+    background:linear-gradient(135deg,var(--blue-soft),var(--accent));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .fact-label { font-size:13px; color:var(--blue-pale); margin-top:5px; }
+
+  /* HOW */
+  .how { padding:100px 60px; max-width:1100px; margin:0 auto; }
+  .section-tag { display:inline-block; color:var(--accent); font-size:11px; letter-spacing:.15em; text-transform:uppercase; margin-bottom:12px; }
+  .section-title { font-family:'Syne',sans-serif; font-size:clamp(30px,4.5vw,50px); font-weight:800; margin-bottom:56px; line-height:1.1; }
+  .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:26px; }
+  .step {
+    padding:34px 26px; border-radius:20px;
+    border:1px solid rgba(91,142,212,.18);
+    background:linear-gradient(135deg,rgba(27,58,107,.22),rgba(13,27,42,.5));
+    position:relative; overflow:hidden;
+    transition:transform .3s, border-color .3s;
+  }
+  .step:hover { transform:translateY(-6px); border-color:rgba(79,195,247,.35); }
+  .step-number { font-family:'Syne',sans-serif; font-size:68px; font-weight:800; color:rgba(91,142,212,.1); position:absolute; top:-10px; right:18px; line-height:1; }
+  .step-icon { width:46px; height:46px; border-radius:12px; background:linear-gradient(135deg,var(--blue-mid),var(--accent)); display:flex; align-items:center; justify-content:center; margin-bottom:18px; font-size:20px; }
+  .step h3 { font-family:'Syne',sans-serif; font-size:19px; font-weight:700; margin-bottom:10px; }
+  .step p  { font-size:14px; color:var(--blue-pale); line-height:1.65; }
+
+  /* DEMO */
+  .demo-section {
+    padding:80px 60px; max-width:1100px; margin:0 auto;
+    display:flex; align-items:center; gap:60px;
+    border-top:1px solid rgba(91,142,212,.1);
+  }
+  .demo-text { flex:1; }
+  .demo-text h2 { font-family:'Syne',sans-serif; font-size:38px; font-weight:800; margin-bottom:14px; }
+  .demo-text p  { color:var(--blue-pale); line-height:1.75; margin-bottom:26px; }
+  .demo-visual { flex:1; background:rgba(27,58,107,.2); border:1px solid rgba(91,142,212,.2); border-radius:22px; padding:28px; }
+  .chat-bubble { display:flex; gap:10px; align-items:flex-start; margin-bottom:14px; }
+  .chat-bubble.user { flex-direction:row-reverse; }
+  .avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--blue-mid),var(--accent)); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; font-family:'Syne',sans-serif; }
+  .bubble-text { background:rgba(27,58,107,.5); border:1px solid rgba(91,142,212,.18); padding:11px 15px; border-radius:15px; max-width:230px; line-height:1.5; font-size:13px; color:var(--white); }
+  .chat-bubble.user .bubble-text { background:rgba(37,99,168,.4); }
+
+  footer { padding:52px 60px; border-top:1px solid rgba(91,142,212,.15); display:flex; justify-content:space-between; align-items:center; color:var(--blue-soft); font-size:13px; gap: 20px; flex-wrap: wrap; }
+
+  @media (max-width: 980px) {
+    nav { gap: 12px; padding: 12px 20px; flex-wrap: wrap; }
+    .nav-chatbar { order: 3; max-width: 100%; flex-basis: 100%; }
+    .nav-links { gap: 14px; }
+    .demo-section { flex-direction: column; padding: 60px 20px; gap: 32px; }
+    .how { padding: 60px 20px; }
+    .steps { grid-template-columns: 1fr; }
+    .facts-strip { grid-template-columns: 1fr; padding: 40px 20px; }
+    footer { padding: 32px 20px; flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="dunper_home.html">
+    <div class="logo-icon"></div>
+    <span class="logo-text">dunper</span>
+  </a>
+
+  <form class="nav-chatbar" id="nav-chatbar">
+    <input type="text" placeholder="Ask our chatbot anything…" />
+    <button class="chatbar-send" type="submit" aria-label="Send">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+    </button>
+  </form>
+
+  <ul class="nav-links">
+    <li><a href="dunper_home.html" class="active">Home</a></li>
+    <li><a href="dunper_about.html">About</a></li>
+    <li><a href="dunper_services.html">Services</a></li>
+    <li><a href="dunper_contact.html">Contact</a></li>
+    <li><a href="dunper_join.html">Join Us</a></li>
+  </ul>
+  <a href="dunper_signin.html" style="text-decoration:none"><button class="nav-cta">Sign In</button></a>
+</nav>
+
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-orb orb1"></div>
+  <div class="hero-orb orb2"></div>
+  <div class="hero-badge">AI-Powered Chatbot Platform</div>
+  <h1>The Future of<br><span>Customer Conversations</span></h1>
+  <p class="hero-sub">Dunper AI gives your business a smart, multilingual chatbot that books, answers, and learns — so you can focus on what matters.</p>
+  <div class="hero-actions">
+    <a href="dunper_join.html" class="btn-primary">Get Started Free</a>
+    <a href="dunper_about.html" class="btn-outline">Learn More</a>
+  </div>
+</section>
+
+<div class="facts-strip">
+  <div class="fact"><div class="fact-num">10K+</div><div class="fact-label">Conversations handled daily</div></div>
+  <div class="fact"><div class="fact-num">98%</div><div class="fact-label">Customer satisfaction rate</div></div>
+  <div class="fact"><div class="fact-num">40+</div><div class="fact-label">Languages supported</div></div>
+</div>
+
+<section class="how">
+  <div class="section-tag">How It Works</div>
+  <h2 class="section-title">Three steps to<br>smarter customer service</h2>
+  <div class="steps">
+    <div class="step"><div class="step-number">1</div><div class="step-icon">⚡</div><h3>Connect</h3><p>Embed Dunper AI on your website or third-party platform in minutes with a small floating icon.</p></div>
+    <div class="step"><div class="step-number">2</div><div class="step-icon">🧠</div><h3>Configure</h3><p>Set your tone, fallout messages, business policies, and language settings from the AI dashboard.</p></div>
+    <div class="step"><div class="step-number">3</div><div class="step-icon">🚀</div><h3>Grow</h3><p>Watch bookings rise, track performance metrics, and let Dunper handle the volume while you scale.</p></div>
+  </div>
+</section>
+
+<section class="demo-section">
+  <div class="demo-text">
+    <div class="section-tag">Why Dunper AI?</div>
+    <h2>Built for businesses that move fast</h2>
+    <p>From automated scheduling to real-world calendar integrations, Dunper remembers user habits, speaks your customers' language, and escalates to a human when needed.</p>
+    <a href="dunper_services.html" class="btn-primary">See All Services</a>
+  </div>
+  <div class="demo-visual">
+    <div class="chat-bubble"><div class="avatar">D</div><div class="bubble-text">Hi! 👋 I'm Dunper. How can I help you today?</div></div>
+    <div class="chat-bubble user"><div class="avatar" style="background:rgba(91,142,212,.3)">U</div><div class="bubble-text">I'd like to book an appointment for next Tuesday at 3pm.</div></div>
+    <div class="chat-bubble"><div class="avatar">D</div><div class="bubble-text">Tuesday 3PM is open! Shall I confirm your booking?</div></div>
+    <div class="chat-bubble user"><div class="avatar" style="background:rgba(91,142,212,.3)">U</div><div class="bubble-text">Yes please!</div></div>
+    <div class="chat-bubble"><div class="avatar">D</div><div class="bubble-text">✓ Done! Confirmation sent to your email. See you Tuesday!</div></div>
+  </div>
+</section>
+
+<footer>
+  <a class="nav-logo" href="dunper_home.html"><div class="logo-icon"></div><span class="logo-text">dunper</span></a>
+  <span>© 2026 Dunper AI. All rights reserved.</span>
+  <span>contact@dunper.ai &nbsp;·&nbsp; @dunperai</span>
+</footer>
+
+<script src="/js/common.js"></script>
+</body>
+</html>

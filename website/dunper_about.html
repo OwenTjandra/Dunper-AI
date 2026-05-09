@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dunper AI — About</title>
+<link rel="icon" type="image/png" href="/img/logo.png" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#0D1B2A;--blue-mid:#2563A8;--blue-soft:#5B8ED4;
+    --blue-pale:#A8C7F0;--white:#F0F6FF;--accent:#4FC3F7;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--navy);color:var(--white);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+
+  nav{position:fixed;top:0;width:100%;z-index:100;display:flex;align-items:center;gap:20px;padding:13px 44px;background:rgba(13,27,42,.85);backdrop-filter:blur(18px);border-bottom:1px solid rgba(91,142,212,.15);}
+  .nav-logo{display:flex;align-items:center;gap:10px;flex-shrink:0;text-decoration:none;color:inherit;}
+  .logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--blue-mid),var(--accent));clip-path:polygon(50% 0%,95% 30%,80% 100%,20% 100%,5% 30%);}
+  .logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:19px;}
+  .nav-chatbar{display:flex;align-items:center;background:rgba(27,58,107,.42);border:1px solid rgba(91,142,212,.28);border-radius:50px;overflow:hidden;flex:1;max-width:460px;}
+  .nav-chatbar input{flex:1;background:none;border:none;outline:none;padding:9px 18px;color:var(--white);font-family:'DM Sans',sans-serif;font-size:14px;}
+  .nav-chatbar input::placeholder{color:var(--blue-soft);}
+  .chatbar-send{background:linear-gradient(135deg,var(--blue-mid),var(--accent));border:none;cursor:pointer;width:34px;height:34px;border-radius:50%;margin:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .chatbar-send svg{width:14px;height:14px;fill:white;}
+  .nav-links{display:flex;gap:26px;list-style:none;flex-shrink:0;}
+  .nav-links a{color:var(--blue-pale);text-decoration:none;font-size:13px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;transition:color .2s;}
+  .nav-links a:hover{color:var(--white);}
+  .nav-links a.active{color:var(--accent);}
+  .nav-cta{background:linear-gradient(135deg,var(--blue-mid),var(--accent));color:var(--white);border:none;cursor:pointer;padding:9px 22px;border-radius:50px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;flex-shrink:0;}
+
+  .page{padding:140px 60px 80px;max-width:1100px;margin:0 auto;}
+  .page-label{color:var(--accent);font-size:11px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:12px;}
+  .page-title{font-family:'Syne',sans-serif;font-size:clamp(36px,6vw,64px);font-weight:800;line-height:1.05;margin-bottom:16px;}
+  .page-sub{color:var(--blue-pale);font-size:17px;font-weight:300;max-width:620px;line-height:1.7;margin-bottom:80px;}
+
+  .section-label{color:var(--accent);font-size:11px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:14px;}
+  .section-title{font-family:'Syne',sans-serif;font-size:clamp(26px,3.5vw,38px);font-weight:800;margin-bottom:36px;line-height:1.15;}
+
+  /* MISSION */
+  .mission-section{
+    padding:64px;border-radius:28px;
+    background:linear-gradient(135deg,rgba(27,58,107,.3),rgba(13,27,42,.7));
+    border:1px solid rgba(91,142,212,.2);
+    margin-bottom:80px;
+    position:relative;overflow:hidden;
+  }
+  .mission-section::before{
+    content:'';position:absolute;top:-100px;right:-100px;
+    width:300px;height:300px;background:radial-gradient(circle,rgba(79,195,247,.08),transparent 70%);
+  }
+  .mission-text{max-width:680px;position:relative;}
+  .mission-text p{color:var(--blue-pale);font-size:17px;line-height:1.8;margin-bottom:18px;}
+
+  /* VALUES */
+  .values-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-bottom:80px;}
+  .value-card{
+    padding:32px 26px;border-radius:20px;
+    border:1px solid rgba(91,142,212,.18);
+    background:linear-gradient(145deg,rgba(27,58,107,.22),rgba(13,27,42,.5));
+    transition:transform .3s, border-color .3s;
+  }
+  .value-card:hover{transform:translateY(-6px);border-color:rgba(79,195,247,.35);}
+  .value-icon{width:50px;height:50px;border-radius:13px;background:linear-gradient(135deg,var(--blue-mid),var(--accent));display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px;}
+  .value-card h3{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:10px;}
+  .value-card p{font-size:14px;color:var(--blue-pale);line-height:1.7;}
+
+  /* TIMELINE */
+  .timeline-section{margin-bottom:80px;}
+  .timeline{
+    position:relative;padding:0 0 0 32px;
+    border-left:2px solid rgba(91,142,212,.2);
+    margin-left:8px;
+  }
+  .timeline-item{position:relative;margin-bottom:34px;}
+  .timeline-item::before{
+    content:'';position:absolute;left:-40px;top:8px;
+    width:14px;height:14px;border-radius:50%;
+    background:linear-gradient(135deg,var(--blue-mid),var(--accent));
+    box-shadow:0 0 0 4px var(--navy);
+  }
+  .timeline-date{
+    color:var(--accent);font-size:12px;letter-spacing:.08em;
+    text-transform:uppercase;margin-bottom:6px;font-weight:600;
+  }
+  .timeline-title{
+    font-family:'Syne',sans-serif;font-size:18px;font-weight:700;
+    margin-bottom:6px;
+  }
+  .timeline-text{color:var(--blue-pale);font-size:14px;line-height:1.7;}
+
+  /* TEAM */
+  .team-section{margin-bottom:80px;}
+  .team-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;}
+  .team-card{
+    padding:32px 28px;border-radius:20px;
+    background:rgba(27,58,107,.18);
+    border:1px solid rgba(91,142,212,.18);
+    display:flex;gap:20px;align-items:flex-start;
+    transition:border-color .3s,transform .3s;
+  }
+  .team-card:hover{border-color:rgba(79,195,247,.3);transform:translateY(-4px);}
+  .team-avatar{
+    width:60px;height:60px;border-radius:50%;
+    background:linear-gradient(135deg,var(--blue-mid),var(--accent));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:white;
+    flex-shrink:0;
+  }
+  .team-info h4{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:4px;}
+  .team-role{color:var(--accent);font-size:12px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;}
+  .team-bio{color:var(--blue-pale);font-size:13px;line-height:1.65;}
+
+  /* CTA */
+  .cta-box{
+    text-align:center;padding:72px 48px;border-radius:28px;
+    background:linear-gradient(135deg,rgba(27,58,107,.4),rgba(13,27,42,.7));
+    border:1px solid rgba(91,142,212,.2);position:relative;overflow:hidden;
+  }
+  .cta-box::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:500px;height:200px;background:radial-gradient(ellipse,rgba(79,195,247,.07),transparent 70%);}
+  .cta-box h2{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;margin-bottom:14px;}
+  .cta-box p{color:var(--blue-pale);max-width:520px;margin:0 auto 32px;line-height:1.7;}
+  .btn-primary{display:inline-block;background:linear-gradient(135deg,var(--blue-mid),var(--accent));color:white;text-decoration:none;padding:14px 36px;border-radius:50px;font-weight:500;font-size:15px;transition:opacity .2s,transform .2s;}
+  .btn-primary:hover{opacity:.85;transform:scale(1.03);}
+
+  .bg-orb{position:fixed;border-radius:50%;filter:blur(110px);pointer-events:none;z-index:-1;}
+  .bg1{width:500px;height:500px;top:-100px;right:-150px;background:rgba(30,58,110,.18);}
+  .bg2{width:350px;height:350px;bottom:0;left:-100px;background:rgba(58,180,242,.05);}
+
+  footer{padding:48px 60px;border-top:1px solid rgba(91,142,212,.12);display:flex;justify-content:space-between;align-items:center;color:rgba(91,142,212,.6);font-size:13px;gap: 20px; flex-wrap: wrap;}
+
+  @media (max-width: 980px) {
+    nav { gap: 12px; padding: 12px 20px; flex-wrap: wrap; }
+    .nav-chatbar { order: 3; max-width: 100%; flex-basis: 100%; }
+    .nav-links { gap: 14px; }
+    .page { padding: 120px 20px 60px; }
+    .mission-section { padding: 32px 22px; }
+    .values-grid { grid-template-columns: 1fr; }
+    .team-grid { grid-template-columns: 1fr; }
+    footer { padding: 32px 20px; flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-orb bg1"></div>
+<div class="bg-orb bg2"></div>
+
+<nav>
+  <a class="nav-logo" href="dunper_home.html"><div class="logo-icon"></div><span class="logo-text">dunper</span></a>
+  <form class="nav-chatbar" id="nav-chatbar"><input type="text" placeholder="Ask our chatbot anything…"/><button class="chatbar-send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button></form>
+  <ul class="nav-links">
+    <li><a href="dunper_home.html">Home</a></li>
+    <li><a href="dunper_about.html" class="active">About</a></li>
+    <li><a href="dunper_services.html">Services</a></li>
+    <li><a href="dunper_contact.html">Contact</a></li>
+    <li><a href="dunper_join.html">Join Us</a></li>
+  </ul>
+  <a href="dunper_signin.html" style="text-decoration:none"><button class="nav-cta">Sign In</button></a>
+</nav>
+
+<div class="page">
+  <div class="page-label">About Us</div>
+  <h1 class="page-title">Building the future of<br>customer conversations</h1>
+  <p class="page-sub">Dunper AI was founded on a simple idea: small businesses deserve the same caliber of customer service tools as the biggest brands. We're a team of builders who believe AI should feel like an employee — not a chatbot.</p>
+
+  <!-- MISSION -->
+  <div class="mission-section">
+    <div class="mission-text">
+      <div class="section-label">Our Mission</div>
+      <h2 class="section-title">Give every business an AI<br>employee that actually shows up</h2>
+      <p>The phone rings while you're with a client. A WhatsApp message arrives at 11pm. A booking inquiry comes through a website you barely have time to maintain. Every missed message is a missed customer.</p>
+      <p>Dunper AI is the AI receptionist that's always on duty. It answers questions in your customer's language, books appointments straight into your calendar, and only escalates to you when it really matters. So you can focus on the work itself — and we'll handle everything around it.</p>
+    </div>
+  </div>
+
+  <!-- VALUES -->
+  <div class="section-label">What We Believe</div>
+  <h2 class="section-title">Our values</h2>
+  <div class="values-grid">
+    <div class="value-card"><div class="value-icon">⚡</div><h3>Speed Matters</h3><p>Customers wait an average of 7 minutes for a reply. With Dunper, the wait is zero. Every second saved is a customer kept.</p></div>
+    <div class="value-card"><div class="value-icon">🤝</div><h3>Built For Real Businesses</h3><p>Not a generic chatbot — a platform tuned for salons, dentists, restaurants, and the SMEs that make neighborhoods work.</p></div>
+    <div class="value-card"><div class="value-icon">🔒</div><h3>Your Data Is Yours</h3><p>Each business connects its own Google account. We don't pool, share, or sell your customer data. Ever.</p></div>
+    <div class="value-card"><div class="value-icon">🌍</div><h3>Local By Design</h3><p>Built in Indonesia, ready for the world. Bahasa, English, and 40+ more languages. Your customers, their words.</p></div>
+    <div class="value-card"><div class="value-icon">📐</div><h3>Honest Engineering</h3><p>We don't ship vibes. We ship code that we'd want to run our own business on. Tested, monitored, predictable.</p></div>
+    <div class="value-card"><div class="value-icon">💬</div><h3>Talk Like A Human</h3><p>If our AI doesn't know, it says so — and routes to a real person. No fake confidence. No empty reassurance.</p></div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="timeline-section">
+    <div class="section-label">Our Journey</div>
+    <h2 class="section-title">The story so far</h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-date">May 2026</div>
+        <div class="timeline-title">Dunper is born</div>
+        <div class="timeline-text">Founded with a single goal: build the AI employee small businesses actually want. First demo built and shipped in 7 days.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-date">Coming Soon</div>
+        <div class="timeline-title">First 10 customers</div>
+        <div class="timeline-text">Working with our first set of partners — dentists, salons, restaurants — to refine the product against real-world chaos.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-date">2026</div>
+        <div class="timeline-title">Multi-tenant platform</div>
+        <div class="timeline-text">Self-service signup. Connect your Google. Embed the chat. Done in under an hour.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-date">2027</div>
+        <div class="timeline-title">Across Southeast Asia</div>
+        <div class="timeline-text">Expanding from Indonesia to Malaysia, Singapore, the Philippines. Indonesian-first, regionally fluent.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEAM -->
+  <div class="team-section">
+    <div class="section-label">The Team</div>
+    <h2 class="section-title">Who's building this</h2>
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-avatar">O</div>
+        <div class="team-info">
+          <h4>Owen Tjandra</h4>
+          <div class="team-role">Founder · Product</div>
+          <p class="team-bio">Building Dunper because every local business owner I know spends too much time answering the same questions. Wants to make AI useful — not just impressive.</p>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">T</div>
+        <div class="team-info">
+          <h4>Thomas</h4>
+          <div class="team-role">Engineering</div>
+          <p class="team-bio">Owns the systems that keep Dunper running 24/7. Believes good infrastructure is invisible — until something goes wrong, then it's everything.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-box">
+    <div class="section-label" style="display:block;text-align:center;margin-bottom:10px">Want to work with us?</div>
+    <h2>Let's build something together</h2>
+    <p>Whether you're a business that needs Dunper or a person who wants to help us build it — we'd love to hear from you.</p>
+    <a href="dunper_contact.html" class="btn-primary">Get in touch →</a>
+  </div>
+</div>
+
+<footer>
+  <a class="nav-logo" href="dunper_home.html"><div class="logo-icon"></div><span class="logo-text">dunper</span></a>
+  <span>© 2026 Dunper AI. All rights reserved.</span>
+  <span>dunperai@gmail.com &nbsp;·&nbsp; @dunperai</span>
+</footer>
+
+<script src="/js/common.js"></script>
+</body>
+</html>

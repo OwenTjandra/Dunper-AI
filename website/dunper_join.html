@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dunper AI — Join Us</title>
+<link rel="icon" type="image/png" href="/img/logo.png" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#0D1B2A;--blue-mid:#2563A8;--blue-soft:#5B8ED4;
+    --blue-pale:#A8C7F0;--white:#F0F6FF;--accent:#4FC3F7;
+    --green:#34d399;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--navy);color:var(--white);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+
+  nav{position:fixed;top:0;width:100%;z-index:100;display:flex;align-items:center;gap:20px;padding:13px 44px;background:rgba(13,27,42,.85);backdrop-filter:blur(18px);border-bottom:1px solid rgba(91,142,212,.15);}
+  .nav-logo{display:flex;align-items:center;gap:10px;flex-shrink:0;text-decoration:none;color:inherit;}
+  .logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--blue-mid),var(--accent));clip-path:polygon(50% 0%,95% 30%,80% 100%,20% 100%,5% 30%);}
+  .logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:19px;}
+  .nav-chatbar{display:flex;align-items:center;background:rgba(27,58,107,.42);border:1px solid rgba(91,142,212,.28);border-radius:50px;overflow:hidden;flex:1;max-width:460px;}
+  .nav-chatbar input{flex:1;background:none;border:none;outline:none;padding:9px 18px;color:var(--white);font-family:'DM Sans',sans-serif;font-size:14px;}
+  .nav-chatbar input::placeholder{color:var(--blue-soft);}
+  .chatbar-send{background:linear-gradient(135deg,var(--blue-mid),var(--accent));border:none;cursor:pointer;width:34px;height:34px;border-radius:50%;margin:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .chatbar-send svg{width:14px;height:14px;fill:white;}
+  .nav-links{display:flex;gap:26px;list-style:none;flex-shrink:0;}
+  .nav-links a{color:var(--blue-pale);text-decoration:none;font-size:13px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;transition:color .2s;}
+  .nav-links a:hover{color:var(--white);}
+  .nav-links a.active{color:var(--accent);}
+  .nav-cta{background:linear-gradient(135deg,var(--blue-mid),var(--accent));color:var(--white);border:none;cursor:pointer;padding:9px 22px;border-radius:50px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;flex-shrink:0;}
+
+  .page{padding:130px 60px 80px;max-width:1120px;margin:0 auto;}
+  .page-label{color:var(--accent);font-size:11px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:12px;}
+  .page-title{font-family:'Syne',sans-serif;font-size:clamp(36px,5.5vw,58px);font-weight:800;line-height:1.05;margin-bottom:14px;text-align:center;}
+  .page-sub{color:var(--blue-pale);font-size:16px;font-weight:300;max-width:520px;line-height:1.7;margin:0 auto 20px;text-align:center;}
+
+  .billing-toggle{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:56px;flex-wrap:wrap;}
+  .toggle-label{font-size:14px;color:var(--blue-pale);}
+  .toggle-wrap{position:relative;width:52px;height:28px;cursor:pointer;}
+  .toggle-wrap input{opacity:0;width:0;height:0;}
+  .toggle-slider{position:absolute;inset:0;background:rgba(91,142,212,.25);border-radius:28px;border:1px solid rgba(91,142,212,.3);transition:.3s;}
+  .toggle-slider::before{content:'';position:absolute;left:3px;top:50%;transform:translateY(-50%);width:22px;height:22px;background:var(--blue-soft);border-radius:50%;transition:.3s;}
+  .toggle-wrap input:checked+.toggle-slider{background:rgba(79,195,247,.2);border-color:var(--accent);}
+  .toggle-wrap input:checked+.toggle-slider::before{left:26px;background:var(--accent);}
+  .save-badge{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:var(--green);padding:3px 10px;border-radius:20px;font-size:11px;letter-spacing:.06em;}
+
+  .plans-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:72px;}
+  .plan-card{
+    padding:32px 24px;border-radius:22px;
+    border:1px solid rgba(91,142,212,.18);
+    background:linear-gradient(145deg,rgba(27,58,107,.18),rgba(13,27,42,.55));
+    display:flex;flex-direction:column;gap:0;
+    transition:transform .3s, border-color .3s;
+    position:relative;
+  }
+  .plan-card:hover{transform:translateY(-6px);}
+  .plan-card.featured{
+    border-color:rgba(79,195,247,.5);
+    background:linear-gradient(145deg,rgba(37,99,168,.3),rgba(27,58,107,.5));
+    box-shadow:0 0 40px rgba(79,195,247,.1);
+  }
+  .plan-badge{
+    position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,var(--blue-mid),var(--accent));
+    color:white;padding:5px 16px;border-radius:20px;
+    font-size:11px;font-weight:600;letter-spacing:.06em;white-space:nowrap;
+  }
+  .plan-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:8px;color:var(--blue-pale);}
+  .plan-price{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;line-height:1;margin-bottom:4px;}
+  .plan-price span{font-size:16px;font-weight:400;color:var(--blue-pale);}
+  .plan-yearly{font-size:12px;color:var(--blue-soft);margin-bottom:24px;min-height:18px;}
+  .plan-divider{height:1px;background:rgba(91,142,212,.15);margin-bottom:20px;}
+  .plan-features{list-style:none;display:flex;flex-direction:column;gap:10px;flex:1;margin-bottom:28px;}
+  .plan-features li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--blue-pale);}
+  .plan-features li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0;}
+  .plan-features li.unavail{color:rgba(91,142,212,.35);}
+  .plan-features li.unavail::before{content:'✗';color:rgba(91,142,212,.3);}
+  .plan-btn{
+    display:block;text-align:center;text-decoration:none;
+    padding:13px 20px;border-radius:50px;
+    font-size:14px;font-weight:500;
+    border:1px solid rgba(91,142,212,.3);color:var(--blue-pale);
+    transition:all .2s;
+  }
+  .plan-btn:hover{border-color:var(--accent);color:var(--white);}
+  .plan-btn.featured-btn{
+    background:linear-gradient(135deg,var(--blue-mid),var(--accent));
+    border:none;color:white;
+  }
+  .plan-btn.featured-btn:hover{opacity:.85;}
+
+  .compare-section{margin-bottom:72px;}
+  .compare-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:28px;}
+  .compare-table-wrap{overflow-x:auto;}
+  .compare-table{width:100%;min-width:680px;border-collapse:collapse;}
+  .compare-table th,.compare-table td{padding:14px 20px;text-align:center;font-size:13px;border-bottom:1px solid rgba(91,142,212,.1);}
+  .compare-table th{color:var(--accent);font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;padding-bottom:20px;}
+  .compare-table td:first-child{text-align:left;color:var(--blue-pale);}
+  .compare-table tr:hover td{background:rgba(27,58,107,.12);}
+  .tick{color:var(--accent);}
+  .cross{color:rgba(91,142,212,.3);}
+
+  .bg-orb{position:fixed;border-radius:50%;filter:blur(110px);pointer-events:none;z-index:-1;}
+  .bg1{width:500px;height:500px;top:-150px;right:-100px;background:rgba(30,58,110,.18);}
+  .bg2{width:350px;height:350px;bottom:0;left:-100px;background:rgba(58,180,242,.05);}
+
+  footer{padding:48px 60px;border-top:1px solid rgba(91,142,212,.12);display:flex;justify-content:space-between;align-items:center;color:rgba(91,142,212,.6);font-size:13px;gap: 20px; flex-wrap: wrap;}
+
+  @media (max-width: 980px) {
+    nav { gap: 12px; padding: 12px 20px; flex-wrap: wrap; }
+    .nav-chatbar { order: 3; max-width: 100%; flex-basis: 100%; }
+    .nav-links { gap: 14px; }
+    .page { padding: 120px 20px 60px; }
+    .plans-grid { grid-template-columns: 1fr; }
+    footer { padding: 32px 20px; flex-direction: column; text-align: center; }
+  }
+  @media (min-width: 981px) and (max-width: 1180px) {
+    .plans-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="bg-orb bg1"></div>
+<div class="bg-orb bg2"></div>
+
+<nav>
+  <a class="nav-logo" href="dunper_home.html"><div class="logo-icon"></div><span class="logo-text">dunper</span></a>
+  <form class="nav-chatbar" id="nav-chatbar"><input type="text" placeholder="Ask our chatbot anything…"/><button class="chatbar-send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button></form>
+  <ul class="nav-links">
+    <li><a href="dunper_home.html">Home</a></li>
+    <li><a href="dunper_about.html">About</a></li>
+    <li><a href="dunper_services.html">Services</a></li>
+    <li><a href="dunper_contact.html">Contact</a></li>
+    <li><a href="dunper_join.html" class="active">Join Us</a></li>
+  </ul>
+  <a href="dunper_signin.html" style="text-decoration:none"><button class="nav-cta">Sign In</button></a>
+</nav>
+
+<div class="page">
+  <div style="text-align:center;margin-bottom:8px"><div class="page-label" style="display:inline-block">Subscription</div></div>
+  <h1 class="page-title">Pick the plan that<br>fits your business</h1>
+  <p class="page-sub">Start free, scale anytime. All plans include the core Dunper AI chatbot experience.</p>
+
+  <!-- BILLING TOGGLE -->
+  <div class="billing-toggle">
+    <span class="toggle-label">Monthly</span>
+    <label class="toggle-wrap">
+      <input type="checkbox" id="billingToggle"/>
+      <span class="toggle-slider"></span>
+    </label>
+    <span class="toggle-label">Yearly</span>
+    <span class="save-badge">Save 20%</span>
+  </div>
+
+  <!-- PLANS -->
+  <div class="plans-grid">
+    <!-- STARTER -->
+    <div class="plan-card">
+      <div class="plan-name">Starter Pack</div>
+      <div class="plan-price" id="p0">$0<span>/mo</span></div>
+      <div class="plan-yearly" id="py0"></div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>500 conversations/mo</li>
+        <li>1 chatbot widget</li>
+        <li>Basic FAQ support</li>
+        <li>Email support</li>
+        <li class="unavail">Booking system</li>
+        <li class="unavail">Multilingual</li>
+        <li class="unavail">Analytics dashboard</li>
+      </ul>
+      <a href="dunper_signin.html" class="plan-btn">Get Started Free</a>
+    </div>
+    <!-- PRO -->
+    <div class="plan-card featured">
+      <div class="plan-badge">Most Popular</div>
+      <div class="plan-name">Pro Pack</div>
+      <div class="plan-price" id="p1">$29<span>/mo</span></div>
+      <div class="plan-yearly" id="py1"></div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>5,000 conversations/mo</li>
+        <li>3 chatbot widgets</li>
+        <li>Booking & scheduling</li>
+        <li>5 languages</li>
+        <li>Analytics dashboard</li>
+        <li>Human handoff</li>
+        <li class="unavail">Custom AI boundaries</li>
+      </ul>
+      <a href="dunper_signin.html" class="plan-btn featured-btn">Start Pro →</a>
+    </div>
+    <!-- MAX -->
+    <div class="plan-card">
+      <div class="plan-name">Max Pack</div>
+      <div class="plan-price" id="p2">$79<span>/mo</span></div>
+      <div class="plan-yearly" id="py2"></div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>Unlimited conversations</li>
+        <li>10 chatbot widgets</li>
+        <li>Full booking pipeline</li>
+        <li>40+ languages</li>
+        <li>Advanced analytics</li>
+        <li>Custom AI boundaries</li>
+        <li>Calendar integrations</li>
+      </ul>
+      <a href="dunper_signin.html" class="plan-btn">Start Max →</a>
+    </div>
+    <!-- ENTERPRISE -->
+    <div class="plan-card">
+      <div class="plan-name">Custom Enterprise</div>
+      <div class="plan-price">Custom<span></span></div>
+      <div class="plan-yearly">Tailored pricing</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>Everything in Max</li>
+        <li>Dedicated AI model</li>
+        <li>SLA & uptime guarantee</li>
+        <li>Custom integrations</li>
+        <li>White-label option</li>
+        <li>Priority onboarding</li>
+        <li>24/7 dedicated support</li>
+      </ul>
+      <a href="dunper_contact.html" class="plan-btn">Contact Sales →</a>
+    </div>
+  </div>
+
+  <!-- COMPARE FEATURES -->
+  <div class="compare-section">
+    <div class="compare-title">Compare features</div>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th style="text-align:left">Feature</th>
+            <th>Starter</th><th>Pro</th><th>Max</th><th>Enterprise</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Conversations / month</td><td>500</td><td>5,000</td><td>Unlimited</td><td>Unlimited</td></tr>
+          <tr><td>Chatbot widgets</td><td>1</td><td>3</td><td>10</td><td>Unlimited</td></tr>
+          <tr><td>Booking & scheduling</td><td class="cross">✗</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
+          <tr><td>Multilingual support</td><td class="cross">✗</td><td>5 langs</td><td>40+ langs</td><td>40+ langs</td></tr>
+          <tr><td>Analytics dashboard</td><td class="cross">✗</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
+          <tr><td>Human handoff</td><td class="cross">✗</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
+          <tr><td>Custom AI boundaries</td><td class="cross">✗</td><td class="cross">✗</td><td class="tick">✓</td><td class="tick">✓</td></tr>
+          <tr><td>Calendar integration</td><td class="cross">✗</td><td class="cross">✗</td><td class="tick">✓</td><td class="tick">✓</td></tr>
+          <tr><td>White-label option</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="tick">✓</td></tr>
+          <tr><td>Dedicated support</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="tick">✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <a class="nav-logo" href="dunper_home.html"><div class="logo-icon"></div><span class="logo-text">dunper</span></a>
+  <span>© 2026 Dunper AI. All rights reserved.</span>
+  <span>dunperai@gmail.com &nbsp;·&nbsp; @dunperai</span>
+</footer>
+
+<script>
+  const monthly=[0,29,79];
+  const yearly=[0,23,63];
+  const toggle=document.getElementById('billingToggle');
+  toggle.addEventListener('change',()=>{
+    const isYearly=toggle.checked;
+    monthly.forEach((_,i)=>{
+      const el=document.getElementById('p'+i);
+      const yel=document.getElementById('py'+i);
+      if(el){
+        const val=isYearly?yearly[i]:monthly[i];
+        el.innerHTML=val===0?`Free<span></span>`:`$${val}<span>/mo</span>`;
+        if(yel) yel.textContent=isYearly&&val>0?`Billed $${val*12}/year`:'';
+      }
+    });
+  });
+</script>
+<script src="/js/common.js"></script>
+</body>
+</html>
