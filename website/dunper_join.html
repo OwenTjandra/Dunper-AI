@@ -23,7 +23,7 @@
   }
   .nav-logo{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-right:28px;}
   .logo-img{height:32px;width:auto;display:block;}
-  .logo-text{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:20px;letter-spacing:0.1em;color:var(--white);text-transform:uppercase;}
+  .logo-text{font-family:'Outfit',sans-serif;font-weight:600;font-size:22px;letter-spacing:-0.01em;color:var(--white);}
   .nav-links{display:flex;gap:22px;list-style:none;flex-shrink:0;margin-right:20px;}
   .nav-links a{
     color:var(--blue-pale);text-decoration:none;font-size:12.5px;
@@ -269,7 +269,7 @@
         <li>Custom agent</li>
         <li>All chatbot features</li>
       </ul>
-      <a href="dunper_signin.html" class="plan-btn">Get Started Free</a>
+      <a href="dunper_signin.html?plan=starter" class="plan-btn" onclick="goPlan(event,'starter')">Get Started Free</a>
     </div>
     <!-- PRO -->
     <div class="plan-card featured">
@@ -285,7 +285,7 @@
         <li>Custom agent</li>
         <li>All chatbot features</li>
       </ul>
-      <a href="dunper_signin.html" class="plan-btn featured-btn">Start Pro →</a>
+      <a href="dunper_signin.html?plan=pro" class="plan-btn featured-btn" onclick="goPlan(event,'pro')">Start Pro →</a>
     </div>
     <!-- MAX -->
     <div class="plan-card">
@@ -300,7 +300,7 @@
         <li>Custom agent</li>
         <li>All chatbot features</li>
       </ul>
-      <a href="dunper_signin.html" class="plan-btn">Start Max →</a>
+      <a href="dunper_signin.html?plan=max" class="plan-btn" onclick="goPlan(event,'max')">Start Max →</a>
     </div>
     <!-- ENTERPRISE -->
     <div class="plan-card">
@@ -410,6 +410,14 @@
 </footer>
 
 <script>
+  // Forward plan + billing choice to the signin page
+  function goPlan(e, planId){
+    e.preventDefault();
+    const isYearly = document.getElementById('billingToggle').checked;
+    const billing = isYearly ? 'yearly' : 'monthly';
+    window.location.href = 'dunper_signin.html?plan=' + planId + '&billing=' + billing;
+  }
+
   // Billing toggle
   const monthly=[0,20,50];
   const yearly=[0,16,40];

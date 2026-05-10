@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dunper AI — Sign In</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@200;300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@200;300;400;500&family=Outfit:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --navy:#2D507C;--blue-mid:#2E78D4;--blue-soft:#6BA4E5;
@@ -46,7 +46,7 @@
   }
   .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;}
   .logo-img{height:32px;width:auto;display:block;}
-  .logo-text{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:20px;letter-spacing:0.1em;color:var(--white);text-transform:uppercase;}
+  .logo-text{font-family:'Outfit',sans-serif;font-weight:600;font-size:22px;letter-spacing:-0.01em;color:var(--white);}
   .back-link{color:var(--blue-pale);text-decoration:none;font-size:13px;font-weight:300;transition:color .2s;letter-spacing:.04em;}
   .back-link:hover{color:var(--white);}
 
@@ -190,6 +190,10 @@
   .invoice-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(107,164,229,.1);font-size:13px;color:var(--blue-pale);}
   .invoice-row:last-child{border-bottom:none;color:var(--white);font-weight:500;}
   .invoice-row.total{margin-top:8px;padding-top:12px;border-top:1px solid rgba(107,164,229,.25);}
+
+  /* validation error */
+  .field-error{border-color:#FF6F61 !important;box-shadow:0 0 0 3px rgba(255,111,97,.18) !important;}
+  .check-row.field-error span{color:#FF6F61;}
   .invoice-row span:last-child{font-family:'Cormorant Garamond',serif;font-size:16px;}
 
   /* ──── THANK YOU ──── */
@@ -269,7 +273,7 @@
     <div class="auth-card">
       <div class="auth-tabs">
         <button class="tab-btn active" id="signinTab" onclick="switchTab('signin')">Log In</button>
-        <button class="tab-btn" id="signupTab" onclick="switchTab('signup')">Sign Up</button>
+        <button class="tab-btn" id="signupTab" onclick="window.location.href='dunper_join.html';return false;">Sign Up</button>
       </div>
 
       <!-- SIGN IN -->
@@ -286,7 +290,7 @@
         <button class="submit-btn" onclick="window.location.href='dunper_home.html'">Log In →</button>
         <div class="divider">or</div>
         <button class="social-btn"><span class="social-icon">G</span> Continue with Google</button>
-        <div class="join-link">No account yet? <a href="#" onclick="switchTab('signup');return false;">Sign up free</a></div>
+        <div class="join-link">No account yet? <a href="dunper_join.html">Sign up free</a></div>
       </div>
 
       <!-- SIGN UP -->
@@ -379,7 +383,7 @@
             </select>
           </div>
         </div>
-        <button class="submit-btn" onclick="goToPage('page-billing'); setStep(3);">
+        <button class="submit-btn" onclick="validateAndContinue('page-account','page-billing',3)">
           Continue to Billing →
         </button>
         <div class="join-link" style="font-size:12px"><a href="#" onclick="goToPage('page-terms');setStep(1);return false;">← Back to Terms</a></div>
@@ -408,7 +412,7 @@
             <div class="field"><label>Security Code</label><input type="text" placeholder="CVV" maxlength="4"/></div>
           </div>
           <label class="check-row" style="margin-top:4px">
-            <input type="checkbox" id="agreePrivacy"/>
+            <input type="checkbox" id="agreePrivacy" required/>
             <span style="font-size:12px">I agree to the <a href="#" style="color:var(--accent)">Privacy Policy</a> and authorise this charge.</span>
           </label>
         </div>
@@ -417,14 +421,11 @@
         <div>
           <div class="invoice-box">
             <div class="invoice-title">Order Summary</div>
-            <div class="invoice-row"><span>Plan</span><span>Pro Pack</span></div>
-            <div class="invoice-row"><span>Billing</span><span>Monthly</span></div>
-            <div class="invoice-row"><span>Conversations</span><span>5,000 / mo</span></div>
-            <div class="invoice-row"><span>Chatbot Widgets</span><span>3 included</span></div>
-            <div class="invoice-row"><span>Languages</span><span>5</span></div>
-            <div class="invoice-row"><span>Subtotal</span><span>$29.00</span></div>
-            <div class="invoice-row"><span>Tax (GST 10%)</span><span>$2.90</span></div>
-            <div class="invoice-row total"><span>Total Today</span><span style="color:var(--accent);font-size:20px">$31.90</span></div>
+            <div class="invoice-row"><span>Plan</span><span id="iv-plan">Pro Pack</span></div>
+            <div class="invoice-row"><span>Billing</span><span id="iv-billing">Monthly</span></div>
+            <div class="invoice-row"><span>Subtotal</span><span id="iv-subtotal">$20.00</span></div>
+            <div class="invoice-row"><span>Tax (GST 10%)</span><span id="iv-tax">$2.00</span></div>
+            <div class="invoice-row total"><span>Total Today</span><span id="iv-total" style="color:var(--accent);font-size:20px">$22.00</span></div>
           </div>
           <p style="font-size:11px;color:rgba(107,164,229,.4);margin-top:12px;line-height:1.6;text-align:center;">
             🔒 256-bit SSL encrypted · Cancel anytime<br>
@@ -434,7 +435,7 @@
       </div>
 
       <br>
-      <button class="submit-btn" onclick="goToPage('page-thankyou'); setStep(4);">
+      <button class="submit-btn" onclick="validateAndContinue('page-billing','page-thankyou',4)">
         Complete Payment →
       </button>
       <br>
@@ -514,6 +515,81 @@ function checkTerms(){
   btn.style.opacity=checked?'1':'0.4';
   btn.style.pointerEvents=checked?'auto':'none';
 }
+
+// Plan catalogue for billing summary
+const PLANS = {
+  starter: {name:'Starter Pack', monthly:0,  yearly:0},
+  pro:     {name:'Pro Pack',     monthly:20, yearly:16},
+  max:     {name:'Max Pack',     monthly:50, yearly:40}
+};
+
+function applySelectedPlan(){
+  const params = new URLSearchParams(window.location.search);
+  const p = params.get('plan');
+  const b = params.get('billing') === 'yearly' ? 'yearly' : 'monthly';
+  if(!p || !PLANS[p]) return;
+  const plan = PLANS[p];
+  const price = plan[b];
+  const tax = Math.round(price * 0.10 * 100) / 100;
+  const total = Math.round((price + tax) * 100) / 100;
+  const fmt = n => '$' + n.toFixed(2);
+  document.getElementById('iv-plan').textContent = plan.name;
+  document.getElementById('iv-billing').textContent = b === 'yearly' ? 'Yearly' : 'Monthly';
+  document.getElementById('iv-subtotal').textContent = fmt(price);
+  document.getElementById('iv-tax').textContent = fmt(tax);
+  document.getElementById('iv-total').textContent = fmt(total);
+}
+
+function validateAndContinue(currentPageId, nextPageId, nextStep){
+  const container = document.getElementById(currentPageId);
+  const inputs = container.querySelectorAll('input:not([type=checkbox]), select');
+  let firstInvalid = null;
+  inputs.forEach(el => {
+    const v = (el.value||'').trim();
+    if(!v){ el.classList.add('field-error'); if(!firstInvalid) firstInvalid = el; }
+    else { el.classList.remove('field-error'); }
+  });
+  const requiredCheckboxes = container.querySelectorAll('input[type=checkbox][required]');
+  requiredCheckboxes.forEach(cb => {
+    const labelEl = cb.closest('label');
+    if(!cb.checked){ if(labelEl) labelEl.classList.add('field-error'); if(!firstInvalid) firstInvalid = cb; }
+    else { if(labelEl) labelEl.classList.remove('field-error'); }
+  });
+  if(firstInvalid){
+    if(firstInvalid.focus) try { firstInvalid.focus(); } catch(e){}
+    firstInvalid.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  goToPage(nextPageId);
+  setStep(nextStep);
+}
+
+// Clear the error state as soon as the user starts typing in / toggling a field
+document.addEventListener('input', function(e){
+  if(e.target.classList && e.target.classList.contains('field-error')){
+    e.target.classList.remove('field-error');
+  }
+});
+document.addEventListener('change', function(e){
+  if(e.target.type === 'checkbox'){
+    const lbl = e.target.closest('label');
+    if(lbl && lbl.classList.contains('field-error') && e.target.checked){
+      lbl.classList.remove('field-error');
+    }
+  }
+});
+
+// If user landed from a plan button on the subscription page, skip auth
+// and drop them at the terms step with their plan pre-filled.
+(function bootstrap(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('plan')){
+    goToPage('page-terms');
+    showStepBar();
+    setStep(1);
+    applySelectedPlan();
+  }
+})();
 
 // Card number formatting
 document.addEventListener('input',function(e){
