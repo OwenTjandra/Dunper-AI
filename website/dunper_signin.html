@@ -7,8 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@200;300;400;500&family=Outfit:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --navy:#2D507C;--blue-mid:#2E78D4;--blue-soft:#6BA4E5;
-    --blue-pale:#B8D4F5;--white:#F0F6FF;--accent:#5BD1FF;
+    --navy:#FFFFFF;--blue-mid:#2E78D4;--blue-soft:#4A7BC8;
+    --blue-pale:#5A8AD6;--white:#1F4C8F;--accent:#0F70F0;
     --green:#34d399;--red:#f87171;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -29,10 +29,10 @@
   }
   .bg-orb{position:absolute;border-radius:50%;filter:blur(100px);}
   .bg-orb.o1{width:500px;height:500px;top:-100px;left:-150px;background:rgba(46,120,212,.1);}
-  .bg-orb.o2{width:400px;height:400px;bottom:-100px;right:-100px;background:rgba(91,209,255,.07);animation:pulse 6s ease-in-out infinite;}
+  .bg-orb.o2{width:400px;height:400px;bottom:-100px;right:-100px;background:rgba(15,112,240,.07);animation:pulse 6s ease-in-out infinite;}
   .bg-grid{
     position:absolute;inset:0;
-    background-image:linear-gradient(rgba(91,209,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(91,209,255,.025) 1px,transparent 1px);
+    background-image:linear-gradient(rgba(15,112,240,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(15,112,240,.025) 1px,transparent 1px);
     background-size:72px 72px;
   }
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
@@ -41,8 +41,8 @@
   .topbar{
     padding:20px 48px;display:flex;align-items:center;justify-content:space-between;
     flex-shrink:0;position:relative;z-index:10;
-    border-bottom:1px solid rgba(107,164,229,.1);
-    background:rgba(45,80,124,.5);backdrop-filter:blur(16px);
+    border-bottom:1px solid rgba(31,76,143,.1);
+    background:rgba(255,255,255,.5);backdrop-filter:blur(16px);
   }
   .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;}
   .logo-img{height:32px;width:auto;display:block;}
@@ -58,27 +58,27 @@
   .step-item{display:flex;align-items:center;gap:0;}
   .step-dot{
     width:32px;height:32px;border-radius:50%;
-    border:1px solid rgba(107,164,229,.3);
+    border:1px solid rgba(31,76,143,.3);
     display:flex;align-items:center;justify-content:center;
     font-size:11px;font-family:'Space Mono',monospace;
-    color:rgba(107,164,229,.5);
+    color:rgba(31,76,143,.5);
     transition:all .4s;
-    background:rgba(45,80,124,.6);
+    background:rgba(255,255,255,.6);
     position:relative;z-index:1;
   }
   .step-dot.active{
     border-color:var(--accent);color:var(--accent);
-    box-shadow:0 0 0 4px rgba(91,209,255,.1);
+    box-shadow:0 0 0 4px rgba(15,112,240,.1);
   }
   .step-dot.done{background:linear-gradient(135deg,var(--blue-mid),var(--accent));border-color:transparent;color:white;}
   .step-label{
     font-size:10px;letter-spacing:.1em;text-transform:uppercase;
-    color:rgba(107,164,229,.45);margin:0 8px;
+    color:rgba(31,76,143,.45);margin:0 8px;
     font-family:'Space Mono',monospace;
     transition:color .4s;white-space:nowrap;
   }
   .step-label.active{color:var(--accent);}
-  .step-connector{width:40px;height:1px;background:rgba(107,164,229,.2);flex-shrink:0;}
+  .step-connector{width:40px;height:1px;background:rgba(31,76,143,.2);flex-shrink:0;}
   .step-connector.done{background:var(--accent);}
 
   /* WRAP */
@@ -86,8 +86,8 @@
 
   /* CARD */
   .auth-card{
-    background:rgba(45,80,124,.75);
-    border:1px solid rgba(107,164,229,.2);
+    background:rgba(255,255,255,.75);
+    border:1px solid rgba(31,76,143,.2);
     border-radius:28px;padding:44px;
     width:100%;max-width:480px;
     backdrop-filter:blur(24px);
@@ -100,10 +100,10 @@
   .card-label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;font-family:'Space Mono',monospace;}
   .card-title{font-family:'Cormorant Garamond',serif;font-size:clamp(26px,4vw,36px);font-weight:300;margin-bottom:6px;line-height:1.15;}
   .card-title em{font-style:italic;color:var(--accent);}
-  .card-sub{font-size:13px;color:rgba(184,212,245,.6);font-weight:300;margin-bottom:32px;line-height:1.6;}
+  .card-sub{font-size:13px;color:rgba(90,138,214,.6);font-weight:300;margin-bottom:32px;line-height:1.6;}
 
   /* TABS */
-  .auth-tabs{display:flex;gap:0;margin-bottom:32px;border-bottom:1px solid rgba(107,164,229,.15);}
+  .auth-tabs{display:flex;gap:0;margin-bottom:32px;border-bottom:1px solid rgba(31,76,143,.15);}
   .tab-btn{
     flex:1;padding:12px;background:none;border:none;cursor:pointer;
     font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;
@@ -121,13 +121,13 @@
   label{font-size:11px;color:var(--blue-pale);letter-spacing:.1em;text-transform:uppercase;font-weight:400;}
   input[type=text],input[type=email],input[type=password],input[type=tel],input[type=date],select,textarea{
     width:100%;background:rgba(31,76,143,.25);
-    border:1px solid rgba(107,164,229,.22);
+    border:1px solid rgba(31,76,143,.22);
     border-radius:12px;padding:13px 16px;
     color:var(--white);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:300;
     outline:none;transition:border-color .25s,box-shadow .25s;
   }
-  input:focus,select:focus,textarea:focus{border-color:rgba(91,209,255,.48);box-shadow:0 0 0 3px rgba(91,209,255,.06);}
-  input::placeholder,textarea::placeholder{color:rgba(107,164,229,.45);}
+  input:focus,select:focus,textarea:focus{border-color:rgba(15,112,240,.48);box-shadow:0 0 0 3px rgba(15,112,240,.06);}
+  input::placeholder,textarea::placeholder{color:rgba(31,76,143,.45);}
   select option{background:var(--navy);}
 
   .forgot{text-align:right;margin-top:-6px;}
@@ -143,20 +143,20 @@
   }
   .submit-btn:hover{opacity:.85;transform:scale(1.01);}
 
-  .divider{display:flex;align-items:center;gap:14px;color:rgba(107,164,229,.35);font-size:12px;}
-  .divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(107,164,229,.15);}
+  .divider{display:flex;align-items:center;gap:14px;color:rgba(31,76,143,.35);font-size:12px;}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(31,76,143,.15);}
 
   .social-btn{
     display:flex;align-items:center;justify-content:center;gap:12px;
-    background:rgba(31,76,143,.2);border:1px solid rgba(107,164,229,.18);
+    background:rgba(31,76,143,.2);border:1px solid rgba(31,76,143,.18);
     border-radius:12px;padding:13px;cursor:pointer;
     font-family:'DM Sans',sans-serif;font-size:13px;color:var(--blue-pale);
     transition:border-color .2s,color .2s;
   }
-  .social-btn:hover{border-color:rgba(91,209,255,.3);color:var(--white);}
+  .social-btn:hover{border-color:rgba(15,112,240,.3);color:var(--white);}
   .social-icon{font-size:17px;}
 
-  .terms-note{font-size:11px;color:rgba(107,164,229,.5);text-align:center;line-height:1.65;}
+  .terms-note{font-size:11px;color:rgba(31,76,143,.5);text-align:center;line-height:1.65;}
   .terms-note a{color:var(--blue-soft);text-decoration:none;}
   .terms-note a:hover{color:var(--accent);}
   .join-link{text-align:center;font-size:13px;color:var(--blue-pale);}
@@ -165,13 +165,13 @@
 
   /* ──── TERMS PANEL ──── */
   .terms-box{
-    background:rgba(31,76,143,.18);border:1px solid rgba(107,164,229,.18);
+    background:rgba(31,76,143,.18);border:1px solid rgba(31,76,143,.18);
     border-radius:16px;padding:24px;max-height:240px;overflow-y:auto;
-    font-size:13px;color:rgba(184,212,245,.7);line-height:1.75;font-weight:300;
+    font-size:13px;color:rgba(90,138,214,.7);line-height:1.75;font-weight:300;
     margin-bottom:4px;
   }
   .terms-box::-webkit-scrollbar{width:4px;}
-  .terms-box::-webkit-scrollbar-thumb{background:rgba(107,164,229,.3);border-radius:2px;}
+  .terms-box::-webkit-scrollbar-thumb{background:rgba(31,76,143,.3);border-radius:2px;}
   .terms-box h4{color:var(--white);font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:400;margin-bottom:10px;}
   .terms-box p{margin-bottom:12px;}
 
@@ -183,13 +183,13 @@
 
   /* ──── BILLING ──── */
   .invoice-box{
-    background:rgba(31,76,143,.15);border:1px solid rgba(107,164,229,.15);
+    background:rgba(31,76,143,.15);border:1px solid rgba(31,76,143,.15);
     border-radius:14px;padding:20px;
   }
   .invoice-title{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;font-family:'Space Mono',monospace;}
-  .invoice-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(107,164,229,.1);font-size:13px;color:var(--blue-pale);}
+  .invoice-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(31,76,143,.1);font-size:13px;color:var(--blue-pale);}
   .invoice-row:last-child{border-bottom:none;color:var(--white);font-weight:500;}
-  .invoice-row.total{margin-top:8px;padding-top:12px;border-top:1px solid rgba(107,164,229,.25);}
+  .invoice-row.total{margin-top:8px;padding-top:12px;border-top:1px solid rgba(31,76,143,.25);}
 
   /* validation error */
   .field-error{border-color:#FF6F61 !important;box-shadow:0 0 0 3px rgba(255,111,97,.18) !important;}
@@ -198,13 +198,13 @@
   /* privacy modal */
   .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:1000;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;}
   .modal-backdrop.open{display:flex;}
-  .modal-card{background:var(--navy);border:1px solid rgba(107,164,229,.3);border-radius:22px;padding:40px 36px 28px;max-width:720px;width:100%;position:relative;color:var(--white);box-shadow:0 24px 60px rgba(0,0,0,.45);}
+  .modal-card{background:var(--navy);border:1px solid rgba(31,76,143,.3);border-radius:22px;padding:40px 36px 28px;max-width:720px;width:100%;position:relative;color:var(--white);box-shadow:0 24px 60px rgba(0,0,0,.45);}
   .modal-card h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:30px;margin-bottom:8px;}
   .modal-card h2 em{font-style:italic;color:var(--accent);font-weight:300;}
   .modal-card .modal-sub{color:var(--blue-pale);font-size:13px;margin-bottom:22px;}
   .modal-card .terms-box{max-height:none;}
   .modal-close{position:absolute;top:14px;right:18px;background:none;border:none;color:var(--blue-pale);font-size:28px;line-height:1;cursor:pointer;padding:4px 10px;border-radius:50%;transition:background .2s,color .2s;}
-  .modal-close:hover{background:rgba(107,164,229,.15);color:var(--white);}
+  .modal-close:hover{background:rgba(31,76,143,.15);color:var(--white);}
   .modal-actions{margin-top:22px;display:flex;justify-content:flex-end;}
   .modal-actions button{background:linear-gradient(135deg,var(--blue-mid),var(--accent));color:var(--white);border:none;cursor:pointer;padding:11px 30px;border-radius:50px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;letter-spacing:.04em;transition:opacity .2s,transform .2s;}
   .modal-actions button:hover{opacity:.88;transform:scale(1.03);}
@@ -214,7 +214,7 @@
   .thankyou-wrap{text-align:center;padding:12px 0;}
   .ty-icon{
     width:80px;height:80px;border-radius:50%;
-    background:linear-gradient(135deg,rgba(52,211,153,.2),rgba(91,209,255,.2));
+    background:linear-gradient(135deg,rgba(52,211,153,.2),rgba(15,112,240,.2));
     border:1px solid rgba(52,211,153,.4);
     display:flex;align-items:center;justify-content:center;
     font-size:36px;margin:0 auto 28px;
@@ -223,9 +223,9 @@
   @keyframes zoomIn{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
   .ty-title{font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:300;margin-bottom:12px;line-height:1;}
   .ty-title em{font-style:italic;color:var(--accent);}
-  .ty-sub{font-size:14px;color:rgba(184,212,245,.65);font-weight:300;line-height:1.7;margin-bottom:32px;}
+  .ty-sub{font-size:14px;color:rgba(90,138,214,.65);font-weight:300;line-height:1.7;margin-bottom:32px;}
   .ty-steps{text-align:left;background:rgba(31,76,143,.18);border-radius:16px;padding:20px 24px;margin-bottom:28px;}
-  .ty-step{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(107,164,229,.1);}
+  .ty-step{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(31,76,143,.1);}
   .ty-step:last-child{border-bottom:none;}
   .ty-step-num{
     width:26px;height:26px;border-radius:50%;flex-shrink:0;
@@ -241,6 +241,12 @@
   .page.active{display:block;}
 
   .logo-img{height:32px;width:auto;display:block;}
+
+  /* light theme: text on blue gradient surfaces stays white */
+  .nav-cta, .nav-cta *, .submit-btn, .submit-btn *, .plan-btn.featured-btn, .featured-btn, .modal-actions button, .team-photo, .feature-icon, .split-icon, .value-icon, .step-icon, .ty-icon, .plan-badge, .save-badge, .btn-primary, .chatbar-send, .chatbar-send svg { color: #FFFFFF !important; fill: white; }
+  .nav-cta:hover, .submit-btn:hover, .plan-btn.featured-btn:hover, .modal-actions button:hover, .btn-primary:hover { color: #FFFFFF !important; }
+  /* placeholders need darker text on the now-light input fields */
+  .nav-chatbar input::placeholder, input::placeholder, textarea::placeholder { color: #5A8AD6 !important; opacity: 0.85; }
 </style>
 </head>
 <body>
@@ -344,7 +350,7 @@
         <p><strong>5. AI Behaviour.</strong> Our chatbot operates within boundaries you configure. Dunper AI is not liable for business decisions made based on AI-generated responses.</p>
         <p><strong>6. Termination.</strong> We reserve the right to suspend or terminate accounts that violate our terms, engage in fraudulent activity, or abuse the platform.</p>
         <p><strong>7. Modifications.</strong> We may update these terms periodically. Continued use of the platform after changes constitutes acceptance of the new terms.</p>
-        <p>For questions, contact us at legal@dunper.ai.</p>
+        <p>For questions, contact us at dunper.com@gmail.com.</p>
       </div>
 
       <br>
@@ -377,7 +383,7 @@
         <div class="field"><label>Create Password</label><input type="password" placeholder="Min. 8 characters"/></div>
         <div class="field-row">
           <div class="field">
-            <label>Date of Birth <span style="color:rgba(107,164,229,.5);font-size:10px">(must be 18+)</span></label>
+            <label>Date of Birth <span style="color:rgba(31,76,143,.5);font-size:10px">(must be 18+)</span></label>
             <input type="date" max="2008-01-01"/>
           </div>
           <div class="field">
@@ -631,7 +637,7 @@
             <div class="invoice-row"><span>Tax (GST 10%)</span><span id="iv-tax">$2.00</span></div>
             <div class="invoice-row total"><span>Total Today</span><span id="iv-total" style="color:var(--accent);font-size:20px">$22.00</span></div>
           </div>
-          <p style="font-size:11px;color:rgba(107,164,229,.4);margin-top:12px;line-height:1.6;text-align:center;">
+          <p style="font-size:11px;color:rgba(31,76,143,.4);margin-top:12px;line-height:1.6;text-align:center;">
             🔒 256-bit SSL encrypted · Cancel anytime<br>
             Next charge: 10 June 2026
           </p>
@@ -709,7 +715,7 @@
 
       <p><strong>10. Changes to this policy.</strong> We may update this Privacy Policy from time to time. Material changes will be announced inside the product and via email. The "Last updated" date at the top reflects the current version.</p>
 
-      <p>Questions or requests? Reach us at <strong>privacy@dunper.ai</strong>.</p>
+      <p>Questions or requests? Reach us at <strong>dunper.com@gmail.com</strong>.</p>
     </div>
     <div class="modal-actions">
       <button type="button" onclick="closePrivacyModal()">I understand</button>
