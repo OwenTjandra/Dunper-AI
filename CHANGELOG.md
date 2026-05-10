@@ -2,7 +2,324 @@
 
 All notable changes to this project. Entries are in reverse chronological order (newest first). Each entry lists what changed and which files to look at if a regression appears.
 
-## 2026-05-08 (latest) — WhatsApp Cloud API auto-reply
+## 2026-05-09 — Marketing site: embed live Dunper chatbot as floating widget (0b78bdc)
+
+### Added
+- **Floating chat bubble (bottom-right)** on all 5 main marketing pages, injected by [website/js/common.js](website/js/common.js) so no per-page edits are needed. Click expands a 400×620 panel with an iframe pointing at `DEMO_URL`. Esc / X / backdrop closes.
+- **8s timeout fallback** — if the iframe stalls or the tunnel is down, the panel shows an "open in new tab" link instead of staying empty.
+- **Mobile** — panel goes fullscreen on screens ≤600px.
+- Any element with `[data-dunper-open]` opens the panel. Wired the home-page hero CTA and the services-page CTA box.
+
+### Changed
+- **Home demo section** reframed as "Try it yourself" with a primary `data-dunper-open` button instead of an inline iframe.
+- Lingering `contact@dunper.ai` → `dunperai@gmail.com` on home footer.
+
+### Known issues / things to watch
+- **`DEMO_URL` is hard-coded** in [website/js/common.js](website/js/common.js). When the Cloudflare quick tunnel rotates, every visitor hits a dead iframe — update the constant and re-deploy. Permanent fix: named tunnel.
+- **Iframe sandbox** — uses default browser sandbox. If you ever load untrusted content there, tighten `<iframe>` attributes.
+
+### Rollback notes
+- Revert the changes in [website/js/common.js](website/js/common.js) (the floating-bubble code is additive — search for `data-dunper-open` and the `createChatPanel` block).
+- Revert the small `data-dunper-open` button additions in [website/dunper_home.html](website/dunper_home.html) and [website/dunper_services.html](website/dunper_services.html).
+
+---
+
+## 2026-05-09 — docs: May 12 demo script (5a26ac0)
+
+### Added
+- [docs/demo-script.md](docs/demo-script.md) — 5-minute walkthrough: pre-demo checklist, 5-act flow (marketing site → customer chat → admin → operator → close), 3 likely investor questions with prepared answers, contingency plan for live-demo failures.
+
+### Rollback notes
+- Pure docs file. Delete [docs/demo-script.md](docs/demo-script.md) to revert. Zero code impact.
+
+---
+
+## 2026-05-09 — Backend hardening: graceful shutdown + Google retry (751aacd)
+
+### Added
+- **Graceful shutdown** in [src/server.js](src/server.js) — SIGTERM / SIGINT / uncaughtException handler drains in-flight HTTP requests, closes the SQLite handle, and force-exits after 10s if anything hangs. Prevents corrupt DB on Ctrl+C.
+- **`withRetry()` wrapper** in [src/integrations/google.js](src/integrations/google.js) — exponential backoff on Google API 429 / 5xx and ECONNRESET-class errors. Auth errors (401/403) and other 4xx still fail fast (no point retrying a misconfigured account).
+
+### Known issues / things to watch
+- **10s force-exit ceiling**: if a request takes longer than 10s after shutdown signal, it gets killed mid-flight. For typical chat replies this is fine; long-running operations (e.g. uploading a huge document) could be cut off.
+- **Retry budget**: `withRetry` defaults to 3 attempts. A flapping Google API can multiply latency by 3 before surfacing the failure to the caller.
+
+### Rollback notes
+- Remove the SIGTERM/SIGINT handler block at the bottom of [src/server.js](src/server.js).
+- In [src/integrations/google.js](src/integrations/google.js), unwrap `withRetry(...)` calls back to direct Google API calls, and delete the `withRetry` helper function.
+
+---
+
+## 2026-05-09 — Marketing site: SEO meta tags, OG cards, sitemap, robots.txt (c83f995)
+
+### Added
+- Per-page `<meta name="description">` + canonical URLs on all 6 pages.
+- Open Graph + Twitter card meta on all 6 pages so dunper.com previews render correctly when shared.
+- `noindex` on [website/dunper_signin.html](website/dunper_signin.html).
+- Static [website/sitemap.xml](website/sitemap.xml) and [website/robots.txt](website/robots.txt) for search engines.
+
+### Changed
+- Style the [website/index.html](website/index.html) redirect so first paint isn't a white flash.
+- Fixed mismatched footer email on services page (`contact@dunper.ai` → `dunperai@gmail.com`).
+
+### Rollback notes
+- All changes are additive `<meta>` tags inside `<head>`. Revert each `website/dunper_*.html` to remove. Deleting `website/sitemap.xml` and `website/robots.txt` is harmless.
+
+---
+
+## 2026-05-09 — Marketing site: redesigned 6-page site (5d438d3)
+
+### Added
+Replaces the previous single-page landing with a 6-page user-designed multi-page site:
+- [website/dunper_home.html](website/dunper_home.html) — hero with gradient text, animated orbs, fact strip (10K+ / 98% / 40+), 3-step "how it works", chat-bubble demo mockup.
+- [website/dunper_about.html](website/dunper_about.html) — mission, 6 values, journey timeline, team cards.
+- [website/dunper_services.html](website/dunper_services.html) — 6 feature cards, chatbot intelligence (6 settings), booking pipeline, 4 FAQs.
+- [website/dunper_join.html](website/dunper_join.html) — 4-tier pricing (Starter/Pro/Max/Enterprise), monthly↔yearly toggle (yearly -20%), compare table.
+- [website/dunper_contact.html](website/dunper_contact.html) — contact form, 4 contact-method cards.
+- [website/dunper_signin.html](website/dunper_signin.html) — log in / sign up tabs, password match validation.
+- [website/index.html](website/index.html) — meta-refresh redirect to `dunper_home.html`.
+- [website/js/common.js](website/js/common.js) — shared nav-chatbar handler.
+
+### Functional bits wired
+- Contact form posts to `formsubmit.co/dunperai@gmail.com` via AJAX.
+- Sign-up form posts to formsubmit.co (captures lead), redirects to `dunper_join.html`.
+- Sign-in redirects to the live chatbot product (`DEMO_URL` in [website/js/common.js](website/js/common.js)).
+- Pricing toggle math (monthly vs yearly, -20%).
+- FAQ accordion (one open at a time).
+- Nav chatbar persists question to sessionStorage, opens live demo.
+
+### Removed
+- Previous single-page [website/index.html](website/index.html) content (replaced with redirect).
+- [website/css/style.css](website/css/style.css) (525 lines, replaced by per-page inline styles).
+- [website/js/main.js](website/js/main.js) (replaced by [website/js/common.js](website/js/common.js)).
+
+### Known issues / things to watch
+- **`DEMO_URL` rotation** — same caveat as the chat widget: hard-coded in [website/js/common.js](website/js/common.js); update on every tunnel rotation.
+- **`formsubmit.co` reliability** — third-party form relay. If it goes down, contact / sign-up forms silently fail (no fallback alert wired). Consider replacing with a real backend endpoint when going to production.
+- **Brand fonts**: Syne (display) + DM Sans (body). Loaded from Google Fonts CDN. Offline previews will fall back to system fonts.
+
+### Rollback notes
+- The previous single-page site is recoverable from commit `60f1738`. To restore: `git checkout 60f1738 -- website/`.
+- Cloudflare Pages is configured to serve `website/` as the output dir — reverting these files reverts the live site on next push.
+
+---
+
+## 2026-05-09 — Founder dashboard at /operator.html — businesses overview + sales CRM (6bca52b)
+
+### Added
+A god-view dashboard for the operator (you) separate from the business-owner-facing [public/admin.html](public/admin.html).
+
+- **Aggregate snapshot tiles** — # of businesses on Dunper (1 today), total conversations, bookings, Anthropic spend, cache hit rate.
+- **Per-business list** — name, type, hours, conversation/message/booking counts, conversion rate, monthly spend, open Qs / pending escalations. "Open dashboard" link to that business's `/admin.html`. Currently 1 row from singleton `business.json`; auto-populates when multi-tenant migration drops.
+- **Sales pipeline** — manual CRM for tracking leads → demos → proposals → active customers.
+  - New `sales_clients` table (migration `005_sales_pipeline.sql`).
+  - Status pipeline tiles (Leads, Demos, Proposals, Active w/MRR, Lost).
+  - "Upcoming next steps" panel — any prospect with `next_step_at` in next 14 days, sorted by date.
+  - Full table view with click-to-edit modal.
+  - Fields: business name, contact, vertical, status, plan, MRR, next step + date, free-form notes.
+  - Standard CRUD endpoints under `/api/operator/clients`.
+- Files: [public/operator.html](public/operator.html), [public/css/operator.css](public/css/operator.css), [public/js/operator.js](public/js/operator.js), [migrations/005_sales_pipeline.sql](migrations/005_sales_pipeline.sql), helpers added in [src/db.js](src/db.js), routes added in [src/server.js](src/server.js).
+
+### Auth
+- Same admin user gates both `/admin.html` and `/operator.html`. **No role separation yet** — when multi-tenant lands we'll split admin (per business) from operator (you, the platform).
+
+### Known issues / things to watch
+- **Singleton trap**: per-business list reads from `business.json` (one row). When you add a second business pre-multi-tenant, the operator dashboard will not show it correctly until DB schema gets `workspace_id`.
+- **Anthropic spend column** depends on the usage-tracking commit (8c83066). If you revert that, this column shows blanks.
+- **No CSV export** for sales pipeline — only in-app editing.
+
+### Rollback notes
+- Delete [public/operator.html](public/operator.html), [public/css/operator.css](public/css/operator.css), [public/js/operator.js](public/js/operator.js).
+- In [src/server.js](src/server.js): remove the `/operator.html` and `/api/operator/*` routes.
+- In [src/db.js](src/db.js): remove the `sales_clients` helpers (search for `salesClients` or `sales_clients`).
+- The `sales_clients` table itself can stay in `data.db` harmlessly (or drop manually).
+
+---
+
+## 2026-05-09 — Anthropic usage tracking (8c83066)
+
+### Added
+Foundation for unit-economics modeling and per-customer cost capping later.
+
+- **`anthropic_usage_log` table** ([migrations/004_anthropic_usage_log.sql](migrations/004_anthropic_usage_log.sql)) — per-call breakdown: `call_site`, `profile_id`, `model`, input/output/cache tokens, `cost_usd`.
+- [src/config/claude.js](src/config/claude.js) `askClaude` now returns `{ text, usage }` instead of bare string. `estimateCost()` exported for direct callers (admin tool-use loop).
+- **Cost calculation** uses Sonnet 4.6 retail pricing: `$3 / $15` input/output, `$3.75` cache create, `$0.30` cache read per 1M tokens.
+- All 5 callsites wired:
+  - `/chat` (web) → `call_site='chat'`
+  - WhatsApp message handler → `call_site='whatsapp'`
+  - Customer summary → `call_site='summarize'`
+  - Conversation compaction → `call_site='compaction'`
+  - Admin AI assistant → `call_site='admin_chat'` (new file [src/admin_chat.js](src/admin_chat.js))
+- **`GET /api/usage`** returns: today/week/month/all-time spend, call counts, by-callsite breakdown, top 10 profiles by spend, cache hit rate.
+- **"Anthropic API usage" card** on the dashboard ([public/admin.html](public/admin.html)) between Metrics and the alerts cards. Spend tiles + callsite/customer breakdown.
+
+### Changed (BREAKING for any direct caller)
+- **`askClaude` return shape changed**: was `string`, now `{ text, usage }`. All in-tree callers updated. If you have any external script that imports `askClaude`, it must be updated to read `.text`.
+
+### Known issues / things to watch
+- **Pricing is hard-coded**. If Anthropic changes Sonnet pricing, update the constants in [src/config/claude.js](src/config/claude.js) — historical rows in `anthropic_usage_log` will not be back-corrected.
+- **`profile_id` is null for `admin_chat` callsite** (it's the operator, not a customer). Filtering by profile in the dashboard excludes these.
+- **Token counts come from Anthropic's response `usage` object**. If Anthropic ever returns null, the row is logged with zeros (visible as $0.00 — looks like a free call but it wasn't).
+
+### Rollback notes
+- Revert [src/config/claude.js](src/config/claude.js) so `askClaude` returns bare string again.
+- Update all 5 callsites: `/chat`, WhatsApp handler, summarize, compaction, admin chat — re-read `string` instead of `{text, usage}`.
+- Delete [src/admin_chat.js](src/admin_chat.js) (extracted as part of this change).
+- Drop the "Anthropic API usage" card from [public/admin.html](public/admin.html), and the matching JS block in [public/js/admin.js](public/js/admin.js).
+- The `anthropic_usage_log` table can stay in `data.db` harmlessly.
+
+---
+
+## 2026-05-09 — docs: scaling roadmap from 1 to 1000 customers (8da956f)
+
+### Added
+- [docs/scaling-roadmap.md](docs/scaling-roadmap.md) — opinionated milestone plan grounded in a code audit. Confirms all 14+ DB tables are single-tenant (no `workspace_id`), `google_connection` has CHECK (id=1), all integration env vars are deployment-global, 4 `askClaude` callsites with no tenant attribution. Covers seven milestones (1, 3, 5, 10, 20, 50, 100, 1000) with architecture changes, monthly cost estimates, the forced inflection point at ~15 customers (multi-tenant rewrite), specific tool picks, and decisions to make NOW that affect downstream scaling.
+
+### Rollback notes
+- Pure docs file. Delete [docs/scaling-roadmap.md](docs/scaling-roadmap.md) to revert.
+
+---
+
+## 2026-05-09 — Marketing site: real headline + tighter copy (0d2e9ce)
+
+### Changed
+- [website/index.html](website/index.html) (the simple landing page from `60f1738`, before it was replaced by the 6-page redesign in `5d438d3`):
+  - Headline: "Your AI receptionist. On duty 24/7."
+  - Lede: replaced abstract "answers customer questions" with concrete channel-by-channel benefits (WhatsApp, website chat, Google Calendar, knowledge of menu/prices/policies).
+  - Hero CTAs: "See it work" / "Book a demo".
+  - Hero meta: surfaced 3 specific proof points (under an hour, EN+ID, no credit card).
+  - Demo section title: "Try it. Book a fake appointment."
+
+### Rollback notes
+- Largely moot — `5d438d3` replaced this file entirely with the redesigned site. Listed for traceability only.
+
+---
+
+## 2026-05-08 (later) — Marketing site at /website (initial single-page) (60f1738)
+
+### Added
+- Single-page landing site at `website/`, plain HTML/CSS/JS, no build step.
+- Sections: hero, 8 feature cards, 3-step how-it-works, live embedded demo iframe, 3-tier pricing (Starter / Pro / Max), demo-request form posting to `dunperai@gmail.com` via formsubmit.co, footer.
+- Brand: purple/indigo gradient, same logo as chat. Mobile responsive at 720px / 580px.
+- `window.DUNPER_DEMO_URL` set at top of `website/index.html` controls the iframe target.
+- [website/README.md](website/README.md) walkthrough: Cloudflare Pages + GoDaddy DNS (nameserver swap, custom-domain attach, optional `hello@dunper.com` email forwarding).
+
+### Known issues / things to watch
+- **Superseded by 6-page redesign (5d438d3)** — this commit's `index.html`, `css/style.css`, and `js/main.js` were replaced. Listed here for completeness.
+
+### Rollback notes
+- To restore this single-page version: `git checkout 60f1738 -- website/`.
+
+---
+
+## 2026-05-08 (later) — Email confirmations, handoff, unanswered log, metrics dashboard, booking source (861a11a)
+
+### Added
+**Schema** ([migrations/003_metrics_handoff_email.sql](migrations/003_metrics_handoff_email.sql)):
+- `bookings.source` column (default `'web'`; `'admin'` for owner-created; ready for `'whatsapp'` once Claude can book via WA).
+- `escalations` table — customer "Talk to a human" requests.
+- `unanswered_questions` table — AI fallback detection.
+- `email_outbox` table — every confirmation send/skip/fail.
+
+**Email** ([src/email.js](src/email.js)):
+- Nodemailer transport built lazily from `SMTP_*` env vars (see [.env.example](.env.example)).
+- `sendBookingConfirmation` runs async after every booking (web + admin paths).
+- When SMTP not configured, still records to `email_outbox` as `status='skipped_no_smtp'` so the owner sees what would have sent.
+- HTML + text templates with business name, service, date/time.
+
+**Human handoff:**
+- 👤 button in customer chat header ([public/index.html](public/index.html), [public/js/chat.js](public/js/chat.js)).
+- `POST /api/customer/escalate` creates an escalation row.
+- Dashboard "Customers waiting for an agent" panel lists open ones with a Mark resolved button (notes optional).
+- i18n strings: `askHuman`, `handoffSent`, `handoffFailed` (EN + ID) in [public/js/i18n.js](public/js/i18n.js).
+
+**Unanswered question detection:**
+- 7 regex patterns spot uncertainty phrases ("I'm not sure", "please call", "outside what", etc.) in Claude's reply.
+- Logged automatically with the customer's question for review.
+- Dashboard panel shows open ones with Mark reviewed button.
+
+**Metrics dashboard:**
+- `GET /api/metrics` aggregates from existing tables.
+- Shows: conversations, customer messages, conversion rate, bookings today/week/month, top service (last 30d), booking source mix, sentiment breakdown, open escalations, open unanswered, cancelled.
+- Renders as a grid of metric cards in the new Metrics card on [public/admin.html](public/admin.html).
+
+**Email outbox panel:** every confirmation email with status (sent/failed/skipped_no_smtp), color-coded.
+
+**Logo asset**: [DunperAI-Logo.png](DunperAI-Logo.png) added at repo root.
+
+### Known issues / things to watch
+- **SMTP credentials live in `.env`**. If you commit `.env` you leak credentials. `.gitignore` already excludes it.
+- **Regex-based unanswered detection** is heuristic. Will miss novel hedging phrases and will false-positive on Claude saying "I'm not sure" idiomatically. Review the panel before trusting it.
+- **Escalation has no notification** — owner only sees it on the dashboard. No SMS/email alert to the owner when a customer escalates. Worth adding.
+- **`source='whatsapp'`** is reserved but never written today (Claude can't book via WhatsApp yet).
+
+### Rollback notes
+- Migration 003 created the new tables — they can stay; the code that writes to them just disappears on revert.
+- Delete [src/email.js](src/email.js) and remove the `sendBookingConfirmation` call sites in [src/server.js](src/server.js) (search `sendBookingConfirmation`).
+- Remove the `/api/customer/escalate`, `/api/escalations*`, `/api/unanswered*`, `/api/metrics` route handlers in [src/server.js](src/server.js).
+- Remove the Metrics, Escalations, Unanswered, and Email outbox cards in [public/admin.html](public/admin.html) and the matching code in [public/js/admin.js](public/js/admin.js).
+- Remove the 👤 button in [public/index.html](public/index.html) and the handler in [public/js/chat.js](public/js/chat.js).
+
+---
+
+## 2026-05-08 (later) — Conversation compaction (89d81f1)
+
+### Added
+Keeps token cost flat over long chats. When a customer's stored history crosses **30 messages**, older messages roll into a single summary paragraph (≤150 words) and only the **last 10 messages** are sent verbatim to Claude. The summary is injected as a synthetic `[user, assistant]` pair at the start of the prompt.
+
+- New `conversation_compactions` table ([migrations/002_conversation_compactions.sql](migrations/002_conversation_compactions.sql)) — one row per profile, stores summary + last covered message id.
+- [src/conversation.js](src/conversation.js) — `buildBaseMessagesForClaude` (used by both `/chat` and the WhatsApp handler), `shouldCompact`, `compactConversation`, `maybeCompactInBackground`.
+- Compaction runs **async via `setImmediate`** after the chat reply, so user-facing latency is unaffected. First turn that crosses the threshold sends the full history once; every turn after uses the compaction.
+- **Re-summarization** triggers when more than 30 messages have arrived since last compaction (folds the previous summary in).
+- Image attachments referenced in compacted messages are described briefly in the summary ("shared photo of broken filling").
+
+### Known issues / things to watch
+- **Summary loss of detail** — by definition the summary drops information. If a customer mentioned a specific allergy in message 5 of a 35-message chat, the summary may not include it. Test with realistic conversations before trusting in clinical / legal contexts.
+- **Compaction is best-effort.** If the summarization API call fails, the compaction is skipped silently — next chat turn just sends the full long history (more expensive but functional).
+- **Threshold (30 / 10) is hard-coded.** If your chats run shorter / longer naturally, tune in [src/conversation.js](src/conversation.js).
+
+### Rollback notes
+- Delete [src/conversation.js](src/conversation.js).
+- In [src/server.js](src/server.js): replace `buildBaseMessagesForClaude` calls with the original direct `getMessagesForProfile` reads, and remove `maybeCompactInBackground` calls.
+- In [src/db.js](src/db.js): remove the `conversation_compactions` helpers.
+- Migration 002 table can stay — harmless if unused.
+
+---
+
+## 2026-05-08 (later) — Backend hardening: prompt caching, rate limiting, dedup, backups, route split, migrations (208a104)
+
+### Added
+- **Prompt caching** — uploaded business docs and the system prompt are marked with `cache_control: { type: 'ephemeral' }` in [src/config/claude.js](src/config/claude.js). Document-grounded chats now cost ~10% on cache hits (5-minute TTL).
+- **Rate limiting** (`express-rate-limit` package added):
+  - `/chat`: 30 messages/min per customer cookie (or IP for non-cookied).
+  - `/webhooks/whatsapp`: 200/min total.
+  - `/api/*` (admin and customer): 120/min global ceiling.
+- **WhatsApp dedup** — Meta retries the same `messageId` on transient failure. New `processed_wa_messages` table tracks every messageId; we skip on replay. 7-day TTL via `purgeOldWhatsAppMessages` on startup.
+- **Daily SQLite backup** — [src/backup.js](src/backup.js) schedules `db.backup()` every 24h to `backups/` (gitignored), keeps last 7 days, prunes older. First backup runs 60s after startup.
+- **Migrations system** — [src/migrations.js](src/migrations.js) scans `migrations/*.sql`, applies pending ones in a transaction, records in `schema_migrations`. Existing schema stays in [src/db.js](src/db.js) for now via `CREATE IF NOT EXISTS`; future schema changes go in numbered `.sql` files. Initial baseline at [migrations/001_baseline.sql](migrations/001_baseline.sql).
+- **Routes extracted** — [src/routes/webhooks.js](src/routes/webhooks.js) now owns the WhatsApp webhook endpoints. Server mounts via `createRouter({ webhookLimiter, handleWhatsAppPayload })`. Admin/customer routes stay in `server.js` for this round.
+
+### Changed
+- New `.env` knobs documented in [.env.example](.env.example).
+- [.gitignore](.gitignore): adds `backups/` and related.
+
+### Known issues / things to watch
+- **Rate-limit IP behavior**: behind a tunnel/proxy, `req.ip` may be the proxy's IP. If multiple customers share an IP (NAT), they share the budget. Trust-proxy is not configured by default — set `app.set('trust proxy', ...)` if you deploy behind a CDN.
+- **Backup destination is local**. `backups/` is on the same disk as `data.db` — disk failure loses both. For real DR, copy to S3/R2/Drive.
+- **Cache TTL is 5 minutes**. Customer who comes back 6 minutes later pays full price for the system prompt. Acceptable for chat workloads.
+- **Migrations runner is forward-only** — no down migrations. To roll back a schema change you must hand-write SQL.
+
+### Rollback notes
+- Remove `cache_control` blocks in [src/config/claude.js](src/config/claude.js) (search `ephemeral`).
+- Remove `express-rate-limit` import + the three limiters in [src/server.js](src/server.js); `npm uninstall express-rate-limit`.
+- Remove `processed_wa_messages` checks in [src/routes/webhooks.js](src/routes/webhooks.js) (or revert that file to inline back into `server.js`).
+- Delete [src/backup.js](src/backup.js) and the call to it at server startup.
+- Delete [src/migrations.js](src/migrations.js) and the runner call at startup. The `migrations/` directory and `schema_migrations` table can stay harmlessly.
+- Move WhatsApp webhook routes back into [src/server.js](src/server.js); delete [src/routes/webhooks.js](src/routes/webhooks.js).
+
+---
+
+## 2026-05-08 — WhatsApp Cloud API auto-reply
 
 ### Added
 - **Bidirectional WhatsApp** via Meta's official Cloud API. Customers messaging your WhatsApp Business number now get auto-replies from Claude, with the same system prompt + business config the web chat uses.
