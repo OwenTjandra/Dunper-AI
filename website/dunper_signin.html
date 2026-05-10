@@ -194,6 +194,20 @@
   /* validation error */
   .field-error{border-color:#FF6F61 !important;box-shadow:0 0 0 3px rgba(255,111,97,.18) !important;}
   .check-row.field-error span{color:#FF6F61;}
+
+  /* privacy modal */
+  .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:1000;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;}
+  .modal-backdrop.open{display:flex;}
+  .modal-card{background:var(--navy);border:1px solid rgba(107,164,229,.3);border-radius:22px;padding:40px 36px 28px;max-width:720px;width:100%;position:relative;color:var(--white);box-shadow:0 24px 60px rgba(0,0,0,.45);}
+  .modal-card h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:30px;margin-bottom:8px;}
+  .modal-card h2 em{font-style:italic;color:var(--accent);font-weight:300;}
+  .modal-card .modal-sub{color:var(--blue-pale);font-size:13px;margin-bottom:22px;}
+  .modal-card .terms-box{max-height:none;}
+  .modal-close{position:absolute;top:14px;right:18px;background:none;border:none;color:var(--blue-pale);font-size:28px;line-height:1;cursor:pointer;padding:4px 10px;border-radius:50%;transition:background .2s,color .2s;}
+  .modal-close:hover{background:rgba(107,164,229,.15);color:var(--white);}
+  .modal-actions{margin-top:22px;display:flex;justify-content:flex-end;}
+  .modal-actions button{background:linear-gradient(135deg,var(--blue-mid),var(--accent));color:var(--white);border:none;cursor:pointer;padding:11px 30px;border-radius:50px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;letter-spacing:.04em;transition:opacity .2s,transform .2s;}
+  .modal-actions button:hover{opacity:.88;transform:scale(1.03);}
   .invoice-row span:last-child{font-family:'Cormorant Garamond',serif;font-size:16px;}
 
   /* ──── THANK YOU ──── */
@@ -370,15 +384,205 @@
             <label>Country</label>
             <select>
               <option value="">Select country…</option>
+              <option>Afghanistan</option>
+              <option>Albania</option>
+              <option>Algeria</option>
+              <option>Andorra</option>
+              <option>Angola</option>
+              <option>Antigua and Barbuda</option>
+              <option>Argentina</option>
+              <option>Armenia</option>
               <option>Australia</option>
+              <option>Austria</option>
+              <option>Azerbaijan</option>
+              <option>Bahamas</option>
+              <option>Bahrain</option>
+              <option>Bangladesh</option>
+              <option>Barbados</option>
+              <option>Belarus</option>
+              <option>Belgium</option>
+              <option>Belize</option>
+              <option>Benin</option>
+              <option>Bhutan</option>
+              <option>Bolivia</option>
+              <option>Bosnia and Herzegovina</option>
+              <option>Botswana</option>
+              <option>Brazil</option>
+              <option>Brunei</option>
+              <option>Bulgaria</option>
+              <option>Burkina Faso</option>
+              <option>Burundi</option>
+              <option>Cabo Verde</option>
+              <option>Cambodia</option>
+              <option>Cameroon</option>
               <option>Canada</option>
+              <option>Central African Republic</option>
+              <option>Chad</option>
+              <option>Chile</option>
+              <option>China</option>
+              <option>Colombia</option>
+              <option>Comoros</option>
+              <option>Congo (Brazzaville)</option>
+              <option>Congo (Kinshasa)</option>
+              <option>Costa Rica</option>
+              <option>Côte d'Ivoire</option>
+              <option>Croatia</option>
+              <option>Cuba</option>
+              <option>Cyprus</option>
+              <option>Czechia</option>
+              <option>Denmark</option>
+              <option>Djibouti</option>
+              <option>Dominica</option>
+              <option>Dominican Republic</option>
+              <option>Ecuador</option>
+              <option>Egypt</option>
+              <option>El Salvador</option>
+              <option>Equatorial Guinea</option>
+              <option>Eritrea</option>
+              <option>Estonia</option>
+              <option>Eswatini</option>
+              <option>Ethiopia</option>
+              <option>Fiji</option>
+              <option>Finland</option>
               <option>France</option>
+              <option>Gabon</option>
+              <option>Gambia</option>
+              <option>Georgia</option>
               <option>Germany</option>
+              <option>Ghana</option>
+              <option>Greece</option>
+              <option>Grenada</option>
+              <option>Guatemala</option>
+              <option>Guinea</option>
+              <option>Guinea-Bissau</option>
+              <option>Guyana</option>
+              <option>Haiti</option>
+              <option>Honduras</option>
+              <option>Hong Kong</option>
+              <option>Hungary</option>
+              <option>Iceland</option>
+              <option>India</option>
+              <option>Indonesia</option>
+              <option>Iran</option>
+              <option>Iraq</option>
+              <option>Ireland</option>
+              <option>Israel</option>
+              <option>Italy</option>
+              <option>Jamaica</option>
               <option>Japan</option>
+              <option>Jordan</option>
+              <option>Kazakhstan</option>
+              <option>Kenya</option>
+              <option>Kiribati</option>
+              <option>Kosovo</option>
+              <option>Kuwait</option>
+              <option>Kyrgyzstan</option>
+              <option>Laos</option>
+              <option>Latvia</option>
+              <option>Lebanon</option>
+              <option>Lesotho</option>
+              <option>Liberia</option>
+              <option>Libya</option>
+              <option>Liechtenstein</option>
+              <option>Lithuania</option>
+              <option>Luxembourg</option>
+              <option>Macau</option>
+              <option>Madagascar</option>
+              <option>Malawi</option>
+              <option>Malaysia</option>
+              <option>Maldives</option>
+              <option>Mali</option>
+              <option>Malta</option>
+              <option>Marshall Islands</option>
+              <option>Mauritania</option>
+              <option>Mauritius</option>
+              <option>Mexico</option>
+              <option>Micronesia</option>
+              <option>Moldova</option>
+              <option>Monaco</option>
+              <option>Mongolia</option>
+              <option>Montenegro</option>
+              <option>Morocco</option>
+              <option>Mozambique</option>
+              <option>Myanmar</option>
+              <option>Namibia</option>
+              <option>Nauru</option>
+              <option>Nepal</option>
+              <option>Netherlands</option>
+              <option>New Zealand</option>
+              <option>Nicaragua</option>
+              <option>Niger</option>
+              <option>Nigeria</option>
+              <option>North Korea</option>
+              <option>North Macedonia</option>
+              <option>Norway</option>
+              <option>Oman</option>
+              <option>Pakistan</option>
+              <option>Palau</option>
+              <option>Palestine</option>
+              <option>Panama</option>
+              <option>Papua New Guinea</option>
+              <option>Paraguay</option>
+              <option>Peru</option>
               <option>Philippines</option>
+              <option>Poland</option>
+              <option>Portugal</option>
+              <option>Qatar</option>
+              <option>Romania</option>
+              <option>Russia</option>
+              <option>Rwanda</option>
+              <option>Saint Kitts and Nevis</option>
+              <option>Saint Lucia</option>
+              <option>Saint Vincent and the Grenadines</option>
+              <option>Samoa</option>
+              <option>San Marino</option>
+              <option>São Tomé and Príncipe</option>
+              <option>Saudi Arabia</option>
+              <option>Senegal</option>
+              <option>Serbia</option>
+              <option>Seychelles</option>
+              <option>Sierra Leone</option>
               <option>Singapore</option>
+              <option>Slovakia</option>
+              <option>Slovenia</option>
+              <option>Solomon Islands</option>
+              <option>Somalia</option>
+              <option>South Africa</option>
+              <option>South Korea</option>
+              <option>South Sudan</option>
+              <option>Spain</option>
+              <option>Sri Lanka</option>
+              <option>Sudan</option>
+              <option>Suriname</option>
+              <option>Sweden</option>
+              <option>Switzerland</option>
+              <option>Syria</option>
+              <option>Taiwan</option>
+              <option>Tajikistan</option>
+              <option>Tanzania</option>
+              <option>Thailand</option>
+              <option>Timor-Leste</option>
+              <option>Togo</option>
+              <option>Tonga</option>
+              <option>Trinidad and Tobago</option>
+              <option>Tunisia</option>
+              <option>Turkey</option>
+              <option>Turkmenistan</option>
+              <option>Tuvalu</option>
+              <option>Uganda</option>
+              <option>Ukraine</option>
+              <option>United Arab Emirates</option>
               <option>United Kingdom</option>
               <option>United States</option>
+              <option>Uruguay</option>
+              <option>Uzbekistan</option>
+              <option>Vanuatu</option>
+              <option>Vatican City</option>
+              <option>Venezuela</option>
+              <option>Vietnam</option>
+              <option>Yemen</option>
+              <option>Zambia</option>
+              <option>Zimbabwe</option>
               <option>Other</option>
             </select>
           </div>
@@ -413,7 +617,7 @@
           </div>
           <label class="check-row" style="margin-top:4px">
             <input type="checkbox" id="agreePrivacy" required/>
-            <span style="font-size:12px">I agree to the <a href="#" style="color:var(--accent)">Privacy Policy</a> and authorise this charge.</span>
+            <span style="font-size:12px">I agree to the <a href="#" style="color:var(--accent)" onclick="openPrivacyModal(event)">Privacy Policy</a> and authorise this charge.</span>
           </label>
         </div>
 
@@ -475,6 +679,44 @@
 
 </div><!-- /auth-wrap -->
 
+<!-- PRIVACY POLICY MODAL -->
+<div id="privacyModal" class="modal-backdrop" onclick="if(event.target===this)closePrivacyModal()">
+  <div class="modal-card">
+    <button class="modal-close" type="button" onclick="closePrivacyModal()" aria-label="Close privacy policy">×</button>
+    <h2>Privacy <em>Policy</em></h2>
+    <p class="modal-sub">Last updated: 10 May 2026</p>
+    <div class="terms-box">
+      <h4>Privacy Policy — Dunper AI</h4>
+      <p>This Privacy Policy explains how Dunper AI ("we", "us", "our") collects, uses and protects information when you use our platform. By creating an account or using the service you agree to the terms below.</p>
+
+      <p><strong>1. Information we collect.</strong> We collect the account information you provide during signup (name, email, phone number, country, date of birth) and the billing details required to process subscription payments (cardholder name, billing address, last four digits of the card). We do not store full card numbers — payments are handled by our PCI-compliant payment processor.</p>
+
+      <p><strong>2. Customer conversation data.</strong> Each Dunper account is isolated. The messages, bookings and customer profiles you process through Dunper belong to your business, are stored only inside your account, and are not pooled, shared or sold to any third party.</p>
+
+      <p><strong>3. How we use information.</strong> We use the information you provide to (a) operate and improve the platform, (b) process payments and send receipts, (c) communicate operational notices and product updates relevant to your account, and (d) detect fraud and abuse. We never sell your personal information.</p>
+
+      <p><strong>4. Third-party services.</strong> We rely on a small number of named subprocessors to run the service, including Google (for calendar and email integration when you connect your Google account), Anthropic (for the AI models behind the chatbot), and a payment processor for billing. Each subprocessor handles only the data needed to perform its function.</p>
+
+      <p><strong>5. Data retention.</strong> Account and billing records are retained while your account is active and for the period legally required after cancellation. Customer conversation data can be exported or permanently deleted on request — contact support and we will action it within 30 days.</p>
+
+      <p><strong>6. Your rights.</strong> You can access, correct or delete your personal information at any time by emailing us. If you are located in a jurisdiction with additional privacy rights (EU/UK GDPR, California CCPA, etc.), those rights apply to you and we will honour them.</p>
+
+      <p><strong>7. Security.</strong> All data is transmitted over TLS. Card details are encrypted in transit and stored only by our payment processor. We follow industry-standard practices to protect data at rest and limit internal access to those who need it to operate the service.</p>
+
+      <p><strong>8. Cookies.</strong> The Dunper website uses cookies to keep you signed in, remember your preferences, and measure basic usage. You can disable non-essential cookies in your browser without losing core functionality.</p>
+
+      <p><strong>9. Children.</strong> Dunper AI is intended for business use by people 18 years of age or older. We do not knowingly collect personal information from children.</p>
+
+      <p><strong>10. Changes to this policy.</strong> We may update this Privacy Policy from time to time. Material changes will be announced inside the product and via email. The "Last updated" date at the top reflects the current version.</p>
+
+      <p>Questions or requests? Reach us at <strong>privacy@dunper.ai</strong>.</p>
+    </div>
+    <div class="modal-actions">
+      <button type="button" onclick="closePrivacyModal()">I understand</button>
+    </div>
+  </div>
+</div>
+
 <script>
 function switchTab(tab){
   document.getElementById('signinTab').classList.toggle('active', tab==='signin');
@@ -515,6 +757,22 @@ function checkTerms(){
   btn.style.opacity=checked?'1':'0.4';
   btn.style.pointerEvents=checked?'auto':'none';
 }
+
+// Privacy policy modal
+function openPrivacyModal(e){
+  if(e) e.preventDefault();
+  const m = document.getElementById('privacyModal');
+  m.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closePrivacyModal(){
+  const m = document.getElementById('privacyModal');
+  m.classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') closePrivacyModal();
+});
 
 // Plan catalogue for billing summary
 const PLANS = {
