@@ -2,6 +2,24 @@
 
 All notable changes to this project. Entries are in reverse chronological order (newest first). Each entry lists what changed and which files to look at if a regression appears.
 
+## 2026-05-10 — `trust proxy` set to `loopback` for Cloudflare-tunnel compatibility
+
+### Changed
+- [src/server.js](src/server.js): added `app.set('trust proxy', 'loopback')` right after `const app = express()`.
+
+### Why
+- When the server is exposed via `cloudflared tunnel --url http://localhost:3000`, every request arrives with an `X-Forwarded-For` header. With `trust proxy` left at the Express default (`false`), `express-rate-limit` throws a `ValidationError` (non-fatal — requests still go through with status 200, but it spams stderr on every call). This made the WhatsApp setup logs unreadable.
+- `'loopback'` is the safest setting for this topology: cloudflared connects to `127.0.0.1`, so the only proxy hop we trust is the loopback interface. We don't accept `X-Forwarded-For` from anywhere else.
+
+### Known issues / things to watch
+- If you ever put a non-loopback proxy in front of the server (e.g. nginx on a different host, a load balancer), this setting must change to match. `'loopback'` will silently ignore `X-Forwarded-For` from those proxies, so rate limits will key on the proxy IP instead of the customer.
+- For Cloudflare *Pages* (not tunnel), trust setting needs to be `true` and you should additionally validate `CF-Connecting-IP` instead.
+
+### Rollback notes
+- Delete the single line `app.set('trust proxy', 'loopback');` in [src/server.js](src/server.js). The rate limiter goes back to producing the validation error on every tunneled request, but functionality is unaffected.
+
+---
+
 ## 2026-05-09 — Marketing site: embed live Dunper chatbot as floating widget (0b78bdc)
 
 ### Added

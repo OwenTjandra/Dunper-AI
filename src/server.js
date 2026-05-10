@@ -95,6 +95,8 @@ const adminApiLimiter = rateLimit({
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set('trust proxy', 'loopback');
+
 app.use(express.json({
   verify: (req, _res, buf) => { req.rawBody = buf; },
 }));
