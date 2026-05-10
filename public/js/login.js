@@ -26,7 +26,8 @@ form.addEventListener('submit', async (e) => {
       showError(data.error || 'Sign-in failed');
       return;
     }
-    window.location.href = '/admin.html';
+    const role = data?.user?.role;
+    window.location.href = role === 'founder' ? '/operator.html' : '/admin.html';
   } catch (err) {
     showError(`Network error: ${err.message}`);
   } finally {

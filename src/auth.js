@@ -31,7 +31,7 @@ function attachUser(req, _res, next) {
   const sid = req.cookies?.[SESSION_COOKIE];
   if (sid) {
     const session = findSession(sid);
-    if (session) req.user = { id: session.user_id, username: session.username };
+    if (session) req.user = { id: session.user_id, username: session.username, role: session.role };
   }
   next();
 }
@@ -43,6 +43,29 @@ function requireAuth(req, res, next) {
   }
   return res.redirect('/login.html');
 }
+
+function requireRole(role) {
+  return function (req, res, next) {
+    if (!req.user) {
+      if (req.path.startsWith('/api/')) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      return res.redirect('/login.html');
+    }
+    if (req.user.role !== role) {
+      if (req.path.startsWith('/api/')) {
+        return res.status(403).json({ error: 'Forbidden: wrong role' });
+      }
+      // Send the user to their own dashboard rather than a dead-end 403 page.
+      const target = req.user.role === 'founder' ? '/operator.html' : '/admin.html';
+      return res.redirect(target);
+    }
+    next();
+  };
+}
+
+const requireFounder = requireRole('founder');
+const requireBusinessOwner = requireRole('business_owner');
 
 const router = express.Router();
 
@@ -61,7 +84,7 @@ router.post('/login', (req, res) => {
   createSession(sessionId, user.id, expiresAt);
   setSessionCookie(res, sessionId);
 
-  res.json({ ok: true, user: { username: user.username } });
+  res.json({ ok: true, user: { username: user.username, role: user.role } });
 });
 
 router.post('/logout', (req, res) => {
@@ -73,7 +96,7 @@ router.post('/logout', (req, res) => {
 
 router.get('/me', (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Not signed in' });
-  res.json({ user: { username: req.user.username } });
+  res.json({ user: { username: req.user.username, role: req.user.role } });
 });
 
-module.exports = { router, attachUser, requireAuth };
+module.exports = { router, attachUser, requireAuth, requireFounder, requireBusinessOwner };

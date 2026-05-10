@@ -2,6 +2,46 @@
 
 All notable changes to this project. Entries are in reverse chronological order (newest first). Each entry lists what changed and which files to look at if a regression appears.
 
+## 2026-05-10 — Role-based separation between business_owner and founder dashboards
+
+### Added
+- **`role` column on `users` table** (migration [migrations/006_user_roles.sql](migrations/006_user_roles.sql)). Values: `'business_owner'` or `'founder'`. Existing users default to `'business_owner'`.
+- **`FOUNDERS` env var** for seeding the 5 founder accounts. Format: `alice:apass,bob:bpass,...`. Idempotent — usernames already in `data.db` are skipped (passwords NEVER overwritten on re-run). New helper `seedFoundersFromEnv()` in [src/db.js](src/db.js).
+- **Two role-aware middlewares** in [src/auth.js](src/auth.js): `requireBusinessOwner` and `requireFounder`. Wrong-role HTTP requests get 403 (`/api/*`) or a 302 redirect to the user's own dashboard (HTML pages). The old `requireAuth` still exists but is no longer used by route handlers — kept for any external callers.
+- **Login API now returns the user's role**, and [public/js/login.js](public/js/login.js) redirects to `/operator.html` for founders and `/admin.html` for business owners.
+
+### Changed
+- **`/admin.html`** is now gated by `requireBusinessOwner` (was `requireAuth`). Founders trying to open it get redirected to `/operator.html`.
+- **`/operator.html`** is now gated by `requireFounder` (was `requireAuth`). Business owners trying to open it get redirected to `/admin.html`.
+- **Every `/api/*` route in [src/server.js](src/server.js)** has had its middleware swapped:
+  - `/api/operator/*` (5 routes: overview + clients CRUD) → `requireFounder`
+  - All other `/api/*` admin endpoints (~30 routes: business config, profiles, bookings, documents, integrations, metrics, escalations, unanswered, usage, email outbox, etc.) → `requireBusinessOwner`
+- **Cross-links between dashboards removed**:
+  - "Founder view →" link removed from [public/admin.html](public/admin.html)
+  - "→ Business dashboard" link removed from [public/operator.html](public/operator.html)
+  - "Open dashboard →" link in operator's per-business list removed in [public/js/operator.js](public/js/operator.js) (was pointing at `/admin.html`, which founders no longer can access — would 302 to `/operator.html` confusingly)
+
+### Why this matters
+Per the user's strategic plan, founders (5 of us) and business owners are completely separate audiences. Founders see the god-view CRM at `/operator.html`, business owners see only their own dashboard at `/admin.html`. Neither side can see the other. Today everything is single-tenant so "the business owner" is one person; this becomes per-tenant when multi-tenancy lands.
+
+### Known issues / things to watch
+- **`FOUNDERS` env var is plaintext.** Anyone with read access to `.env` can see the founder passwords. Migrate to a password-reset / invite flow before deploying publicly. For laptop dev today, fine.
+- **Idempotent seeder NEVER overwrites passwords.** If a founder forgets their password, changing the value in `FOUNDERS` does NOT update the DB. Either delete the row in `data.db` first, or build a password-reset flow (preferred). I'd build the reset flow before going to production.
+- **No 2FA on founder accounts.** With operator-level access (full sales pipeline visibility, every business's data once multi-tenant lands), 2FA should be added before pitching.
+- **Existing single user `owen` keeps `business_owner` role by default** (the migration's `DEFAULT 'business_owner'` clause). To make `owen` a founder instead, run: `UPDATE users SET role='founder' WHERE username='owen';` — or simply log in as one of the seeded `founder1`-`founder5` accounts.
+- **Migration 006 + the dev DB had a special case during development** (the `ensureColumn` helper added the column before the migration ran, causing a duplicate-column error). Resolved by removing the `ensureColumn` and manually marking 006 as applied on the dev DB. Fresh installs will not hit this — the migration runs cleanly on a DB without the column.
+
+### Rollback notes
+- **DB**: `ALTER TABLE users DROP COLUMN role;` — SQLite supports this in 3.35+. Or simpler: leave the column, it's harmless without the auth code referencing it.
+- **Auth**: in [src/auth.js](src/auth.js), delete `requireRole`, `requireFounder`, `requireBusinessOwner` and their export. Revert `attachUser` to the version without `role:`. Revert login response to not include `role`.
+- **Server**: in [src/server.js](src/server.js), `replace_all` `requireFounder` → `requireAuth` and `requireBusinessOwner` → `requireAuth`. Revert the static gate block to a single `requireAuth` for both pages. Restore the `seedAdminFromEnv` and remove the `seedFoundersFromEnv` import + call.
+- **DB**: in [src/db.js](src/db.js), restore the original `seedAdminFromEnv` (without `role` in the INSERT) and the original `findSession` (without `u.role` in SELECT). Remove `seedFoundersFromEnv` and its export.
+- **Login UI**: in [public/js/login.js](public/js/login.js), revert the conditional redirect back to `window.location.href = '/admin.html'`.
+- **Cross-links**: re-add the "Founder view →" link in [public/admin.html](public/admin.html), the "→ Business dashboard" link in [public/operator.html](public/operator.html), and the `<a href="${b.adminUrl}">` in [public/js/operator.js](public/js/operator.js).
+- **`.env`**: remove `FOUNDERS=` line (purely cosmetic — no harm leaving it).
+
+---
+
 ## 2026-05-10 — `trust proxy` set to `loopback` for Cloudflare-tunnel compatibility
 
 ### Changed

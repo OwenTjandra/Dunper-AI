@@ -8,6 +8,7 @@ const path = require('path');
 const { askClaude } = require('./config/claude');
 const {
   seedAdminFromEnv,
+  seedFoundersFromEnv,
   purgeExpiredSessions,
   listBusinessVersions,
   getBusinessVersion,
@@ -53,7 +54,7 @@ const googleIntegration = require('./integrations/google');
 const whatsapp = require('./integrations/whatsapp');
 const conversation = require('./conversation');
 const emailService = require('./email');
-const { router: authRouter, attachUser, requireAuth } = require('./auth');
+const { router: authRouter, attachUser, requireFounder, requireBusinessOwner } = require('./auth');
 const { getBusiness, getSystemPrompt, applyBusinessUpdate } = require('./business');
 const { runAdminChat } = require('./admin_chat');
 const documents = require('./documents');
@@ -61,6 +62,7 @@ const documents = require('./documents');
 const { db } = require('./db');
 require('./migrations').runPending(db);
 seedAdminFromEnv();
+seedFoundersFromEnv();
 purgeExpiredSessions();
 purgeOldWhatsAppMessages();
 seedInitialBusinessVersion(getBusiness());
@@ -113,9 +115,8 @@ const webhookRoutes = require('./routes/webhooks').createRouter({
 app.use('/webhooks', webhookRoutes);
 
 app.use((req, res, next) => {
-  if (req.path === '/admin.html' || req.path === '/operator.html') {
-    return requireAuth(req, res, next);
-  }
+  if (req.path === '/admin.html') return requireBusinessOwner(req, res, next);
+  if (req.path === '/operator.html') return requireFounder(req, res, next);
   next();
 });
 app.use(express.static(path.join(__dirname, '../public')));
@@ -124,17 +125,17 @@ app.get('/health', (req, res) => {
   res.json({ status: 'Server is running', business: getBusiness().name });
 });
 
-app.get('/api/business', requireAuth, (req, res) => {
+app.get('/api/business', requireBusinessOwner,(req, res) => {
   res.json(getBusiness());
 });
 
-app.post('/api/business', requireAuth, (req, res) => {
+app.post('/api/business', requireBusinessOwner,(req, res) => {
   const result = applyBusinessUpdate(req.body, req.user, null);
   if (result.error) return res.status(result.status).json({ error: result.error });
   res.json({ ok: true, business: getBusiness() });
 });
 
-app.get('/api/business/versions', requireAuth, (req, res) => {
+app.get('/api/business/versions', requireBusinessOwner,(req, res) => {
   const versions = listBusinessVersions().map(v => ({
     id: v.id,
     username: v.username,
@@ -149,13 +150,13 @@ app.get('/api/business/versions', requireAuth, (req, res) => {
   res.json({ versions });
 });
 
-app.get('/api/business/versions/:id', requireAuth, (req, res) => {
+app.get('/api/business/versions/:id', requireBusinessOwner,(req, res) => {
   const version = getBusinessVersion(Number(req.params.id));
   if (!version) return res.status(404).json({ error: 'Version not found' });
   res.json({ version });
 });
 
-app.post('/api/business/versions/:id/restore', requireAuth, (req, res) => {
+app.post('/api/business/versions/:id/restore', requireBusinessOwner,(req, res) => {
   const version = getBusinessVersion(Number(req.params.id));
   if (!version) return res.status(404).json({ error: 'Version not found' });
   const note = `Restored from version #${version.id}`;
@@ -164,7 +165,7 @@ app.post('/api/business/versions/:id/restore', requireAuth, (req, res) => {
   res.json({ ok: true, business: getBusiness(), restoredFrom: version.id });
 });
 
-app.post('/api/admin/chat', requireAuth, async (req, res) => {
+app.post('/api/admin/chat', requireBusinessOwner,async (req, res) => {
   try {
     const { messages } = req.body;
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -300,22 +301,22 @@ app.get('/api/attachments/:id', attachCustomerProfile, (req, res) => {
   res.sendFile(documents.customerAttachmentPath(att.profile_id, att.storage_name));
 });
 
-app.get('/api/profiles', requireAuth, (req, res) => {
+app.get('/api/profiles', requireBusinessOwner,(req, res) => {
   res.json({ profiles: listCustomerProfiles() });
 });
 
-app.get('/api/profiles/:id', requireAuth, (req, res) => {
+app.get('/api/profiles/:id', requireBusinessOwner,(req, res) => {
   const profile = getCustomerProfile(Number(req.params.id));
   if (!profile) return res.status(404).json({ error: 'Profile not found' });
   const messages = getCustomerMessages(profile.id).map(serializeMessage);
   res.json({ profile, messages });
 });
 
-app.get('/api/business/documents', requireAuth, (req, res) => {
+app.get('/api/business/documents', requireBusinessOwner,(req, res) => {
   res.json({ documents: documents.listDocuments() });
 });
 
-app.post('/api/business/documents', requireAuth, (req, res) => {
+app.post('/api/business/documents', requireBusinessOwner,(req, res) => {
   documents.upload.single('file')(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message });
     if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
@@ -324,13 +325,13 @@ app.post('/api/business/documents', requireAuth, (req, res) => {
   });
 });
 
-app.delete('/api/business/documents/:id', requireAuth, (req, res) => {
+app.delete('/api/business/documents/:id', requireBusinessOwner,(req, res) => {
   const ok = documents.removeDocument(Number(req.params.id));
   if (!ok) return res.status(404).json({ error: 'Document not found.' });
   res.json({ ok: true });
 });
 
-app.post('/api/business/logo', requireAuth, (req, res) => {
+app.post('/api/business/logo', requireBusinessOwner,(req, res) => {
   documents.logoUpload.single('logo')(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message });
     if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
@@ -338,7 +339,7 @@ app.post('/api/business/logo', requireAuth, (req, res) => {
   });
 });
 
-app.patch('/api/profiles/:id', requireAuth, (req, res) => {
+app.patch('/api/profiles/:id', requireBusinessOwner,(req, res) => {
   const id = Number(req.params.id);
   if (!getCustomerProfile(id)) return res.status(404).json({ error: 'Profile not found' });
   const fields = {};
@@ -436,11 +437,11 @@ app.get('/api/customer/bookings', attachCustomerProfile, (req, res) => {
   res.json({ bookings: listBookingsForProfile(req.customerProfile.id) });
 });
 
-app.get('/api/bookings', requireAuth, (req, res) => {
+app.get('/api/bookings', requireBusinessOwner,(req, res) => {
   res.json({ bookings: listBookings() });
 });
 
-app.post('/api/bookings', requireAuth, (req, res) => {
+app.post('/api/bookings', requireBusinessOwner,(req, res) => {
   const { service, date, time, name, phone, email, notes } = req.body || {};
   if (!service || !date || !time || !name || !phone || !email) {
     return res.status(400).json({ error: 'service, date, time, name, phone, email are required' });
@@ -470,7 +471,7 @@ app.post('/api/bookings', requireAuth, (req, res) => {
   res.json({ ok: true, booking: result.booking });
 });
 
-app.post('/api/bookings/:id/cancel', requireAuth, (req, res) => {
+app.post('/api/bookings/:id/cancel', requireBusinessOwner,(req, res) => {
   const id = Number(req.params.id);
   const booking = getBookingById(id);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
@@ -480,7 +481,7 @@ app.post('/api/bookings/:id/cancel', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/api/profiles/:id/summarize', requireAuth, async (req, res) => {
+app.post('/api/profiles/:id/summarize', requireBusinessOwner,async (req, res) => {
   try {
     const profileId = Number(req.params.id);
     const profile = getCustomerProfile(profileId);
@@ -543,7 +544,7 @@ ${transcript}`;
   }
 });
 
-app.get('/api/profiles/:id/summary', requireAuth, (req, res) => {
+app.get('/api/profiles/:id/summary', requireBusinessOwner,(req, res) => {
   const summary = getCustomerSummary(Number(req.params.id));
   if (!summary) return res.status(404).json({ error: 'No summary yet.' });
   res.json({ summary });
@@ -556,13 +557,13 @@ app.post('/api/customer/escalate', attachCustomerProfile, (req, res) => {
   res.json({ ok: true, id });
 });
 
-app.get('/api/escalations', requireAuth, (req, res) => {
+app.get('/api/escalations', requireBusinessOwner,(req, res) => {
   const status = (req.query.status || 'open').toString();
   const list = status === 'all' ? listAllEscalations() : listOpenEscalations();
   res.json({ escalations: list });
 });
 
-app.post('/api/escalations/:id/resolve', requireAuth, (req, res) => {
+app.post('/api/escalations/:id/resolve', requireBusinessOwner,(req, res) => {
   const id = Number(req.params.id);
   const note = typeof req.body?.note === 'string' ? req.body.note.trim() : null;
   const ok = resolveEscalation(id, { username: req.user?.username, note });
@@ -570,11 +571,11 @@ app.post('/api/escalations/:id/resolve', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/api/unanswered', requireAuth, (req, res) => {
+app.get('/api/unanswered', requireBusinessOwner,(req, res) => {
   res.json({ unanswered: listUnansweredQuestions() });
 });
 
-app.post('/api/unanswered/:id/review', requireAuth, (req, res) => {
+app.post('/api/unanswered/:id/review', requireBusinessOwner,(req, res) => {
   const id = Number(req.params.id);
   const note = typeof req.body?.note === 'string' ? req.body.note.trim() : null;
   const status = req.body?.status === 'answered' ? 'answered' : 'reviewed';
@@ -583,15 +584,15 @@ app.post('/api/unanswered/:id/review', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/api/metrics', requireAuth, (req, res) => {
+app.get('/api/metrics', requireBusinessOwner,(req, res) => {
   res.json(getMetricsSnapshot());
 });
 
-app.get('/api/usage', requireAuth, (req, res) => {
+app.get('/api/usage', requireBusinessOwner,(req, res) => {
   res.json(getUsageSnapshot());
 });
 
-app.get('/api/operator/overview', requireAuth, (req, res) => {
+app.get('/api/operator/overview', requireFounder, (req, res) => {
   const business = getBusiness();
   const metrics = getMetricsSnapshot();
   const usage = getUsageSnapshot();
@@ -626,11 +627,11 @@ app.get('/api/operator/overview', requireAuth, (req, res) => {
   });
 });
 
-app.get('/api/operator/clients', requireAuth, (req, res) => {
+app.get('/api/operator/clients', requireFounder, (req, res) => {
   res.json({ clients: listSalesClients() });
 });
 
-app.post('/api/operator/clients', requireAuth, (req, res) => {
+app.post('/api/operator/clients', requireFounder, (req, res) => {
   const b = req.body || {};
   if (!b.businessName || !String(b.businessName).trim()) {
     return res.status(400).json({ error: 'businessName required' });
@@ -651,7 +652,7 @@ app.post('/api/operator/clients', requireAuth, (req, res) => {
   res.json({ client: created });
 });
 
-app.patch('/api/operator/clients/:id', requireAuth, (req, res) => {
+app.patch('/api/operator/clients/:id', requireFounder, (req, res) => {
   const id = Number(req.params.id);
   if (!getSalesClient(id)) return res.status(404).json({ error: 'Client not found' });
   const fields = {};
@@ -663,22 +664,22 @@ app.patch('/api/operator/clients/:id', requireAuth, (req, res) => {
   res.json({ client: getSalesClient(id) });
 });
 
-app.delete('/api/operator/clients/:id', requireAuth, (req, res) => {
+app.delete('/api/operator/clients/:id', requireFounder, (req, res) => {
   const id = Number(req.params.id);
   const ok = deleteSalesClient(id);
   if (!ok) return res.status(404).json({ error: 'Client not found' });
   res.json({ ok: true });
 });
 
-app.get('/api/email/outbox', requireAuth, (req, res) => {
+app.get('/api/email/outbox', requireBusinessOwner,(req, res) => {
   res.json({ emails: listOutboxEmails(), config: emailService.status() });
 });
 
-app.get('/api/integrations/google', requireAuth, (req, res) => {
+app.get('/api/integrations/google', requireBusinessOwner,(req, res) => {
   res.json(googleIntegration.status());
 });
 
-app.get('/api/integrations/google/connect', requireAuth, (req, res) => {
+app.get('/api/integrations/google/connect', requireBusinessOwner,(req, res) => {
   const cfg = googleIntegration.configError();
   if (cfg) return res.status(400).json({ error: cfg });
   const state = crypto.randomBytes(16).toString('hex');
@@ -708,12 +709,12 @@ app.get('/api/integrations/google/callback', async (req, res) => {
   }
 });
 
-app.post('/api/integrations/google/disconnect', requireAuth, async (req, res) => {
+app.post('/api/integrations/google/disconnect', requireBusinessOwner,async (req, res) => {
   await googleIntegration.disconnect();
   res.json({ ok: true });
 });
 
-app.get('/api/integrations/google/calendars', requireAuth, async (req, res) => {
+app.get('/api/integrations/google/calendars', requireBusinessOwner,async (req, res) => {
   try {
     res.json({ calendars: await googleIntegration.listCalendars() });
   } catch (err) {
@@ -721,7 +722,7 @@ app.get('/api/integrations/google/calendars', requireAuth, async (req, res) => {
   }
 });
 
-app.get('/api/integrations/google/sheets', requireAuth, async (req, res) => {
+app.get('/api/integrations/google/sheets', requireBusinessOwner,async (req, res) => {
   try {
     res.json({ sheets: await googleIntegration.listSheets() });
   } catch (err) {
@@ -729,7 +730,7 @@ app.get('/api/integrations/google/sheets', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/api/integrations/google/sheets/create', requireAuth, async (req, res) => {
+app.post('/api/integrations/google/sheets/create', requireBusinessOwner,async (req, res) => {
   try {
     const title = req.body?.title || `Frontdesk — ${getBusiness().name}`;
     const sheet = await googleIntegration.createSheet(title);
@@ -740,7 +741,7 @@ app.post('/api/integrations/google/sheets/create', requireAuth, async (req, res)
   }
 });
 
-app.post('/api/integrations/google/reformat', requireAuth, async (req, res) => {
+app.post('/api/integrations/google/reformat', requireBusinessOwner,async (req, res) => {
   try {
     const result = await googleIntegration.reformatExistingTabs();
     res.json(result);
@@ -749,14 +750,14 @@ app.post('/api/integrations/google/reformat', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/api/integrations/google/select', requireAuth, (req, res) => {
+app.post('/api/integrations/google/select', requireBusinessOwner,(req, res) => {
   const { calendarId, sheetId } = req.body || {};
   if (calendarId !== undefined) googleIntegration.selectCalendar(calendarId);
   if (sheetId !== undefined) googleIntegration.selectSheet(sheetId);
   res.json({ status: googleIntegration.status() });
 });
 
-app.get('/api/integrations/whatsapp', requireAuth, (req, res) => {
+app.get('/api/integrations/whatsapp', requireBusinessOwner,(req, res) => {
   res.json(whatsapp.status());
 });
 

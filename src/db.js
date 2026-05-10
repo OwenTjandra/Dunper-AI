@@ -144,6 +144,8 @@ function ensureColumn(table, column, def) {
 }
 ensureColumn('customer_profiles', 'email', 'TEXT');
 ensureColumn('bookings', 'customer_email', 'TEXT');
+// Note: users.role added by migration 006_user_roles.sql, not ensureColumn,
+// so the migration runner is the single source of truth for new schema.
 
 function seedAdminFromEnv() {
   const username = process.env.ADMIN_USERNAME;
@@ -154,8 +156,36 @@ function seedAdminFromEnv() {
   if (userCount > 0) return;
 
   const hash = bcrypt.hashSync(password, 10);
-  db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)').run(username, hash);
-  console.log(`Seeded initial admin user: ${username}`);
+  db.prepare("INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'business_owner')").run(username, hash);
+  console.log(`Seeded initial business_owner user: ${username}`);
+}
+
+function seedFoundersFromEnv() {
+  const raw = process.env.FOUNDERS;
+  if (!raw) return;
+
+  const insertStmt = db.prepare("INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'founder')");
+  const findStmt = db.prepare('SELECT id FROM users WHERE username = ?');
+
+  const seeded = [];
+  for (const pair of raw.split(',')) {
+    const trimmed = pair.trim();
+    if (!trimmed) continue;
+    const sep = trimmed.indexOf(':');
+    if (sep < 1) {
+      console.warn(`[founders] skipping malformed entry: ${trimmed}`);
+      continue;
+    }
+    const username = trimmed.slice(0, sep).trim();
+    const password = trimmed.slice(sep + 1);
+    if (!username || !password) continue;
+
+    if (findStmt.get(username)) continue; // idempotent — never overwrite existing
+    const hash = bcrypt.hashSync(password, 10);
+    insertStmt.run(username, hash);
+    seeded.push(username);
+  }
+  if (seeded.length) console.log(`Seeded founder users: ${seeded.join(', ')}`);
 }
 
 function findUserByUsername(username) {
@@ -169,7 +199,7 @@ function createSession(sessionId, userId, expiresAt) {
 
 function findSession(sessionId) {
   return db.prepare(`
-    SELECT s.id, s.user_id, s.expires_at, u.username
+    SELECT s.id, s.user_id, s.expires_at, u.username, u.role
     FROM sessions s JOIN users u ON u.id = s.user_id
     WHERE s.id = ? AND s.expires_at > CURRENT_TIMESTAMP
   `).get(sessionId);
@@ -821,6 +851,7 @@ function purgeOldWhatsAppMessages() {
 module.exports = {
   db,
   seedAdminFromEnv,
+  seedFoundersFromEnv,
   findUserByUsername,
   createSession,
   findSession,

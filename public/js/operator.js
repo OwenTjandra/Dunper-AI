@@ -98,7 +98,6 @@ async function loadOverview() {
             <div><span class="bs-label">Open Qs</span><span class="bs-val">${b.openUnanswered}</span></div>
             <div><span class="bs-label">Pending</span><span class="bs-val">${b.openEscalations}</span></div>
           </div>
-          <a href="${b.adminUrl}" class="btn-link">Open dashboard →</a>
         `;
         businessesListEl.appendChild(row);
       });
