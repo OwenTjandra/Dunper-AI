@@ -22,3 +22,6 @@ cloudflared
 
 # Local SQLite backups
 backups/
+
+# Website draft / pre-redesign backups (not part of source)
+website/_original_backup_*/
