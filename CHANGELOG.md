@@ -2,6 +2,33 @@
 
 All notable changes to this project. Entries are in reverse chronological order (newest first). Each entry lists what changed and which files to look at if a regression appears.
 
+## 2026-05-10 — Rough homepage scaffold at /homepage/
+
+### Added
+A minimal, iterable homepage scaffold with the layout the user specced (logo top-left, embedded chat in the hero, 5 nav links to their own pages). Explicitly "rough" — not a polish job; meant to be replaced when the real UI/UX files arrive.
+
+- [public/homepage/index.html](public/homepage/index.html) — Hero with the gradient headline and an `<iframe src="/">` embedding the customer chat directly on the page so visitors can try the demo without leaving.
+- [public/homepage/about.html](public/homepage/about.html), [services.html](public/homepage/services.html), [contact.html](public/homepage/contact.html), [join.html](public/homepage/join.html) — placeholder content for the four nav targets. Each has a yellow "Placeholder content" warning banner so they're obviously stubs.
+- [public/homepage/homepage.css](public/homepage/homepage.css) — single shared stylesheet (~150 lines). Sticky header, nav with active-state, hero, page-wrap layout, mobile breakpoint at 720px.
+- Every page has the same nav block: Home / About / Services / Contact / Join + a separate "Business sign in" pill that links to `/login.html`.
+
+### Why /homepage/ and not /
+- `/` is currently the customer chat, which is referenced by the WhatsApp webhook handler, the dashboard's preview links, the marketing site's iframe widget, and any future per-tenant embeds. Replacing `/` with a marketing homepage would break all of those silently.
+- `/homepage/` is a clean test path that doesn't collide with anything.
+- When you're ready to swap, it's a 10-line change in [src/server.js](src/server.js) static-file routing — but that's a deliberate decision for later.
+
+### Known issues / things to watch
+- **The embedded chat iframes `/`** (the customer chat). Visitors to the homepage will be chatting with the demo "Dr. Smith Dental Clinic" bot. Fine for testing layout; obviously needs to point at a per-tenant configuration once multi-tenant lands.
+- **No JS** — every page is static HTML. No form handlers wired (Contact and Join just show placeholder text).
+- **Nav block is duplicated across 5 HTML files** by design (no template engine for "rough"). When the real design lands, the cleanest move is either a shared `<header>` partial included via JS fetch, or a build step.
+- **Brand fonts** — uses system font stack. The polished `website/` site at the project root uses Syne + DM Sans; this scaffold doesn't. Match later if needed.
+- **Not the same as `website/`** — this is a separate, simpler scaffold. The 6-page polished site at [website/](website/) (deployed via Cloudflare Pages) is unaffected.
+
+### Rollback notes
+- Delete the entire `public/homepage/` directory. No code outside that directory references it; nothing breaks.
+
+---
+
 ## 2026-05-10 — Role-based separation between business_owner and founder dashboards
 
 ### Added
