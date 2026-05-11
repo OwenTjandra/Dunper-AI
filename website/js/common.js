@@ -634,6 +634,53 @@
        chip-style ::before doesn't render a second dot. */
     .hero-badge .badge-dot { display: none !important; }
 
+    /* Decorative hero overlays on the home page (orbs + grid + bg) were
+       intercepting clicks on the hero-actions buttons below them. Make
+       them visible-only. */
+    section.hero .hero-orb,
+    section.hero .hero-bg,
+    section.hero .hero-grid { pointer-events: none !important; }
+    /* Lift the hero buttons above any positioned decoration just in case. */
+    section.hero .hero-actions,
+    section.hero .hero-actions a { z-index: 5 !important; position: relative !important; }
+
+    /* Base layout for .nav-chatbar (used unconditionally — widget pages
+       don't ship their own nav-chatbar CSS, so without this they render
+       as a vertical stack instead of a search pill). Doesn't use
+       !important so existing per-page rules still apply where present. */
+    .nav-chatbar {
+      display: flex;
+      align-items: center;
+      border-radius: 50px;
+      overflow: hidden;
+      flex: 1;
+      max-width: 460px;
+      transition: border-color .25s ease, box-shadow .25s ease;
+    }
+    .nav-chatbar input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      padding: 9px 16px;
+      font-size: 13px;
+    }
+    .chatbar-send {
+      border: none;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      margin: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: transform .2s ease;
+    }
+    .chatbar-send svg { width: 13px; height: 13px; }
+    .chatbar-send:hover { transform: scale(1.06); }
+
     /* "For developers" CTA section on the home page */
     body.page-home .dev-cta {
       padding: 60px 40px 100px;
