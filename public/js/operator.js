@@ -103,11 +103,62 @@ async function loadOverview() {
       });
     }
 
+    renderThisWeek(data.pipeline || {});
     renderPipelineTiles(data.pipeline || {});
     renderUpcoming(data.pipeline?.upcoming || []);
   } catch (err) {
     aggregateGridEl.innerHTML = `<p class="hint err">Failed: ${escapeHtml(err.message)}</p>`;
   }
+}
+
+function renderThisWeek(pipeline) {
+  const grid = document.getElementById('this-week-grid');
+  const actions = document.getElementById('this-week-actions');
+  const dateEl = document.getElementById('this-week-date');
+  if (!grid) return;
+
+  const t = pipeline.totals || {};
+  const upcoming = pipeline.upcoming || [];
+  const now = new Date();
+  const in7 = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
+  const next7 = upcoming.filter(r => {
+    const d = new Date(r.next_step_at);
+    return d >= now && d <= in7;
+  });
+  const demosNext7 = next7.filter(r => r.status === 'demo_scheduled').length;
+
+  if (dateEl) {
+    const fmt = { month: 'short', day: 'numeric' };
+    dateEl.textContent = `${now.toLocaleDateString([], fmt)} → ${in7.toLocaleDateString([], fmt)}`;
+  }
+
+  grid.innerHTML = [
+    `<div class="tw-tile tw-mrr"><span class="tw-label">Active MRR</span><span class="tw-value">${escapeHtml(fmtMoney(t.activeMrr ?? 0))}</span><span class="tw-sub">${t.active ?? 0} paying ${(t.active === 1) ? 'customer' : 'customers'}</span></div>`,
+    `<div class="tw-tile tw-demos"><span class="tw-label">Demos this week</span><span class="tw-value">${demosNext7}</span><span class="tw-sub">scheduled in next 7 days</span></div>`,
+    `<div class="tw-tile tw-pipeline"><span class="tw-label">Open pipeline</span><span class="tw-value">${(t.leads ?? 0) + (t.demoScheduled ?? 0) + (t.demoDone ?? 0) + (t.proposalSent ?? 0)}</span><span class="tw-sub">leads + demos + proposals</span></div>`,
+    `<div class="tw-tile tw-actions-count"><span class="tw-label">Actions due</span><span class="tw-value">${next7.length}</span><span class="tw-sub">next steps in next 7 days</span></div>`,
+  ].join('');
+
+  if (!next7.length) {
+    actions.innerHTML = `<p class="hint" style="margin-top:14px;">No next steps scheduled in the next 7 days. <a href="#" id="this-week-add">Add one</a>.</p>`;
+    const addLink = document.getElementById('this-week-add');
+    if (addLink) addLink.addEventListener('click', (e) => { e.preventDefault(); openAddClientBtn?.click(); });
+    return;
+  }
+  let html = '<div class="tw-actions-list">';
+  next7.slice(0, 5).forEach(r => {
+    html += `<div class="tw-action-row" data-id="${r.id}">
+      <span class="tw-action-when">${escapeHtml(fmtDate(r.next_step_at))}</span>
+      <span class="tw-action-name">${escapeHtml(r.business_name)}</span>
+      <span class="tw-action-step">${escapeHtml(r.next_step || '—')}</span>
+      <span class="pill status-${escapeHtml(r.status)}">${escapeHtml(STATUS_LABELS[r.status] || r.status)}</span>
+    </div>`;
+  });
+  html += '</div>';
+  actions.innerHTML = html;
+  actions.querySelectorAll('.tw-action-row').forEach(el => {
+    el.addEventListener('click', () => openEditClient(Number(el.dataset.id)));
+  });
 }
 
 function renderPipelineTiles(pipeline) {

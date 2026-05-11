@@ -27,6 +27,17 @@
       <strong>Note:</strong> Right now Dunper is single-tenant — one server = one business. There's <strong>1 business</strong> on this deployment. When you go multi-tenant (around customer #15 per the <a href="https://github.com/OwenTjandra/FrontDesk/blob/main/docs/scaling-roadmap.md" target="_blank">scaling roadmap</a>), this list auto-populates with every tenant.
     </p>
 
+    <section class="card pinned-card" id="this-week-card">
+      <div class="pinned-head">
+        <h2>This week <span class="pinned-sub">at a glance</span></h2>
+        <span class="pinned-date" id="this-week-date"></span>
+      </div>
+      <div id="this-week-grid" class="this-week-grid">
+        <p class="hint">Loading…</p>
+      </div>
+      <div id="this-week-actions" class="this-week-actions"></div>
+    </section>
+
     <section class="card">
       <h2>Aggregate snapshot</h2>
       <div id="aggregate-grid" class="metrics-grid">
