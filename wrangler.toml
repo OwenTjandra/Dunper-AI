@@ -15,16 +15,13 @@ compatibility_date = "2024-10-01"
 directory = "./website"
 not_found_handling = "single-page-application"
 
-# Custom domains for dunper.com / www.dunper.com will be added here
-# AFTER you swap GoDaddy nameservers to Cloudflare and Cloudflare
-# detects the zone. Until then, leaving them in this file fails the
-# entire build. Uncomment + push once Cloudflare shows dunper.com as
-# "Active" in the Websites tab:
-#
-# [[routes]]
-# pattern = "dunper.com"
-# custom_domain = true
-#
-# [[routes]]
-# pattern = "www.dunper.com"
-# custom_domain = true
+# Custom domains — dunper.com is now on Cloudflare (verified via DNS
+# lookup: nameservers are grant.ns.cloudflare.com + melissa.ns.cloudflare.com).
+# These routes attach the Worker to both bare and www domains.
+[[routes]]
+pattern = "dunper.com"
+custom_domain = true
+
+[[routes]]
+pattern = "www.dunper.com"
+custom_domain = true
