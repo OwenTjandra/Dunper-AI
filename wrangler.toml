@@ -1,0 +1,16 @@
+# Cloudflare Workers + Static Assets config.
+#
+# This tells Cloudflare to serve the marketing site (./website) as a
+# static-asset Worker. The chatbot product (./public) is NOT served
+# from this Worker — it runs from the laptop via cloudflared tunnel
+# (see docs/deploy-dunper-com.md).
+#
+# When the Cloudflare project is wired to Git auto-deploy, it picks
+# up this file on every push and serves ./website as the site root.
+
+name = "dunper-ai"
+compatibility_date = "2024-10-01"
+
+[assets]
+directory = "./website"
+not_found_handling = "single-page-application"
