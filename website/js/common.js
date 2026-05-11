@@ -657,6 +657,15 @@
       max-width: 460px;
       transition: border-color .25s ease, box-shadow .25s ease;
     }
+    /* Services / Contact / Join Us use a flat nav (no nav-left wrapper
+       and no justify-content:space-between), so the chatbar was sitting
+       flush against the nav links. Push it right so the visual layout
+       matches the home page (chatbar floats near the Sign In CTA). */
+    body.page-services nav .nav-chatbar,
+    body.page-contact nav .nav-chatbar,
+    body.page-join nav .nav-chatbar {
+      margin-left: auto !important;
+    }
     .nav-chatbar input {
       flex: 1;
       background: none;
