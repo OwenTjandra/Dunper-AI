@@ -215,11 +215,11 @@ async function loadAlerts() {
     ]);
     if (handleUnauthorized(escRes) || handleUnauthorized(unaRes)) return;
     const escData = escRes.ok ? await escRes.json() : { escalations: [] };
-    const unaData = unaRes.ok ? await unaRes.json() : { questions: [] };
+    const unaData = unaRes.ok ? await unaRes.json() : { unanswered: [] };
 
     const items = []
       .concat((escData.escalations || []).map(e => ({ type: 'Handoff', text: e.reason, time: e.created_at })))
-      .concat((unaData.questions  || []).map(u => ({ type: 'Unanswered', text: u.question, time: u.created_at })))
+      .concat((unaData.unanswered || []).map(u => ({ type: 'Unanswered', text: u.question_text, time: u.created_at })))
       .sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0))
       .slice(0, 10);
 
@@ -250,7 +250,8 @@ async function loadProfile() {
     const r = await fetch('/api/auth/me', { credentials: 'include' });
     if (handleUnauthorized(r)) return;
     if (!r.ok) return;
-    const u = await r.json();
+    const data = await r.json();
+    const u = data.user || data;
     const name = u.username || u.name || 'there';
     setText('greeting', `Hello, ${name}. 👋`);
     setText('sidebar-username', name);

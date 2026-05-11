@@ -24,6 +24,7 @@ const bcrypt = require('bcryptjs');
 process.chdir(path.join(__dirname, '..'));
 
 const { db } = require('../src/db');
+require('../src/migrations').runPending(db);
 
 function listUsers() {
   const rows = db.prepare(

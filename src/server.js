@@ -259,6 +259,7 @@ function attachCustomerProfile(req, res, next) {
     res.cookie(CUSTOMER_COOKIE, sid, {
       httpOnly: true,
       sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
       maxAge: CUSTOMER_COOKIE_TTL_MS,
     });
   }
@@ -284,6 +285,14 @@ function serializeMessage(m) {
     createdAt: m.created_at,
     attachments: getAttachmentsForMessage(m.id).map(serializeAttachment),
   };
+}
+
+function contentDispositionFilename(filename) {
+  const fallback = String(filename || 'attachment')
+    .replace(/[\r\n"]/g, '_')
+    .replace(/[\\\/]/g, '_')
+    .slice(0, 120) || 'attachment';
+  return `inline; filename="${fallback}"`;
 }
 
 function buildClaudeMessageContent(message, attachments) {
@@ -367,7 +376,7 @@ app.get('/api/attachments/:id', attachCustomerProfile, (req, res) => {
   }
 
   res.setHeader('Content-Type', att.content_type);
-  res.setHeader('Content-Disposition', `inline; filename="${att.original_filename}"`);
+  res.setHeader('Content-Disposition', contentDispositionFilename(att.original_filename));
   res.sendFile(documents.customerAttachmentPath(att.profile_id, att.storage_name));
 });
 

@@ -23,6 +23,16 @@ function applied(db) {
   return new Set(db.prepare('SELECT version FROM schema_migrations').all().map(r => r.version));
 }
 
+function columnExists(db, table, column) {
+  return db.prepare(`PRAGMA table_info(${table})`).all().some(c => c.name === column);
+}
+
+function makeAlterAddColumnIdempotent(db, sql) {
+  return sql.replace(/ALTER\s+TABLE\s+(\w+)\s+ADD\s+COLUMN\s+(\w+)\s+([^;]+);/gi, (stmt, table, column) => {
+    return columnExists(db, table, column) ? `-- skipped existing column: ${table}.${column};` : stmt;
+  });
+}
+
 function runPending(db) {
   ensureMigrationsTable(db);
   const done = applied(db);
@@ -31,8 +41,8 @@ function runPending(db) {
   if (pending.length === 0) return { applied: [] };
 
   const applyOne = db.transaction((file) => {
-    const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8');
-    db.exec(sql);
+    const sql = makeAlterAddColumnIdempotent(db, fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8'));
+    if (sql.trim()) db.exec(sql);
     db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(file);
   });
 

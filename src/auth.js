@@ -18,6 +18,7 @@ const SESSION_COOKIE = 'frontdesk_session';
 const PENDING_COOKIE = 'frontdesk_pending';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const PENDING_TTL_MS = 10 * 60 * 1000; // matches login_codes expiry
+const COOKIE_SECURE = process.env.NODE_ENV === 'production';
 
 function newSessionId() {
   return crypto.randomBytes(32).toString('hex');
@@ -27,6 +28,7 @@ function setSessionCookie(res, sessionId) {
   res.cookie(SESSION_COOKIE, sessionId, {
     httpOnly: true,
     sameSite: 'lax',
+    secure: COOKIE_SECURE,
     maxAge: SESSION_TTL_MS,
   });
 }
@@ -44,6 +46,7 @@ function setPendingCookie(res, userId) {
   res.cookie(PENDING_COOKIE, `${payload}.${sig}`, {
     httpOnly: true,
     sameSite: 'lax',
+    secure: COOKIE_SECURE,
     maxAge: PENDING_TTL_MS,
   });
 }
@@ -53,13 +56,18 @@ function readPendingCookie(req) {
   if (!raw) return null;
   const [payload, sig] = raw.split('.');
   if (!payload || !sig) return null;
-  if (signPending(payload) !== sig) return null;
+  if (!safeEqual(signPending(payload), sig)) return null;
   return Number(payload);
 }
 function signPending(payload) {
   // Sign with the session-secret derived from .env if set, else a stable per-process key.
   const secret = process.env.PENDING_LOGIN_SECRET || process.env.ANTHROPIC_API_KEY || 'dev-secret';
   return crypto.createHmac('sha256', secret).update(payload).digest('hex').slice(0, 24);
+}
+function safeEqual(a, b) {
+  const left = Buffer.from(String(a));
+  const right = Buffer.from(String(b));
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
 }
 
 function attachUser(req, _res, next) {

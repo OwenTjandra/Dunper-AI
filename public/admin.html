@@ -818,7 +818,7 @@
       items.push({ dot: 'red', text: `Customer waiting for agent: ${escapeHtml(e.customer_name || 'unknown')}`, time: relativeTime(e.created_at) });
     });
     unanswered.slice(0, 2).forEach(u => {
-      items.push({ dot: 'yellow', text: `Unanswered question — ${escapeHtml((u.question || '').slice(0, 80))}`, time: relativeTime(u.created_at) });
+      items.push({ dot: 'yellow', text: `Unanswered question — ${escapeHtml((u.question_text || '').slice(0, 80))}`, time: relativeTime(u.created_at) });
     });
     const recentConfirmed = bookings
       .filter(b => b.status !== 'cancelled')
@@ -943,7 +943,7 @@
         items.push({ dot: 'red', text: `Customer waiting for agent: ${escapeHtml(e.customer_name || 'unknown')} — ${escapeHtml((e.reason || 'Requested from chat').slice(0, 80))}`, time: relativeTime(e.created_at) });
       });
       unanswered.forEach(u => {
-        items.push({ dot: 'yellow', text: `Unanswered: ${escapeHtml((u.question || '').slice(0, 100))}`, time: relativeTime(u.created_at) });
+        items.push({ dot: 'yellow', text: `Unanswered: ${escapeHtml((u.question_text || '').slice(0, 100))}`, time: relativeTime(u.created_at) });
       });
       if (items.length === 0) {
         chatsList.innerHTML = '<div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">No chat alerts.</div>';

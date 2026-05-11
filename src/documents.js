@@ -147,7 +147,6 @@ const LOGO_ALLOWED_MIME = new Set([
   'image/png',
   'image/gif',
   'image/webp',
-  'image/svg+xml',
 ]);
 const LOGO_MAX_BYTES = 3 * 1024 * 1024;
 
@@ -164,7 +163,7 @@ const logoUpload = multer({
   limits: { fileSize: LOGO_MAX_BYTES },
   fileFilter: (_req, file, cb) => {
     if (!LOGO_ALLOWED_MIME.has(file.mimetype)) {
-      return cb(new Error(`Unsupported logo type: ${file.mimetype}. Allowed: JPEG, PNG, GIF, WEBP, SVG.`));
+      return cb(new Error(`Unsupported logo type: ${file.mimetype}. Allowed: JPEG, PNG, GIF, WEBP.`));
     }
     cb(null, true);
   },

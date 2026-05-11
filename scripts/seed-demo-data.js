@@ -22,6 +22,7 @@ const path = require('path');
 process.chdir(path.join(__dirname, '..'));
 
 const { db } = require('../src/db');
+require('../src/migrations').runPending(db);
 const {
   createBooking,
   createSalesClient,
@@ -49,7 +50,7 @@ function reset() {
   }
   db.prepare("DELETE FROM customer_profiles WHERE session_id LIKE ?").run(DEMO_PREFIX + '%');
   db.prepare("DELETE FROM sales_clients WHERE business_name LIKE 'DEMO · %'").run();
-  db.prepare("DELETE FROM unanswered_questions WHERE question LIKE 'DEMO ·%' OR id IN (SELECT id FROM unanswered_questions WHERE created_at > datetime('now','-2 hours') AND question LIKE '%laser%' OR question LIKE '%refund%')").run();
+  db.prepare("DELETE FROM unanswered_questions WHERE question_text LIKE 'DEMO ·%' OR id IN (SELECT id FROM unanswered_questions WHERE created_at > datetime('now','-2 hours') AND (question_text LIKE '%laser%' OR question_text LIKE '%refund%'))").run();
   db.prepare("DELETE FROM anthropic_usage_log WHERE call_site = 'demo-seed'").run();
   console.log('   …done.');
 }
@@ -230,17 +231,17 @@ function seed() {
     "INSERT INTO customer_summaries (profile_id, summary, sentiment, intent) VALUES (?, ?, ?, ?)"
   );
   const insertEscalation = db.prepare(
-    "INSERT INTO escalations (profile_id, reason, status) VALUES (?, ?, 'open')"
+    "INSERT INTO escalations (profile_id, reason, status) VALUES (?, ?, 'pending')"
   );
   const insertUnanswered = db.prepare(
-    "INSERT INTO unanswered_questions (profile_id, question, status) VALUES (?, ?, 'open')"
+    "INSERT INTO unanswered_questions (profile_id, question_text, status) VALUES (?, ?, 'open')"
   );
 
   for (const c of conversations) {
     const r = insertProfile.run(c.session, c.name, c.phone, c.email, c.notes);
     const profileId = r.lastInsertRowid;
     for (const [role, content] of c.messages) {
-      insertMsg.run(profileId, role, content);
+      insertMsg.run(profileId, role === 'customer' ? 'user' : role, content);
     }
     insertSummary.run(profileId, c.summary, c.sentiment, c.intent);
     if (c.escalate) {
@@ -305,7 +306,7 @@ function seed() {
       createdAt.setHours(9 + Math.floor(i * 12 / calls), Math.floor(Math.random() * 60));
       db.prepare(`
         INSERT INTO anthropic_usage_log
-          (call_site, profile_id, model, input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens, cost_usd, created_at)
+          (call_site, profile_id, model, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cost_usd, created_at)
         VALUES ('demo-seed', NULL, 'claude-sonnet-4-6', ?, ?, ?, ?, ?, ?)
       `).run(input, output, cacheCreate, cacheRead, cost, createdAt.toISOString().replace('T',' ').replace(/\.\d+Z$/, ''));
     }
