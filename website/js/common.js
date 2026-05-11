@@ -1,11 +1,11 @@
 /* Dunper marketing site — shared JS
  *
  * Provides:
- *   - Nav chatbar handler: navigates to the chat landing page with the typed
- *     question as a URL param. Works on both <form> and <div> chatbars.
+ *   - Nav chatbar: typing + send navigates to the chat landing page.
  *   - Scroll-triggered fade-in animations on cards and sections.
- *   - Hover polish on cards, nav links and CTA buttons (injected as a single
- *     stylesheet so individual pages don't need to repeat it).
+ *   - A site-wide "Pinterest-style" visual refresh injected as a single
+ *     stylesheet: lavender-blue body, white cards with soft shadows, dark
+ *     navy pill buttons, geometric sans typography, chip section labels.
  */
 
 (function () {
@@ -37,10 +37,408 @@
     }
   }
 
-  // ===== Inject shared animation / hover stylesheet =====
+  // ===== Injected stylesheet (Pinterest-style refresh + animations) =====
   const animCss = `
-    /* fade-in target list — kept hidden until JS marks <body> ready, so non-JS
-       visitors still see everything. */
+    /* ===========================================================
+       PINTEREST-STYLE REFRESH
+       Minimal lavender-blue body, white cards, dark navy pill
+       buttons, geometric sans throughout, chip-style labels.
+       =========================================================== */
+
+    body {
+      background:
+        radial-gradient(ellipse 80% 60% at 15% -5%, rgba(206,219,242,.55) 0%, transparent 60%),
+        radial-gradient(ellipse 70% 50% at 85% 105%, rgba(192,207,234,.45) 0%, transparent 60%),
+        #EBF0FA !important;
+      color: #0A1430 !important;
+      font-family: 'Outfit', 'DM Sans', system-ui, -apple-system, sans-serif !important;
+    }
+
+    /* Headings — sans-serif, bold, dark navy */
+    h1, h2, h3, h4, h5, h6,
+    .hero-title, .page-title, .section-title,
+    .chat-title, .compare-title, .card-title,
+    .ty-title {
+      font-family: 'Outfit', sans-serif !important;
+      font-weight: 700 !important;
+      color: #0A1430 !important;
+      font-style: normal !important;
+      letter-spacing: -0.02em !important;
+    }
+
+    /* Italic emphasis becomes coloured-bold instead of italic-serif */
+    h1 em, h2 em, h3 em,
+    .hero-title em, .section-title em, .chat-title em,
+    .page-title em, .card-title em,
+    h1 .line-two {
+      font-style: normal !important;
+      color: #1E3A8A !important;
+      background: none !important;
+      -webkit-background-clip: padding-box !important;
+      background-clip: padding-box !important;
+      -webkit-text-fill-color: #1E3A8A !important;
+      font-weight: 700 !important;
+    }
+
+    /* Secondary body text — slate grey */
+    .hero-sub, .page-sub, .chat-sub, .card-sub,
+    .section-body, .section-body p,
+    .demo-text p, .cta-box p, .chatbot-text p,
+    .terms-note, .info-card p, .step p, .feature-card p,
+    .team-card p, .split-card p, .compare-subtitle,
+    .toggle-label, .team-bio, .fact-label,
+    .ty-step-text, .ty-sub {
+      color: #475569 !important;
+      font-weight: 400 !important;
+      -webkit-text-fill-color: #475569 !important;
+      background: none !important;
+      -webkit-background-clip: padding-box !important;
+      background-clip: padding-box !important;
+    }
+
+    /* === Cards: pure white with soft drop shadow === */
+    .feature-card, .info-card, .value-card, .step,
+    .team-card, .split-card, .plan-card, .auth-card,
+    .invoice-box, .terms-box, .mission-section,
+    .demo-visual, .chatbot-section, .compare-section,
+    .chat-window {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(15,23,42,0.05) !important;
+      box-shadow: 0 10px 32px rgba(15,23,42,0.06) !important;
+      border-radius: 22px !important;
+    }
+    .feature-card:hover, .info-card:hover, .value-card:hover,
+    .team-card:hover, .split-card:hover, .step:hover,
+    .plan-card:hover {
+      transform: translateY(-6px) !important;
+      border-color: rgba(15,23,42,0.10) !important;
+      box-shadow: 0 22px 52px rgba(15,23,42,0.09) !important;
+    }
+
+    /* Featured plan card gets a subtle blue tint to stand out */
+    .plan-card.featured {
+      background: linear-gradient(180deg, #EEF3FF 0%, #FFFFFF 100%) !important;
+      border-color: rgba(30,58,138,0.18) !important;
+    }
+
+    /* === Buttons: dark navy pills === */
+    .btn-primary, .nav-cta, .submit-btn, .plan-btn,
+    .modal-actions button, .chatbar-send, .composer button,
+    .featured-btn {
+      background: #0A1430 !important;
+      color: #FFFFFF !important;
+      border: none !important;
+      box-shadow: 0 6px 18px rgba(10,20,48,0.18) !important;
+      transition: background .2s ease, transform .2s ease, box-shadow .2s ease !important;
+    }
+    .btn-primary:hover, .nav-cta:hover, .submit-btn:hover,
+    .plan-btn:hover, .modal-actions button:hover,
+    .chatbar-send:hover, .composer button:hover {
+      background: #1E3A8A !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 10px 24px rgba(10,20,48,0.24) !important;
+    }
+    .chatbar-send svg, .composer button svg {
+      fill: #FFFFFF !important;
+    }
+
+    /* Outline button */
+    .btn-outline {
+      background: transparent !important;
+      border: 1.5px solid rgba(15,23,42,0.15) !important;
+      color: #0A1430 !important;
+      box-shadow: none !important;
+    }
+    .btn-outline:hover {
+      background: rgba(15,23,42,0.04) !important;
+      border-color: rgba(15,23,42,0.3) !important;
+      color: #0A1430 !important;
+    }
+
+    /* === Nav === */
+    nav {
+      background: rgba(235,240,250,0.82) !important;
+      backdrop-filter: blur(14px) saturate(140%) !important;
+      border-bottom: 1px solid rgba(15,23,42,0.06) !important;
+    }
+    .logo-text {
+      color: #0A1430 !important;
+      font-family: 'Outfit', sans-serif !important;
+    }
+    .nav-links a {
+      color: #475569 !important;
+      text-transform: none !important;
+      letter-spacing: 0 !important;
+      font-weight: 500 !important;
+      font-size: 13.5px !important;
+    }
+    .nav-links a:hover { color: #0A1430 !important; }
+    .nav-links a.active { color: #1E3A8A !important; }
+    .nav-links a::after { background: #1E3A8A !important; }
+
+    /* Nav chatbar */
+    .nav-chatbar {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(15,23,42,0.08) !important;
+      box-shadow: 0 2px 10px rgba(15,23,42,0.04) !important;
+    }
+    .nav-chatbar input {
+      color: #0A1430 !important;
+      font-family: 'Outfit', sans-serif !important;
+    }
+    .nav-chatbar input::placeholder {
+      color: #94A3B8 !important;
+      opacity: 1 !important;
+    }
+    .nav-chatbar:focus-within {
+      border-color: rgba(30,58,138,0.4) !important;
+      box-shadow: 0 0 0 3px rgba(30,58,138,0.08) !important;
+    }
+
+    /* === Chip-style section labels (the "● Business Impact" pattern) === */
+    .section-label, .page-label, .chat-label, .hero-label,
+    .section-tag, .plan-badge, .save-badge, .hero-badge {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 7px !important;
+      background: #FFFFFF !important;
+      border: 1px solid rgba(15,23,42,0.08) !important;
+      color: #0A1430 !important;
+      -webkit-text-fill-color: #0A1430 !important;
+      padding: 6px 14px !important;
+      border-radius: 50px !important;
+      font-size: 11.5px !important;
+      font-weight: 500 !important;
+      letter-spacing: 0 !important;
+      text-transform: none !important;
+      background-image: none !important;
+      -webkit-background-clip: padding-box !important;
+      background-clip: padding-box !important;
+      box-shadow: 0 2px 8px rgba(15,23,42,0.04) !important;
+      font-family: 'Outfit', sans-serif !important;
+      line-height: 1.4 !important;
+    }
+    .section-label::before, .page-label::before, .chat-label::before,
+    .hero-label::before, .section-tag::before, .plan-badge::before,
+    .save-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #3B82F6;
+      flex-shrink: 0;
+      display: inline-block;
+    }
+    .plan-badge::before { background: #34D399 !important; }
+    .save-badge::before { background: #FB923C !important; }
+
+    /* === Inputs === */
+    input:not([type=checkbox]):not([type=radio]),
+    textarea, select {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(15,23,42,0.10) !important;
+      color: #0A1430 !important;
+      border-radius: 12px !important;
+      font-family: 'Outfit', sans-serif !important;
+    }
+    input:not([type=checkbox]):not([type=radio]):focus,
+    textarea:focus, select:focus {
+      border-color: rgba(15,23,42,0.4) !important;
+      box-shadow: 0 0 0 3px rgba(15,23,42,0.06) !important;
+      outline: none !important;
+    }
+    input::placeholder, textarea::placeholder {
+      color: #94A3B8 !important;
+      opacity: 1 !important;
+    }
+
+    /* === Hero: white card sitting on the lavender body === */
+    section.hero {
+      background: #FFFFFF !important;
+      color: #0A1430 !important;
+      border-radius: 32px !important;
+      margin: 88px 24px 60px !important;
+      padding: 80px 40px 80px !important;
+      position: relative !important;
+      overflow: hidden !important;
+      min-height: auto !important;
+      box-shadow: 0 20px 60px rgba(15,23,42,0.06) !important;
+      isolation: isolate !important;
+    }
+    section.hero::after { display: none !important; }
+    section.hero h1, section.hero .hero-title {
+      color: #0A1430 !important;
+      -webkit-text-fill-color: #0A1430 !important;
+    }
+    section.hero p, section.hero .hero-sub {
+      color: #475569 !important;
+      -webkit-text-fill-color: #475569 !important;
+    }
+    section.hero h1 em,
+    section.hero .hero-title em,
+    section.hero h1 .line-two {
+      color: #1E3A8A !important;
+      -webkit-text-fill-color: #1E3A8A !important;
+      background: none !important;
+      -webkit-background-clip: padding-box !important;
+      background-clip: padding-box !important;
+    }
+    section.hero .btn-outline {
+      color: #0A1430 !important;
+      border-color: rgba(15,23,42,0.15) !important;
+    }
+    section.hero .scroll-cue { color: #475569 !important; }
+    /* tone down decorative orbs so they're a faint blue glow */
+    section.hero .hero-orb { opacity: 0.35 !important; filter: blur(80px) !important; }
+    section.hero .hero-grid { opacity: 0.25 !important; }
+
+    /* Override the old dark-hero nav rule — keep nav light over light hero */
+    body:has(section.hero) nav {
+      background: rgba(235,240,250,0.82) !important;
+      backdrop-filter: blur(14px) saturate(140%) !important;
+      border-bottom-color: rgba(15,23,42,0.06) !important;
+    }
+    body:has(section.hero) nav .logo-text { color: #0A1430 !important; }
+    body:has(section.hero) nav .nav-links a { color: #475569 !important; }
+    body:has(section.hero) nav .nav-links a:hover { color: #0A1430 !important; }
+    body:has(section.hero) nav .nav-links a.active { color: #1E3A8A !important; }
+    body:has(section.hero) nav .nav-chatbar {
+      background: #FFFFFF !important;
+      border-color: rgba(15,23,42,0.08) !important;
+    }
+    body:has(section.hero) nav .nav-chatbar input { color: #0A1430 !important; }
+    body:has(section.hero) nav .nav-chatbar input::placeholder { color: #94A3B8 !important; }
+
+    /* === Disable animated bg orbs (Pinterest is minimal) === */
+    body.animated-bg::before,
+    body.animated-bg::after,
+    body.animated-bg > .ambient-orb {
+      display: none !important;
+    }
+    body.animated-bg {
+      isolation: auto !important;
+    }
+
+    /* === Icon chips inside cards: soft grey-blue tile with emoji === */
+    .feature-icon, .split-icon, .value-icon, .info-icon,
+    .step-icon {
+      background: #F1F5F9 !important;
+      color: #0A1430 !important;
+      box-shadow: inset 0 0 0 1px rgba(15,23,42,0.04) !important;
+    }
+
+    /* === Team avatars: dark navy circle with white initials === */
+    .team-photo {
+      background: #0A1430 !important;
+      color: #FFFFFF !important;
+      border: none !important;
+    }
+    .team-avatar {
+      background: #0A1430 !important;
+      color: #FFFFFF !important;
+    }
+
+    /* === Step / progress dots === */
+    .step-dot {
+      background: #FFFFFF !important;
+      border: 2px solid rgba(15,23,42,0.15) !important;
+      color: #94A3B8 !important;
+    }
+    .step-dot.done, .step-dot.active {
+      background: #0A1430 !important;
+      color: #FFFFFF !important;
+      border-color: #0A1430 !important;
+    }
+    .step-connector.done { background: #0A1430 !important; }
+
+    /* Step numbers in card lists */
+    .step-num, .timeline-date {
+      color: #1E3A8A !important;
+      font-weight: 600 !important;
+    }
+
+    /* === Tabs === */
+    .tab-btn { color: #475569 !important; }
+    .tab-btn.active {
+      color: #0A1430 !important;
+      border-bottom-color: #1E3A8A !important;
+    }
+
+    /* === Compare table === */
+    .compare-table th, .compare-table td {
+      color: #0A1430 !important;
+      border-color: rgba(15,23,42,0.06) !important;
+    }
+    .compare-table .tick { color: #34D399 !important; }
+    .compare-table .cross { color: #94A3B8 !important; }
+
+    /* === Modal === */
+    .modal-card {
+      background: #FFFFFF !important;
+      color: #0A1430 !important;
+    }
+    .modal-card h2, .modal-card h2 em {
+      color: #0A1430 !important;
+      -webkit-text-fill-color: #0A1430 !important;
+    }
+    .modal-card .terms-box {
+      background: #F8FAFC !important;
+      color: #0A1430 !important;
+      border-color: rgba(15,23,42,0.08) !important;
+    }
+
+    /* === Chat bubbles === */
+    .msg-bot .msg-bubble {
+      background: #F1F5F9 !important;
+      color: #0A1430 !important;
+      border-color: rgba(15,23,42,0.06) !important;
+    }
+    .msg-user .msg-bubble {
+      background: #0A1430 !important;
+      color: #FFFFFF !important;
+    }
+    .msg-bot .msg-bubble strong { color: #0A1430 !important; }
+    .msg-bot .msg-bubble a { color: #1E3A8A !important; }
+    .msg-user .msg-avatar {
+      background: #0A1430 !important;
+      color: #FFFFFF !important;
+    }
+
+    /* Chat CTA strip */
+    .chat-cta a {
+      background: #FFFFFF !important;
+      border-color: rgba(15,23,42,0.10) !important;
+      color: #475569 !important;
+    }
+    .chat-cta a:hover {
+      border-color: rgba(15,23,42,0.3) !important;
+      color: #0A1430 !important;
+    }
+
+    /* === Footer === */
+    footer {
+      background: transparent !important;
+      color: #475569 !important;
+      border-top: 1px solid rgba(15,23,42,0.06) !important;
+    }
+    footer .footer-copy, footer .footer-right,
+    footer span, footer a {
+      color: #475569 !important;
+      -webkit-text-fill-color: #475569 !important;
+      background: none !important;
+      -webkit-background-clip: padding-box !important;
+      background-clip: padding-box !important;
+    }
+    footer .logo-text { color: #0A1430 !important; }
+
+    /* === Disable the playful shimmer on buttons (too busy for this aesthetic) === */
+    .nav-cta::after, .submit-btn::after, .btn-primary::after,
+    .plan-btn.featured-btn::after, .composer button::after,
+    .chatbar-send::after, .modal-actions button::after {
+      display: none !important;
+    }
+
+    /* === Scroll fade entrance animation (kept) === */
     .scroll-anim-ready :is(
       .section, .feature-card, .step, .team-card, .split-card,
       .plan-card, .info-card, .value-card, .auth-card, .compare-section,
@@ -57,35 +455,21 @@
       opacity: 1 !important;
       transform: translateY(0) !important;
     }
-    /* stagger neighbouring cards in a grid so they cascade in */
-    .scroll-anim-ready :is(.feature-grid, .step-list, .team-grid, .plans-grid, .values-grid) > *:nth-child(2)      { transition-delay: .08s; }
-    .scroll-anim-ready :is(.feature-grid, .step-list, .team-grid, .plans-grid, .values-grid) > *:nth-child(3)      { transition-delay: .16s; }
-    .scroll-anim-ready :is(.feature-grid, .step-list, .team-grid, .plans-grid, .values-grid) > *:nth-child(4)      { transition-delay: .24s; }
-    .scroll-anim-ready :is(.team-grid, .plans-grid) > *:nth-child(5)                                                { transition-delay: .32s; }
+    .scroll-anim-ready :is(.feature-grid, .step-list, .team-grid, .plans-grid, .values-grid) > *:nth-child(2) { transition-delay: .08s; }
+    .scroll-anim-ready :is(.feature-grid, .step-list, .team-grid, .plans-grid, .values-grid) > *:nth-child(3) { transition-delay: .16s; }
+    .scroll-anim-ready :is(.feature-grid, .step-list, .team-grid, .plans-grid, .values-grid) > *:nth-child(4) { transition-delay: .24s; }
+    .scroll-anim-ready :is(.team-grid, .plans-grid) > *:nth-child(5) { transition-delay: .32s; }
 
-    /* card hover lift (universal nudge) */
-    .feature-card, .step, .team-card, .info-card, .value-card, .split-card {
-      transition: transform .35s cubic-bezier(.16,1,.3,1),
-                  border-color .3s ease,
-                  box-shadow .35s ease,
-                  opacity .65s cubic-bezier(.16,1,.3,1);
-    }
-    .feature-card:hover, .info-card:hover, .value-card:hover,
-    .team-card:hover, .split-card:hover, .step:hover {
-      transform: translateY(-7px) !important;
-      box-shadow: 0 22px 50px rgba(15,112,240,.14) !important;
-    }
+    /* Card hover transitions inherit from override above; nothing else to add. */
 
-    /* animated nav-link underline */
+    /* Animated nav underline (kept) */
     .nav-links a { position: relative; }
     .nav-links a::after {
       content: '';
       position: absolute;
-      left: 0;
-      bottom: -5px;
-      width: 100%;
-      height: 2px;
-      background: linear-gradient(90deg, #2E78D4, #0F70F0);
+      left: 0; bottom: -5px;
+      width: 100%; height: 2px;
+      background: #1E3A8A;
       transform: scaleX(0);
       transform-origin: right center;
       transition: transform .35s cubic-bezier(.16,1,.3,1);
@@ -98,214 +482,11 @@
       transform-origin: left center;
     }
 
-    /* CTA button shimmer sweep */
-    .nav-cta, .submit-btn, .btn-primary, .plan-btn.featured-btn,
-    .featured-btn, .composer button, .chatbar-send, .modal-actions button {
-      position: relative;
-      overflow: hidden;
-      isolation: isolate;
-    }
-    .nav-cta::after, .submit-btn::after, .btn-primary::after,
-    .plan-btn.featured-btn::after, .composer button::after,
-    .chatbar-send::after, .modal-actions button::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -120%;
-      width: 60%;
-      height: 100%;
-      background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.32) 50%, transparent 100%);
-      transform: skewX(-18deg);
-      transition: left .6s cubic-bezier(.4,0,.2,1);
-      pointer-events: none;
-      z-index: 1;
-    }
-    .nav-cta:hover::after, .submit-btn:hover::after, .btn-primary:hover::after,
-    .plan-btn.featured-btn:hover::after, .composer button:hover::after,
-    .chatbar-send:hover::after, .modal-actions button:hover::after {
-      left: 130%;
-    }
+    /* Logo wiggle on hover */
+    .nav-logo .logo-img { transition: transform .4s cubic-bezier(.16,1,.3,1); }
+    .nav-logo:hover .logo-img { transform: rotate(-6deg) scale(1.06); }
 
-    /* Logo hover wiggle */
-    .nav-logo .logo-img {
-      transition: transform .45s cubic-bezier(.16,1,.3,1);
-    }
-    .nav-logo:hover .logo-img {
-      transform: rotate(-8deg) scale(1.08);
-    }
-
-    /* Floating hero orbs pulse harder for visibility on light bg */
-    @keyframes orbFloat {
-      0%,100% { transform: translate3d(0,0,0); }
-      50%     { transform: translate3d(0,-14px,0); }
-    }
-    .hero-orb, .bg-orb {
-      animation: orbFloat 7s ease-in-out infinite !important;
-    }
-    .hero-orb.orb2, .bg-orb.bg2 { animation-delay: 1.8s !important; }
-    .hero-orb.orb3 { animation-delay: 3.4s !important; }
-
-    /* ===== Animated blue ambient background =====
-       Applied to pages that don't already have a dark <section class="hero">.
-       Three drifting, blurred blue orbs sit on a fixed layer behind the page
-       content. We use isolation:isolate on the body so z-index:-1 reliably
-       puts the orbs BEHIND all body children (nav stays fixed, page sections
-       stay where the page CSS expects them, no extra empty space at top). */
-    body.animated-bg {
-      isolation: isolate;
-      background:
-        radial-gradient(ellipse 60% 40% at 8% 12%, rgba(46,120,212,.08) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 35% at 92% 88%, rgba(15,112,240,.07) 0%, transparent 60%),
-        var(--navy, #D9E8F8);
-    }
-    body.animated-bg::before,
-    body.animated-bg::after,
-    body.animated-bg > .ambient-orb {
-      content: '';
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(110px);
-      pointer-events: none;
-      z-index: -1;
-      opacity: .85;
-      will-change: transform;
-    }
-    body.animated-bg::before {
-      width: 520px; height: 520px;
-      top: -120px; left: -140px;
-      background: radial-gradient(circle, rgba(15,112,240,.35) 0%, transparent 65%);
-      animation: ambientDriftA 24s ease-in-out infinite;
-    }
-    body.animated-bg::after {
-      width: 600px; height: 600px;
-      bottom: -180px; right: -160px;
-      background: radial-gradient(circle, rgba(46,120,212,.30) 0%, transparent 65%);
-      animation: ambientDriftB 28s ease-in-out infinite;
-    }
-    body.animated-bg > .ambient-orb {
-      width: 420px; height: 420px;
-      top: 45%; left: 45%;
-      background: radial-gradient(circle, rgba(91,209,255,.20) 0%, transparent 65%);
-      animation: ambientDriftC 32s ease-in-out infinite;
-    }
-    @keyframes ambientDriftA {
-      0%,100% { transform: translate3d(0,0,0) scale(1); }
-      33%     { transform: translate3d(34vw, 28vh, 0) scale(1.15); }
-      66%     { transform: translate3d(62vw, 58vh, 0) scale(.95); }
-    }
-    @keyframes ambientDriftB {
-      0%,100% { transform: translate3d(0,0,0) scale(1); }
-      33%     { transform: translate3d(-30vw, -24vh, 0) scale(1.1); }
-      66%     { transform: translate3d(-54vw, -8vh, 0) scale(.92); }
-    }
-    @keyframes ambientDriftC {
-      0%,100% { transform: translate3d(0,0,0) scale(1); }
-      25%     { transform: translate3d(-22vw, 18vh, 0) scale(.9); }
-      50%     { transform: translate3d(20vw, 28vh, 0) scale(1.18); }
-      75%     { transform: translate3d(28vw, -22vh, 0) scale(1.04); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      body.animated-bg::before,
-      body.animated-bg::after,
-      body.animated-bg > .ambient-orb {
-        animation: none !important;
-      }
-    }
-
-    /* Body sub text — bump up to normal weight so it reads on the soft-blue bg */
-    .page-sub, .hero-sub, .compare-subtitle, .toggle-label,
-    .demo-text p, .cta-box p, .chatbot-text p, .info-card p,
-    .ty-step-text, .terms-note {
-      font-weight: 400 !important;
-    }
-
-    /* ===== Bold dark hero (home & about) =====
-       Wherever <section class="hero"> exists, give it a deep blue
-       gradient so it pops against the soft-blue body, then invert
-       text colours inside the hero to white. */
-    section.hero {
-      background:
-        radial-gradient(ellipse 75% 65% at 50% 30%, rgba(46,120,212,.55) 0%, transparent 65%),
-        radial-gradient(ellipse 45% 35% at 18% 78%, rgba(15,112,240,.32) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 40% at 85% 70%, rgba(91,209,255,.20) 0%, transparent 60%),
-        linear-gradient(180deg, #0E2C5A 0%, #1E4585 100%);
-      color: #F0F6FF;
-      position: relative;
-      overflow: hidden;
-      border-radius: 0 0 36px 36px;
-      margin-bottom: 60px;
-      isolation: isolate;
-    }
-    section.hero::after {
-      content: '';
-      position: absolute;
-      left: 0; right: 0; bottom: -1px;
-      height: 80px;
-      background: linear-gradient(180deg, transparent 0%, var(--navy, #D9E8F8) 100%);
-      pointer-events: none;
-      z-index: 0;
-    }
-    /* lift only the content elements above the ::after fade.
-       Skip decorative absolute-positioned helpers (.hero-bg,
-       .hero-orb, .hero-grid, .scroll-cue) — forcing them to
-       position:relative would put the giant blurred orbs in
-       document flow and blow the hero up to 2000px+ tall. */
-    section.hero > *:not(.hero-bg):not(.hero-orb):not(.hero-grid):not(.scroll-cue) {
-      position: relative;
-      z-index: 1;
-    }
-    section.hero > .scroll-cue { z-index: 1; }
-    section.hero h1,
-    section.hero .hero-title {
-      color: #F0F6FF !important;
-    }
-    section.hero .hero-title em,
-    section.hero h1 em,
-    section.hero h1 .line-two {
-      color: #5BD1FF !important;
-    }
-    section.hero p,
-    section.hero .hero-sub {
-      color: rgba(240,246,255,.82) !important;
-    }
-    section.hero .hero-label {
-      color: #5BD1FF !important;
-    }
-    section.hero .hero-badge {
-      background: rgba(255,255,255,.10) !important;
-      border-color: rgba(255,255,255,.20) !important;
-      color: #F0F6FF !important;
-      backdrop-filter: blur(10px);
-    }
-    section.hero .scroll-cue {
-      color: rgba(240,246,255,.72) !important;
-    }
-    section.hero .btn-outline {
-      color: #F0F6FF !important;
-      border-color: rgba(240,246,255,.4) !important;
-    }
-    section.hero .btn-outline:hover {
-      border-color: #5BD1FF !important;
-      color: #5BD1FF !important;
-    }
-    /* nav over the dark hero — frosted glass instead of solid light blue */
-    body:has(section.hero) nav {
-      background: rgba(14, 44, 90, 0.55) !important;
-      backdrop-filter: blur(18px) saturate(140%);
-      border-bottom-color: rgba(255,255,255,0.12) !important;
-    }
-    body:has(section.hero) nav .logo-text { color: #F0F6FF !important; }
-    body:has(section.hero) nav .nav-links a { color: rgba(240,246,255,0.78) !important; }
-    body:has(section.hero) nav .nav-links a:hover,
-    body:has(section.hero) nav .nav-links a.active { color: #5BD1FF !important; }
-    body:has(section.hero) nav .nav-chatbar {
-      background: rgba(255,255,255,0.08) !important;
-      border-color: rgba(255,255,255,0.18) !important;
-    }
-    body:has(section.hero) nav .nav-chatbar input { color: #F0F6FF !important; }
-    body:has(section.hero) nav .nav-chatbar input::placeholder { color: rgba(240,246,255,0.55) !important; }
-
-    /* Honour reduced-motion */
+    /* Reduced-motion */
     @media (prefers-reduced-motion: reduce) {
       .scroll-anim-ready :is(.section, .feature-card, .step, .team-card,
         .split-card, .plan-card, .info-card, .value-card, .auth-card,
@@ -315,8 +496,17 @@
         transform: none !important;
         transition: none !important;
       }
-      .hero-orb, .bg-orb { animation: none !important; }
       .nav-links a::after { transition: none !important; }
+      .nav-logo .logo-img { transition: none !important; }
+    }
+
+    /* Responsive hero padding */
+    @media (max-width: 720px) {
+      section.hero {
+        margin: 88px 12px 40px !important;
+        padding: 60px 24px 60px !important;
+        border-radius: 24px !important;
+      }
     }
   `;
 
@@ -333,7 +523,6 @@
     const targets = document.querySelectorAll(selector);
     if (!targets.length) return;
     document.body.classList.add('scroll-anim-ready');
-
     if (!('IntersectionObserver' in window)) {
       targets.forEach(el => el.classList.add('scroll-in'));
       return;
@@ -349,27 +538,10 @@
     targets.forEach(el => obs.observe(el));
   }
 
-  function wireAmbientBg() {
-    // Only apply the animated blue background to pages that DON'T already
-    // have a dark hero (home / about have their own dark gradient hero) and
-    // don't already ship their own decorative background layer (signin has
-    // its own .bg-wrap with static orbs + grid that would clash).
-    if (document.querySelector('section.hero')) return;
-    if (document.querySelector('.bg-wrap')) return;
-    document.body.classList.add('animated-bg');
-    // Insert a third floating orb (CSS pseudo-elements only give us two).
-    if (!document.querySelector('.ambient-orb')) {
-      const orb = document.createElement('div');
-      orb.className = 'ambient-orb';
-      document.body.appendChild(orb);
-    }
-  }
-
   function init() {
     injectStyles();
     wireChatbar();
     wireScrollAnim();
-    wireAmbientBg();
   }
 
   if (document.readyState === 'loading') {
