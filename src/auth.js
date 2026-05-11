@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const express = require('express');
 const {
   findUserByUsername,
+  createBusinessOwnerUser,
   createSession,
   findSession,
   deleteSession,
@@ -138,6 +139,54 @@ router.post('/login', async (req, res) => {
   }
 
   // No 2FA — fall through to direct session (legacy)
+  const sessionId = newSessionId();
+  const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString().replace('T', ' ').replace('Z', '');
+  createSession(sessionId, user.id, expiresAt);
+  setSessionCookie(res, sessionId);
+  return res.json({ ok: true, step: 'done', user: { username: user.username, role: user.role } });
+});
+
+// Self-service signup from the marketing site. Creates a business_owner
+// account. If an email is provided, kicks off the 2FA flow (same as login
+// step 1); otherwise issues a session immediately. Username is the email
+// when one is given — otherwise we accept whatever was supplied.
+router.post('/signup', async (req, res) => {
+  const { email, password, name } = req.body || {};
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanName  = (name  || '').trim();
+
+  if (!cleanEmail || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    return res.status(400).json({ error: 'That email address looks malformed.' });
+  }
+  if (String(password).length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+  }
+
+  // Use email as username so existing username-keyed login flow works.
+  const user = createBusinessOwnerUser({ username: cleanEmail, password, email: cleanEmail });
+  if (!user) {
+    return res.status(409).json({ error: 'An account with that email already exists. Try logging in.' });
+  }
+
+  // If SMTP isn't configured we can't actually deliver the 2FA code, so
+  // fall back to a direct session (still useful for local demo).
+  const smtpReady = !!(process.env.SMTP_HOST && process.env.SMTP_USER);
+  if (smtpReady) {
+    const code = generateCode();
+    createLoginCode(user.id, code);
+    try {
+      await sendLoginCode(cleanEmail, code, cleanName || cleanEmail);
+      setPendingCookie(res, user.id);
+      return res.json({ ok: true, step: 'verify', hint: emailHint(cleanEmail) });
+    } catch (err) {
+      console.warn('[signup] SMTP send failed — falling back to direct session:', err.message);
+    }
+  }
+
+  // Direct session (no email step) — first-run, dev, or SMTP misconfigured.
   const sessionId = newSessionId();
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString().replace('T', ' ').replace('Z', '');
   createSession(sessionId, user.id, expiresAt);

@@ -224,6 +224,21 @@ function findUserByUsername(username) {
   return db.prepare('SELECT * FROM users WHERE username = ?').get(username);
 }
 
+// Self-service signup from the marketing site. Returns the newly created
+// user, or null if the username is already taken. Always creates a
+// business_owner — founder accounts are seeded from the FOUNDERS env var
+// and can't be self-signed-up.
+function createBusinessOwnerUser({ username, password, email }) {
+  if (!username || !password) return null;
+  if (db.prepare('SELECT id FROM users WHERE username = ?').get(username)) return null;
+  const hash = bcrypt.hashSync(password, 10);
+  const twofa = email ? 1 : 0;
+  const result = db.prepare(
+    "INSERT INTO users (username, password_hash, role, email, twofa_enabled) VALUES (?, ?, 'business_owner', ?, ?)"
+  ).run(username, hash, email || null, twofa);
+  return db.prepare('SELECT id, username, role, email, twofa_enabled FROM users WHERE id = ?').get(result.lastInsertRowid);
+}
+
 function createSession(sessionId, userId, expiresAt) {
   db.prepare('INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)')
     .run(sessionId, userId, expiresAt);
@@ -885,6 +900,7 @@ module.exports = {
   seedAdminFromEnv,
   seedFoundersFromEnv,
   findUserByUsername,
+  createBusinessOwnerUser,
   setUserEmail,
   disableUserTwofa,
   createLoginCode,

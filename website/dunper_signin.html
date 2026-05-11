@@ -333,17 +333,16 @@
       <!-- SIGN UP -->
       <div class="tab-panel" id="signupPanel">
         <div class="field-row">
-          <div class="field"><label>First Name</label><input type="text" placeholder="Alex"/></div>
-          <div class="field"><label>Last Name</label><input type="text" placeholder="Rivera"/></div>
+          <div class="field"><label>First Name</label><input type="text" id="signupFirstName" placeholder="Alex" autocomplete="given-name"/></div>
+          <div class="field"><label>Last Name</label><input type="text" id="signupLastName" placeholder="Rivera" autocomplete="family-name"/></div>
         </div>
-        <div class="field"><label>Email Address</label><input type="email" placeholder="you@company.com"/></div>
-        <div class="field"><label>Password</label><input type="password" placeholder="Min. 8 characters"/></div>
-        <div class="field"><label>Confirm Password</label><input type="password" placeholder="Re-enter password"/></div>
-        <button class="submit-btn" onclick="goToPage('page-terms'); showStepBar(); setStep(1);">
-          Continue to Subscription →
-        </button>
+        <div class="field"><label>Email Address</label><input type="email" id="signupEmail" placeholder="you@company.com" autocomplete="email"/></div>
+        <div class="field"><label>Password</label><input type="password" id="signupPassword" placeholder="Min. 8 characters" autocomplete="new-password" minlength="8"/></div>
+        <div class="field"><label>Confirm Password</label><input type="password" id="signupConfirm" placeholder="Re-enter password" autocomplete="new-password" minlength="8"/></div>
+        <button class="submit-btn" id="signupSubmitBtn" type="button">Create my dashboard →</button>
+        <p class="form-status" id="signupStatus" style="font-size:13px;text-align:center;min-height:18px;margin-top:-4px"></p>
         <div class="divider">or</div>
-        <button class="social-btn"><span class="social-icon">G</span> Continue with Google</button>
+        <button class="social-btn" type="button" onclick="alert('Google sign-up coming soon. Use the email form above for now.');"><span class="social-icon">G</span> Continue with Google</button>
         <div class="terms-note">By signing up you agree to our <a href="#">Terms</a> & <a href="#">Privacy Policy</a>. Must be 18+.</div>
         <div class="join-link">Already have an account? <a href="#" onclick="switchTab('signin');return false;">Log in</a></div>
       </div>
@@ -693,7 +692,7 @@
           </div>
         </div>
 
-        <a href="dunper_home.html" class="submit-btn" style="display:block;text-decoration:none;text-align:center;padding:15px;">
+        <a href="/admin.html" class="submit-btn" style="display:block;text-decoration:none;text-align:center;padding:15px;">
           Go to Dashboard →
         </a>
       </div>
@@ -1001,10 +1000,87 @@ function wireLoginButton(){
   }
 }
 
+// Wire the Sign-Up form to the /api/auth/signup endpoint. Account
+// creation goes straight to /admin.html (or to the 2FA code step if SMTP
+// is configured). Bypasses the cosmetic 4-page billing flow — that's for
+// a future Stripe wiring, not for v1 self-serve signups.
+function wireSignupButton(){
+  const btn = document.getElementById('signupSubmitBtn');
+  if(!btn) return;
+  const firstEl   = document.getElementById('signupFirstName');
+  const lastEl    = document.getElementById('signupLastName');
+  const emailEl   = document.getElementById('signupEmail');
+  const passEl    = document.getElementById('signupPassword');
+  const confirmEl = document.getElementById('signupConfirm');
+  const statusEl  = document.getElementById('signupStatus');
+
+  // Reuse the existing login verify-box UI for the 2FA code step.
+  const verifyBox     = document.getElementById('verify-box');
+  const codeEl        = document.getElementById('verify-code');
+  const verifyBtn     = document.getElementById('verifyBtn');
+  const emailHintEl   = document.getElementById('verify-email-hint');
+
+  function setStatus(msg, kind){
+    statusEl.textContent = msg || '';
+    statusEl.style.color = kind === 'ok' ? '#065F46' : kind === 'err' ? '#B91C1C' : 'inherit';
+  }
+
+  async function attemptSignup(){
+    setStatus('');
+    const email   = (emailEl.value || '').trim();
+    const password = passEl.value || '';
+    const confirm  = confirmEl.value || '';
+    const name = [firstEl.value, lastEl.value].map(s => (s || '').trim()).filter(Boolean).join(' ');
+
+    if(!email || !password){ setStatus('Email and password are required.', 'err'); return; }
+    if(password.length < 8){ setStatus('Password must be at least 8 characters.', 'err'); return; }
+    if(password !== confirm){ setStatus("Passwords don't match.", 'err'); return; }
+
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = 'Creating account…';
+    try {
+      const r = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password, name }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if(!r.ok){
+        setStatus(data.error || 'Sign-up failed. Try a different email.', 'err');
+        return;
+      }
+      if(data.step === 'verify'){
+        // Switch to login tab + show verify box (reuses the 2FA UI Thomas built)
+        switchTab('signin');
+        if(emailHintEl) emailHintEl.textContent = data.hint || 'your email';
+        if(verifyBox){ verifyBox.style.display = 'block'; verifyBox.scrollIntoView({behavior:'smooth',block:'center'}); }
+        if(codeEl) codeEl.focus();
+        return;
+      }
+      setStatus('Welcome aboard. Loading your dashboard…', 'ok');
+      window.location.href = '/admin.html';
+    } catch (e) {
+      setStatus('Network error: ' + (e.message || 'could not reach the server.'), 'err');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  }
+
+  btn.addEventListener('click', attemptSignup);
+  [firstEl, lastEl, emailEl, passEl, confirmEl].forEach(el => {
+    if(!el) return;
+    el.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); attemptSignup(); } });
+  });
+}
+
 // If user landed from a plan button on the subscription page, skip auth
 // and drop them at the terms step with their plan pre-filled.
 (function bootstrap(){
   wireLoginButton();
+  wireSignupButton();
   const params = new URLSearchParams(window.location.search);
   if(params.get('plan')){
     goToPage('page-terms');
