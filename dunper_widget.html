@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dunper AI — Embed the chat widget on your site</title>
+<meta name="description" content="Drop a three-line snippet onto your website and your visitors get a Dunper AI chat bubble in the corner.">
+<link rel="canonical" href="https://dunper.com/dunper_widget.html">
+<meta name="theme-color" content="#EBF0FA">
+<link rel="icon" type="image/png" href="img/logo.png" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#EBF0FA; --blue-deep:#0F2E5C; --blue-mid:#1E3A8A;
+    --blue-soft:#94A3B8; --blue-pale:#475569; --sky:#E8F1FF;
+    --white:#0A1430; --accent:#1E3A8A;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--navy);color:var(--white);font-family:'Outfit',sans-serif;overflow-x:hidden;line-height:1.6;}
+
+  /* NAV */
+  nav{position:fixed;top:0;width:100%;z-index:100;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 44px;background:rgba(235,240,250,0.85);backdrop-filter:blur(16px);border-bottom:1px solid rgba(15,23,42,0.06);}
+  .nav-left{display:flex;align-items:center;gap:28px;flex-shrink:0;}
+  .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+  .logo-img{height:32px;width:auto;display:block;}
+  .logo-text{font-family:'Outfit',sans-serif;font-weight:600;font-size:22px;letter-spacing:-0.01em;color:var(--white);}
+  .nav-links{display:flex;gap:20px;list-style:none;}
+  .nav-links a{color:var(--blue-pale);text-decoration:none;font-size:13.5px;font-weight:500;transition:color .2s;}
+  .nav-links a:hover{color:var(--white);}
+  .nav-cta{background:var(--white);color:#fff;border:none;cursor:pointer;padding:9px 22px;border-radius:50px;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:500;flex-shrink:0;transition:background .2s,transform .2s;text-decoration:none;display:inline-flex;align-items:center;}
+  .nav-cta:hover{background:var(--blue-mid);transform:scale(1.02);}
+
+  /* PAGE */
+  .wrap{padding:120px 24px 80px;max-width:920px;margin:0 auto;}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid rgba(15,23,42,.08);color:var(--white);padding:6px 14px;border-radius:50px;font-size:11.5px;font-weight:500;box-shadow:0 2px 8px rgba(15,23,42,.04);margin-bottom:18px;}
+  .chip::before{content:'';width:6px;height:6px;border-radius:50%;background:#3B82F6;flex-shrink:0;}
+  h1.title{font-family:'Outfit',sans-serif;font-weight:700;font-size:clamp(36px,5vw,52px);letter-spacing:-0.02em;color:var(--white);margin-bottom:14px;line-height:1.1;}
+  h1.title em{font-style:normal;color:var(--blue-mid);}
+  p.sub{color:var(--blue-pale);font-size:16px;max-width:600px;margin-bottom:48px;line-height:1.7;}
+
+  .grid{display:grid;grid-template-columns:1.4fr 1fr;gap:32px;align-items:start;}
+  @media (max-width:880px){ .grid{grid-template-columns:1fr;} }
+
+  .card{background:#fff;border:1px solid rgba(15,23,42,.05);border-radius:22px;padding:32px;box-shadow:0 10px 32px rgba(15,23,42,.06);}
+  .card h2{font-size:20px;font-weight:600;margin-bottom:6px;letter-spacing:-0.01em;}
+  .card p{color:var(--blue-pale);font-size:14px;line-height:1.65;margin-bottom:20px;}
+
+  pre.code{background:#0A1430;color:#E2E8F0;padding:20px 22px;border-radius:14px;font-family:'Space Mono',monospace;font-size:12.5px;line-height:1.7;overflow-x:auto;border:1px solid rgba(15,23,42,.1);}
+  pre.code .tag{color:#94A3B8;}
+  pre.code .attr{color:#7DD3FC;}
+  pre.code .str{color:#86EFAC;}
+  pre.code .key{color:#FCD34D;}
+
+  .row-btns{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  .btn{background:var(--white);color:#fff;border:none;cursor:pointer;padding:11px 22px;border-radius:50px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:500;transition:background .2s,transform .15s;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+  .btn:hover{background:var(--blue-mid);transform:translateY(-1px);}
+  .btn-secondary{background:transparent;color:var(--white);border:1.5px solid rgba(15,23,42,.15);}
+  .btn-secondary:hover{background:rgba(15,23,42,.04);color:var(--white);}
+
+  .copied{display:inline-block;margin-left:10px;font-size:12px;color:#16A34A;opacity:0;transition:opacity .2s;}
+  .copied.show{opacity:1;}
+
+  .config-table{width:100%;border-collapse:collapse;margin-top:10px;}
+  .config-table th,.config-table td{padding:10px 0;text-align:left;font-size:13px;border-bottom:1px solid rgba(15,23,42,.06);}
+  .config-table th{color:var(--blue-soft);font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;}
+  .config-table td:first-child{font-family:'Space Mono',monospace;color:var(--blue-mid);font-size:12px;}
+  .config-table td:last-child{color:var(--blue-pale);}
+
+  .arrow{position:fixed;right:108px;bottom:42px;z-index:99997;color:var(--white);font-family:'Space Mono',monospace;font-size:12px;background:#fff;border:1px solid rgba(15,23,42,.08);padding:7px 14px;border-radius:24px;box-shadow:0 8px 20px rgba(15,23,42,.1);pointer-events:none;}
+  .arrow::after{content:'';position:absolute;right:-8px;top:50%;transform:translateY(-50%);border:6px solid transparent;border-left-color:#fff;}
+  @media (max-width:600px){ .arrow{display:none;} }
+
+  footer{padding:32px 60px;border-top:1px solid rgba(15,23,42,.06);display:flex;justify-content:space-between;align-items:center;color:var(--blue-pale);font-size:12px;gap:16px;flex-wrap:wrap;margin-top:40px;}
+  footer .logo-img{height:26px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <a class="nav-logo" href="dunper_home.html">
+      <img src="img/logo-nav.png" alt="dunper" class="logo-img"/>
+      <span class="logo-text">dunper</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="dunper_home.html">Home</a></li>
+      <li><a href="dunper_about.html">About</a></li>
+      <li><a href="dunper_services.html">Services</a></li>
+      <li><a href="dunper_contact.html">Contact</a></li>
+      <li><a href="dunper_join.html">Join Us</a></li>
+    </ul>
+  </div>
+  <form class="nav-chatbar" id="nav-chatbar">
+    <input type="text" placeholder="Ask our chatbot anything…"/>
+    <button class="chatbar-send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
+  </form>
+  <a href="dunper_signin.html" class="nav-cta">Sign In</a>
+</nav>
+
+<div class="wrap">
+  <div class="chip">For client websites</div>
+  <h1 class="title">The Dunper <em>chat popup</em></h1>
+  <p class="sub">Drop this three-line snippet onto any website and your visitors get a Dunper AI chat bubble in the bottom-right corner — same conversation experience your customers see anywhere else, without leaving your site.</p>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Embed code</h2>
+        <p>Paste this just before <code>&lt;/body&gt;</code> on every page you want the chat bubble on.</p>
+        <pre class="code" id="snippet"><span class="tag">&lt;!-- Dunper AI chat widget --&gt;</span>
+<span class="tag">&lt;script&gt;</span>
+  <span class="key">window</span>.DUNPER_CHAT_URL = <span class="str">'https://your-dunper-instance.example.com'</span>;
+  <span class="key">window</span>.DUNPER_LABEL    = <span class="str">'Chat with us'</span>;
+<span class="tag">&lt;/script&gt;</span>
+<span class="tag">&lt;script</span> <span class="attr">src=</span><span class="str">"https://dunper.com/js/dunper-widget.js"</span> <span class="attr">defer</span><span class="tag">&gt;&lt;/script&gt;</span></pre>
+        <div class="row-btns">
+          <button class="btn" onclick="copyEmbed()">Copy embed code <span style="font-size:11px">⧉</span></button>
+          <a class="btn btn-secondary" href="#" onclick="openDunperWidget();return false;">Open the demo popup ↗</a>
+          <span class="copied" id="copied-flag">Copied</span>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:24px;">
+        <h2>Configuration</h2>
+        <p>All three globals are optional. The defaults work for a quick demo.</p>
+        <table class="config-table">
+          <thead><tr><th>Global</th><th>Default</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td>DUNPER_CHAT_URL</td><td>dunper_chat.html</td><td>URL the iframe loads inside the panel.</td></tr>
+            <tr><td>DUNPER_LABEL</td><td>Chat with Dunper</td><td>Tooltip + ARIA label on the bubble.</td></tr>
+            <tr><td>DUNPER_SUBTITLE</td><td>Live chat · we usually reply in seconds</td><td>Small text under the panel header title.</td></tr>
+            <tr><td>DUNPER_LOGO_URL</td><td>img/logo-nav.png</td><td>Small logo shown in the panel header.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" style="margin-top:24px;">
+        <h2>Trigger the popup from your own buttons</h2>
+        <p>Any element on the host page with <code>data-dunper-open</code> or the class <code>dunper-open</code> opens the popup when clicked. Useful for "Talk to us" buttons inside the page content.</p>
+        <pre class="code"><span class="tag">&lt;button</span> <span class="attr">data-dunper-open</span><span class="tag">&gt;</span>Talk to Dunper<span class="tag">&lt;/button&gt;</span></pre>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>Try it on this page</h2>
+        <p>The widget is live in the bottom-right corner of this page. Click the bubble — or use the button below.</p>
+        <button class="btn" data-dunper-open>Open chat ↘</button>
+      </div>
+
+      <div class="card" style="margin-top:24px;">
+        <h2>Notes for production</h2>
+        <p style="margin-bottom:10px;"><strong style="color:var(--white)">Use a permanent URL</strong><br/>Once Dunper has a permanent public chat URL (named tunnel or hosted domain), point <code>DUNPER_CHAT_URL</code> at it. The temporary Cloudflare tunnel rotates.</p>
+        <p style="margin-bottom:10px;"><strong style="color:var(--white)">One bubble per page</strong><br/>The script is idempotent — loading it twice on the same page is a no-op.</p>
+        <p><strong style="color:var(--white)">Reduced motion</strong><br/>The bubble's pulse is disabled for users with <code>prefers-reduced-motion: reduce</code>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow" id="bubble-arrow">Click me →</div>
+
+<footer>
+  <a class="nav-logo" href="dunper_home.html" style="text-decoration:none">
+    <img src="img/logo-nav.png" alt="dunper" class="logo-img"/>
+    <span class="logo-text">dunper</span>
+  </a>
+  <span>© 2026 Dunper AI. All rights reserved.</span>
+  <span>dunperai@gmail.com &nbsp;·&nbsp; @dunper.ai</span>
+</footer>
+
+<script>
+  function copyEmbed(){
+    const text = document.getElementById('snippet').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const flag = document.getElementById('copied-flag');
+      flag.classList.add('show');
+      setTimeout(() => flag.classList.remove('show'), 1500);
+    });
+  }
+  // Hide the "click me" arrow once the user has opened the widget
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.dunper-fab, [data-dunper-open], .dunper-open')) {
+      const a = document.getElementById('bubble-arrow');
+      if (a) a.style.display = 'none';
+    }
+  });
+</script>
+
+<!-- The widget itself — points at the standalone chat page by default. -->
+<script>
+  window.DUNPER_CHAT_URL = 'dunper_chat.html';
+  window.DUNPER_LABEL    = 'Chat with Dunper';
+</script>
+<script src="js/dunper-widget.js" defer></script>
+</body>
+</html>

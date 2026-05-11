@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dunper AI — Client Widget (rough draft)</title>
+<meta name="description" content="Rough-draft of the Dunper AI chat widget that paying clients embed on their own websites. Shows the full feature surface and the embed/architecture.">
+<link rel="canonical" href="https://dunper.com/dunper_client_widget.html">
+<meta name="theme-color" content="#EBF0FA">
+<link rel="icon" type="image/png" href="img/logo.png" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#EBF0FA; --blue-deep:#0F2E5C; --blue-mid:#1E3A8A;
+    --blue-soft:#94A3B8; --blue-pale:#475569; --sky:#E8F1FF;
+    --white:#0A1430; --accent:#1E3A8A;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--navy);color:var(--white);font-family:'Outfit',sans-serif;overflow-x:hidden;line-height:1.6;}
+
+  nav{position:fixed;top:0;width:100%;z-index:90;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 44px;background:rgba(235,240,250,0.85);backdrop-filter:blur(16px);border-bottom:1px solid rgba(15,23,42,0.06);}
+  .nav-left{display:flex;align-items:center;gap:28px;flex-shrink:0;}
+  .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+  .logo-img{height:32px;width:auto;display:block;}
+  .logo-text{font-family:'Outfit',sans-serif;font-weight:600;font-size:22px;letter-spacing:-0.01em;color:var(--white);}
+  .nav-links{display:flex;gap:20px;list-style:none;}
+  .nav-links a{color:var(--blue-pale);text-decoration:none;font-size:13.5px;font-weight:500;transition:color .2s;}
+  .nav-links a:hover{color:var(--white);}
+  .nav-cta{background:var(--white);color:#fff;border:none;cursor:pointer;padding:9px 22px;border-radius:50px;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:500;flex-shrink:0;transition:background .2s,transform .2s;text-decoration:none;display:inline-flex;align-items:center;}
+  .nav-cta:hover{background:var(--blue-mid);transform:scale(1.02);}
+
+  .wrap{padding:120px 24px 80px;max-width:1080px;margin:0 auto;}
+  .draft-tag{display:inline-flex;align-items:center;gap:7px;background:#FEF3C7;border:1px solid rgba(146,64,14,.18);color:#92400E;padding:6px 14px;border-radius:50px;font-size:11.5px;font-weight:600;margin-bottom:18px;}
+  .draft-tag::before{content:'';width:6px;height:6px;border-radius:50%;background:#F59E0B;flex-shrink:0;}
+  h1.title{font-family:'Outfit',sans-serif;font-weight:700;font-size:clamp(36px,5vw,52px);letter-spacing:-0.02em;color:var(--white);margin-bottom:14px;line-height:1.1;}
+  h1.title em{font-style:normal;color:var(--blue-mid);}
+  p.sub{color:var(--blue-pale);font-size:16px;max-width:700px;margin-bottom:40px;line-height:1.7;}
+
+  .grid{display:grid;grid-template-columns:1.3fr 1fr;gap:28px;align-items:start;}
+  @media (max-width:960px){ .grid{grid-template-columns:1fr;} }
+
+  .card{background:#fff;border:1px solid rgba(15,23,42,.05);border-radius:22px;padding:32px;box-shadow:0 10px 32px rgba(15,23,42,.06);margin-bottom:24px;}
+  .card h2{font-size:22px;font-weight:600;margin-bottom:8px;letter-spacing:-0.01em;}
+  .card h3{font-size:15px;font-weight:600;margin:18px 0 8px;color:var(--white);}
+  .card p{color:var(--blue-pale);font-size:14.5px;line-height:1.65;margin-bottom:14px;}
+  .card ul{padding-left:20px;color:var(--blue-pale);font-size:14px;line-height:1.75;margin-bottom:12px;}
+  .card ul li::marker{color:var(--blue-mid);}
+  .card code{background:#F1F5F9;color:var(--blue-mid);padding:1.5px 6px;border-radius:4px;font-family:'Space Mono',monospace;font-size:12px;}
+
+  pre.code{background:#0A1430;color:#E2E8F0;padding:22px;border-radius:14px;font-family:'Space Mono',monospace;font-size:12px;line-height:1.75;overflow-x:auto;}
+  pre.code .tag{color:#94A3B8;}
+  pre.code .attr{color:#7DD3FC;}
+  pre.code .str{color:#86EFAC;}
+  pre.code .key{color:#FCD34D;}
+  pre.code .cmt{color:#64748B;font-style:italic;}
+
+  .row-btns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  .btn{background:var(--white);color:#fff;border:none;cursor:pointer;padding:11px 22px;border-radius:50px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:500;transition:background .2s,transform .15s;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+  .btn:hover{background:var(--blue-mid);transform:translateY(-1px);}
+  .btn-secondary{background:transparent;color:var(--white);border:1.5px solid rgba(15,23,42,.15);}
+  .btn-secondary:hover{background:rgba(15,23,42,.04);color:var(--white);}
+  .copied{display:inline-block;margin-left:8px;font-size:12px;color:#16A34A;opacity:0;transition:opacity .2s;}
+  .copied.show{opacity:1;}
+
+  .feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px;}
+  @media (max-width:560px){ .feat-grid{grid-template-columns:1fr;} }
+  .feat{background:#F8FAFC;border:1px solid rgba(15,23,42,.05);border-radius:14px;padding:14px 16px;}
+  .feat strong{display:block;font-size:13.5px;color:var(--white);margin-bottom:4px;}
+  .feat span{color:var(--blue-pale);font-size:12.5px;line-height:1.55;}
+  .feat .api{display:inline-block;margin-top:6px;font-family:'Space Mono',monospace;font-size:10.5px;color:var(--blue-mid);background:rgba(30,58,138,.08);padding:2px 7px;border-radius:4px;}
+
+  .api-table{width:100%;border-collapse:collapse;margin-top:10px;}
+  .api-table th,.api-table td{padding:10px 0;text-align:left;font-size:13px;border-bottom:1px solid rgba(15,23,42,.06);vertical-align:top;}
+  .api-table th{color:var(--blue-soft);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;}
+  .api-table td:first-child{font-family:'Space Mono',monospace;color:var(--blue-mid);font-size:11.5px;width:35%;}
+  .api-table td:last-child{color:var(--blue-pale);}
+
+  .flow{margin-top:14px;}
+  .flow-step{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid rgba(15,23,42,.05);}
+  .flow-step:last-child{border-bottom:none;}
+  .flow-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--white);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;}
+  .flow-body strong{display:block;font-size:13.5px;color:var(--white);margin-bottom:2px;}
+  .flow-body span{color:var(--blue-pale);font-size:13px;line-height:1.55;}
+
+  .arrow{position:fixed;right:108px;bottom:42px;z-index:90;color:var(--white);font-family:'Space Mono',monospace;font-size:12px;background:#fff;border:1px solid rgba(15,23,42,.08);padding:7px 14px;border-radius:24px;box-shadow:0 8px 20px rgba(15,23,42,.1);pointer-events:none;animation:bobX 2s ease-in-out infinite;}
+  @keyframes bobX{0%,100%{transform:translateX(0)}50%{transform:translateX(-6px)}}
+  .arrow::after{content:'';position:absolute;right:-8px;top:50%;transform:translateY(-50%);border:6px solid transparent;border-left-color:#fff;}
+  @media (max-width:600px){ .arrow{display:none;} }
+
+  footer{padding:32px 60px;border-top:1px solid rgba(15,23,42,.06);display:flex;justify-content:space-between;align-items:center;color:var(--blue-pale);font-size:12px;gap:16px;flex-wrap:wrap;margin-top:40px;}
+  footer .logo-img{height:26px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <a class="nav-logo" href="dunper_home.html">
+      <img src="img/logo-nav.png" alt="dunper" class="logo-img"/>
+      <span class="logo-text">dunper</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="dunper_home.html">Home</a></li>
+      <li><a href="dunper_about.html">About</a></li>
+      <li><a href="dunper_services.html">Services</a></li>
+      <li><a href="dunper_contact.html">Contact</a></li>
+      <li><a href="dunper_join.html">Join Us</a></li>
+    </ul>
+  </div>
+  <form class="nav-chatbar" id="nav-chatbar">
+    <input type="text" placeholder="Ask our chatbot anything…"/>
+    <button class="chatbar-send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
+  </form>
+  <a href="dunper_signin.html" class="nav-cta">Sign In</a>
+</nav>
+
+<div class="wrap">
+  <div class="draft-tag">Rough draft · UI/UX TBD</div>
+  <h1 class="title">The Dunper <em>client widget</em></h1>
+  <p class="sub">This is the chat experience paying clients embed on <em>their own</em> site. Unlike the simple iframe popup, it has its own UI so each tenant can theme it to their brand — and every feature of the Dunper chatbot is reachable from inside the panel. Click the bubble in the corner to try the mock flow.</p>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Embed on a client's site</h2>
+        <p>Three lines, anywhere before <code>&lt;/body&gt;</code>. The <code>tenantId</code> is what we give them on signup — everything else has a sensible default.</p>
+        <pre class="code" id="snippet"><span class="cmt">&lt;!-- Dunper AI chat widget --&gt;</span>
+<span class="tag">&lt;script&gt;</span>
+  <span class="key">window</span>.DUNPER = {
+    <span class="attr">tenantId</span>:     <span class="str">'biz_abc123'</span>,         <span class="cmt">// REQUIRED</span>
+    <span class="attr">businessName</span>: <span class="str">'Acme Dental'</span>,
+    <span class="attr">primaryColor</span>: <span class="str">'#FF6B35'</span>,            <span class="cmt">// bubble + outgoing bubble</span>
+    <span class="attr">accentColor</span>:  <span class="str">'#1E3A8A'</span>,            <span class="cmt">// links + action chips</span>
+    <span class="attr">greeting</span>:     <span class="str">'Hi! Need help today?'</span>,
+    <span class="attr">locale</span>:       <span class="str">'auto'</span>,               <span class="cmt">// or 'en' / 'id' / 'es' …</span>
+    <span class="attr">position</span>:     <span class="str">'right'</span>,              <span class="cmt">// or 'left'</span>
+    <span class="attr">logoUrl</span>:      <span class="str">'https://acme.com/logo.png'</span>
+  };
+<span class="tag">&lt;/script&gt;</span>
+<span class="tag">&lt;script</span> <span class="attr">src=</span><span class="str">"https://widget.dunper.com/v1/dunper.js"</span> <span class="attr">defer</span><span class="tag">&gt;&lt;/script&gt;</span></pre>
+        <div class="row-btns">
+          <button class="btn" onclick="copyEmbed()">Copy embed code ⧉</button>
+          <a class="btn btn-secondary" href="#" onclick="openDunperChat();return false;">Open the popup demo ↗</a>
+          <span class="copied" id="copied-flag">Copied</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Every chatbot feature, reachable from the panel</h2>
+        <p>The widget UI exposes every capability of the Dunper AI in one place — instead of bouncing the customer to other channels.</p>
+        <div class="feat-grid">
+          <div class="feat"><strong>💬 Conversations</strong><span>Send/receive text in 60+ languages. Bot replies stream in with a typing indicator.</span><span class="api">POST /v1/messages</span></div>
+          <div class="feat"><strong>📅 Booking</strong><span>"Pick a time" card with real-time availability from the client's Google Calendar.</span><span class="api">GET /v1/availability · POST /v1/bookings</span></div>
+          <div class="feat"><strong>🧑 Lead qualification</strong><span>Quick inline form to capture name / email / phone. Becomes the customer's profile across future visits.</span><span class="api">POST /v1/profile</span></div>
+          <div class="feat"><strong>📎 Attachments</strong><span>Image + PDF upload from the visitor (e.g. share a screenshot, a contract).</span><span class="api">POST /v1/attachments</span></div>
+          <div class="feat"><strong>🌐 Languages</strong><span>Auto-detect from browser <code>Accept-Language</code> or explicit switch. Mid-conversation language change supported.</span><span class="api">locale param on every call</span></div>
+          <div class="feat"><strong>⚡ Quick replies</strong><span>The bot can suggest tappable replies after each message ("Book now", "Pricing", "Talk to a human").</span><span class="api">part of /v1/messages response</span></div>
+          <div class="feat"><strong>🙋 Human handoff</strong><span>When the visitor asks for a person, the panel shows a banner and routes future replies to a teammate in the dashboard.</span><span class="api">POST /v1/handoff</span></div>
+          <div class="feat"><strong>🔁 Persistence</strong><span>Conversation, profile and language stick in <code>localStorage</code> per tenant — survives refresh and revisits.</span><span class="api">local only</span></div>
+          <div class="feat"><strong>🎨 Branding</strong><span>Primary + accent colours, logo, business name, greeting — all driven by the <code>window.DUNPER</code> globals.</span><span class="api">client-side config</span></div>
+          <div class="feat"><strong>📱 Responsive</strong><span>Fullscreen takeover on phones, bottom-right card on desktop. Honours <code>prefers-reduced-motion</code>.</span><span class="api">CSS</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>How a conversation flows</h2>
+        <div class="flow">
+          <div class="flow-step"><div class="flow-num">1</div><div class="flow-body"><strong>Client site loads</strong><span>The script reads <code>window.DUNPER</code>, mounts a single floating bubble + dialog, and hydrates any saved session from <code>localStorage</code>.</span></div></div>
+          <div class="flow-step"><div class="flow-num">2</div><div class="flow-body"><strong>Visitor clicks the bubble</strong><span>Panel slides up. If we don't have a profile yet we show a quick lead form inline as the first card.</span></div></div>
+          <div class="flow-step"><div class="flow-num">3</div><div class="flow-body"><strong>Visitor types or taps a quick reply</strong><span>Widget POSTs to <code>/v1/messages</code> with <code>tenantId</code>, <code>profileId</code>, text, attachments, locale. Backend routes to the tenant's configured Dunper agent.</span></div></div>
+          <div class="flow-step"><div class="flow-num">4</div><div class="flow-body"><strong>Bot reply renders</strong><span>Response shape: <code>{ text, html?, quickReplies?, action?, slots? }</code>. <code>action: 'booking'</code> renders a slot picker; <code>action: 'handoff'</code> shows the human-takeover banner.</span></div></div>
+          <div class="flow-step"><div class="flow-num">5</div><div class="flow-body"><strong>Booking, escalation, attachments</strong><span>Each follow-up calls its own endpoint (<code>/bookings</code>, <code>/handoff</code>, <code>/attachments</code>), but the visitor stays in the same panel. Confirmation comes back inline.</span></div></div>
+          <div class="flow-step"><div class="flow-num">6</div><div class="flow-body"><strong>Visitor closes the panel</strong><span>State persists. Next time they hit the bubble — even on another page or session — the conversation resumes where they left off.</span></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Backend surface this assumes</h2>
+        <p>Four endpoints + one auth header. The four real network calls in the widget JS are tagged <code>// BACKEND HOOK</code> so the integration is a five-minute job once these exist.</p>
+        <table class="api-table">
+          <thead><tr><th>Endpoint</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td>POST /v1/messages</td><td>Send a visitor message. Body: <code>{ sessionId, profileId, text, attachments, locale }</code>. Returns: <code>{ text, html?, quickReplies?, action?, slots? }</code>.</td></tr>
+            <tr><td>GET&nbsp; /v1/availability</td><td>Get bookable slots. Query: <code>serviceId</code>, <code>from</code>, <code>to</code>. Returns: <code>[{ id, label, iso }]</code>.</td></tr>
+            <tr><td>POST /v1/bookings</td><td>Create a booking. Body: <code>{ slotId, profileId }</code>. Returns: <code>{ ok, confirmation, slot }</code>.</td></tr>
+            <tr><td>POST /v1/attachments</td><td>Multipart upload. Returns: <code>{ url, name, type }</code> for inline display in the conversation.</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:14px">All four take <code>X-Tenant: {tenantId}</code> as the auth header. Tenant config (agent personality, languages, branding fallbacks, booking services, escalation policy) lives in the Dunper dashboard and is fetched server-side per request — the client widget never sees it directly.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>Try it</h2>
+        <p>The mock widget is live in the bottom-right corner of this page. Open it and try things like:</p>
+        <ul>
+          <li>"Book an appointment"</li>
+          <li>"How much does it cost?"</li>
+          <li>"When are you open?"</li>
+          <li>"Can I talk to a human?"</li>
+          <li>Drop a file via the 📎 button</li>
+          <li>Switch the language in the toolbar</li>
+        </ul>
+        <button class="btn" onclick="openDunperChat()">Open the panel ↘</button>
+      </div>
+
+      <div class="card">
+        <h2>What's a draft, what's real</h2>
+        <h3>Already wired</h3>
+        <ul>
+          <li>All UI structure (bubble, panel, header, messages, composer, toolbar)</li>
+          <li>Quick replies, attachment upload, booking slot picker, lead-form card, handoff banner, language switcher, unread badge</li>
+          <li>localStorage persistence keyed by <code>tenantId</code></li>
+          <li>Branded theme via <code>window.DUNPER.{primaryColor, accentColor, logoUrl, businessName, greeting, position}</code></li>
+        </ul>
+        <h3>Stubbed (mock data — replace at the <code>// BACKEND HOOK</code> markers)</h3>
+        <ul>
+          <li><code>apiSend()</code> returns canned replies based on keywords in the input</li>
+          <li><code>apiAvailability()</code> returns six made-up time slots</li>
+          <li><code>apiBook()</code> always succeeds with a random confirmation code</li>
+          <li><code>apiUpload()</code> uses <code>URL.createObjectURL</code>, doesn't actually upload</li>
+        </ul>
+        <h3>Will need real-design pass</h3>
+        <ul>
+          <li>Header / colour system (currently uses raw <code>primaryColor</code> as a flood)</li>
+          <li>Slot picker layout (currently a 3-column grid — likely wants a date stepper + time list)</li>
+          <li>Lead form (currently three plain inputs — could become a stepper)</li>
+          <li>Empty / error / offline states</li>
+          <li>Sound / desktop notification on incoming bot reply</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow" id="bubble-arrow">Click the bubble →</div>
+
+<footer>
+  <a class="nav-logo" href="dunper_home.html" style="text-decoration:none">
+    <img src="img/logo-nav.png" alt="dunper" class="logo-img"/>
+    <span class="logo-text">dunper</span>
+  </a>
+  <span>© 2026 Dunper AI. All rights reserved.</span>
+  <span>dunperai@gmail.com &nbsp;·&nbsp; @dunper.ai</span>
+</footer>
+
+<script>
+  function copyEmbed(){
+    const text = document.getElementById('snippet').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const flag = document.getElementById('copied-flag');
+      flag.classList.add('show');
+      setTimeout(() => flag.classList.remove('show'), 1500);
+    });
+  }
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.dwc-fab, .dwc-panel')) {
+      const a = document.getElementById('bubble-arrow');
+      if (a) a.style.display = 'none';
+    }
+  });
+</script>
+
+<!-- Mount the client widget itself with a demo tenant config -->
+<script>
+  window.DUNPER = {
+    tenantId:     'demo',
+    businessName: 'Acme Dental (demo)',
+    primaryColor: '#0A1430',
+    accentColor:  '#1E3A8A',
+    greeting:     "Hi! 👋 I'm Dunper, the AI assistant for this site. Ask about pricing, hours, or book an appointment.",
+    locale:       'en',
+    position:     'right',
+    logoUrl:      'img/logo-nav.png'
+  };
+</script>
+<script src="js/dunper-client-widget.js" defer></script>
+</body>
+</html>
