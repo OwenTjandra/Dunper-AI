@@ -150,42 +150,74 @@ ensureColumn('bookings', 'customer_email', 'TEXT');
 function seedAdminFromEnv() {
   const username = process.env.ADMIN_USERNAME;
   const password = process.env.ADMIN_PASSWORD;
+  const email = process.env.ADMIN_EMAIL || null;
   if (!username || !password) return;
 
   const userCount = db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
   if (userCount > 0) return;
 
   const hash = bcrypt.hashSync(password, 10);
-  db.prepare("INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'business_owner')").run(username, hash);
-  console.log(`Seeded initial business_owner user: ${username}`);
+  const twofa = email ? 1 : 0;
+  db.prepare("INSERT INTO users (username, password_hash, role, email, twofa_enabled) VALUES (?, ?, 'business_owner', ?, ?)")
+    .run(username, hash, email, twofa);
+  console.log(`Seeded initial business_owner user: ${username}${email ? ' (2FA on)' : ' (NO email — 2FA disabled)'}`);
 }
 
 function seedFoundersFromEnv() {
   const raw = process.env.FOUNDERS;
   if (!raw) return;
 
-  const insertStmt = db.prepare("INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'founder')");
+  const insertStmt = db.prepare("INSERT INTO users (username, password_hash, role, email, twofa_enabled) VALUES (?, ?, 'founder', ?, ?)");
   const findStmt = db.prepare('SELECT id FROM users WHERE username = ?');
 
   const seeded = [];
-  for (const pair of raw.split(',')) {
-    const trimmed = pair.trim();
+  for (const entry of raw.split(',')) {
+    const trimmed = entry.trim();
     if (!trimmed) continue;
-    const sep = trimmed.indexOf(':');
-    if (sep < 1) {
+    // Accept both username:password and username:password:email
+    const parts = trimmed.split(':');
+    if (parts.length < 2) {
       console.warn(`[founders] skipping malformed entry: ${trimmed}`);
       continue;
     }
-    const username = trimmed.slice(0, sep).trim();
-    const password = trimmed.slice(sep + 1);
+    const username = parts[0].trim();
+    const password = parts[1];
+    const email = parts[2] ? parts[2].trim() : null;
     if (!username || !password) continue;
 
     if (findStmt.get(username)) continue; // idempotent — never overwrite existing
     const hash = bcrypt.hashSync(password, 10);
-    insertStmt.run(username, hash);
-    seeded.push(username);
+    insertStmt.run(username, hash, email, email ? 1 : 0);
+    seeded.push(username + (email ? '' : ' (no email)'));
   }
   if (seeded.length) console.log(`Seeded founder users: ${seeded.join(', ')}`);
+}
+
+// ===== 2FA helpers =====
+function setUserEmail(userId, email) {
+  db.prepare('UPDATE users SET email = ?, twofa_enabled = 1 WHERE id = ?').run(email, userId);
+}
+
+function disableUserTwofa(userId) {
+  db.prepare('UPDATE users SET twofa_enabled = 0 WHERE id = ?').run(userId);
+}
+
+function createLoginCode(userId, code, ttlSeconds = 600) {
+  // Invalidate any existing unused codes for this user first.
+  db.prepare('UPDATE login_codes SET used = 1 WHERE user_id = ? AND used = 0').run(userId);
+  const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString().replace('T', ' ').replace('Z', '');
+  db.prepare('INSERT INTO login_codes (user_id, code, expires_at) VALUES (?, ?, ?)').run(userId, code, expiresAt);
+}
+
+function consumeLoginCode(userId, code) {
+  const row = db.prepare(`
+    SELECT id FROM login_codes
+    WHERE user_id = ? AND code = ? AND used = 0 AND expires_at > CURRENT_TIMESTAMP
+    ORDER BY id DESC LIMIT 1
+  `).get(userId, code);
+  if (!row) return false;
+  db.prepare('UPDATE login_codes SET used = 1 WHERE id = ?').run(row.id);
+  return true;
 }
 
 function findUserByUsername(username) {
@@ -853,6 +885,10 @@ module.exports = {
   seedAdminFromEnv,
   seedFoundersFromEnv,
   findUserByUsername,
+  setUserEmail,
+  disableUserTwofa,
+  createLoginCode,
+  consumeLoginCode,
   createSession,
   findSession,
   deleteSession,

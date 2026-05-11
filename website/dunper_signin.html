@@ -309,6 +309,22 @@
         <div class="forgot"><a href="#">Forgot password?</a></div>
         <div id="login-error" class="field-error-msg" style="display:none;color:#B91C1C;background:#FEF2F2;border:1px solid rgba(220,38,38,.2);padding:9px 12px;border-radius:10px;font-size:12.5px;margin-bottom:12px;"></div>
         <button class="submit-btn" id="loginBtn" type="button">Log In →</button>
+
+        <!-- 2FA verification step — hidden until step 1 succeeds -->
+        <div id="verify-box" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid rgba(15,23,42,.08);">
+          <div style="font-size:13px;color:var(--blue-pale);margin-bottom:10px;line-height:1.55;">
+            We've emailed a 6-digit code to <strong id="verify-email-hint" style="color:var(--white);">your email</strong>. Enter it to finish signing in.
+          </div>
+          <div class="field"><label>6-digit code</label>
+            <input type="text" id="verify-code" inputmode="numeric" maxlength="6" placeholder="000000" style="letter-spacing:8px;font-family:'Space Mono',monospace;text-align:center;font-size:18px;font-weight:600;"/>
+          </div>
+          <div id="verify-error" style="display:none;color:#B91C1C;background:#FEF2F2;border:1px solid rgba(220,38,38,.2);padding:9px 12px;border-radius:10px;font-size:12.5px;margin-bottom:10px;"></div>
+          <button class="submit-btn" id="verifyBtn" type="button">Verify &amp; sign in →</button>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;">
+            <a href="#" id="resendCodeLink" style="color:var(--accent);">Resend code</a>
+            <a href="#" id="backToLoginLink" style="color:var(--blue-soft);">Use a different account</a>
+          </div>
+        </div>
         <div class="divider">or</div>
         <button class="social-btn"><span class="social-icon">G</span> Continue with Google</button>
         <div class="join-link">No account yet? <a href="dunper_join.html">Sign up free</a></div>
@@ -851,23 +867,35 @@ document.addEventListener('change', function(e){
 });
 
 // Wire the Log-In button on the marketing sign-in page to the real
-// Express auth endpoint. On success the backend sets the session cookie
-// and tells us the role; we redirect to the matching dashboard.
+// Express auth endpoint. Two-step flow:
+//   step 1: send creds → backend mails a 6-digit code, returns step=verify
+//   step 2: user types code → /verify-2fa creates the session
+// If the backend has 2FA disabled for that user (no linked email), the
+// first call returns step=done and we redirect immediately.
 function wireLoginButton(){
   const btn = document.getElementById('loginBtn');
   if(!btn) return;
   const userEl = document.getElementById('login-username');
   const passEl = document.getElementById('login-password');
   const errEl  = document.getElementById('login-error');
-  function showErr(msg){ if(errEl){ errEl.textContent = msg; errEl.style.display = 'block'; } }
-  function clearErr(){ if(errEl){ errEl.style.display = 'none'; errEl.textContent = ''; } }
+  const verifyBox = document.getElementById('verify-box');
+  const codeEl = document.getElementById('verify-code');
+  const verifyBtn = document.getElementById('verifyBtn');
+  const verifyErrEl = document.getElementById('verify-error');
+  const emailHintEl = document.getElementById('verify-email-hint');
+  const resendLink = document.getElementById('resendCodeLink');
+  const backLink = document.getElementById('backToLoginLink');
+
+  function showErr(el, msg){ if(el){ el.textContent = msg; el.style.display = 'block'; } }
+  function clearErr(el){ if(el){ el.style.display = 'none'; el.textContent = ''; } }
+  function dashboardFor(role){ return role === 'founder' ? '/operator.html' : '/admin.html'; }
 
   async function attemptLogin(){
-    clearErr();
+    clearErr(errEl);
     const username = (userEl.value || '').trim();
     const password = passEl.value || '';
     if(!username || !password){
-      showErr('Please enter both username and password.');
+      showErr(errEl, 'Please enter both username and password.');
       [userEl, passEl].forEach(el => { if(!el.value.trim()) el.classList.add('field-error'); });
       return;
     }
@@ -883,25 +911,94 @@ function wireLoginButton(){
       });
       const data = await r.json().catch(() => ({}));
       if(!r.ok){
-        showErr(data.error || 'Sign-in failed. Check your username and password.');
+        showErr(errEl, data.error || 'Sign-in failed. Check your username and password.');
         return;
       }
-      const role = data && data.user && data.user.role;
-      window.location.href = role === 'founder' ? '/operator.html' : '/admin.html';
+      if(data.step === 'verify'){
+        if(emailHintEl) emailHintEl.textContent = data.hint || 'your email';
+        if(verifyBox) verifyBox.style.display = 'block';
+        if(codeEl) codeEl.focus();
+        return;
+      }
+      window.location.href = dashboardFor(data.user && data.user.role);
     } catch (e) {
-      showErr('Network error: ' + (e.message || 'could not reach the server.'));
+      showErr(errEl, 'Network error: ' + (e.message || 'could not reach the server.'));
     } finally {
       btn.disabled = false;
       btn.textContent = orig;
     }
   }
 
+  async function attemptVerify(){
+    clearErr(verifyErrEl);
+    const code = (codeEl.value || '').replace(/\D/g, '');
+    if(code.length !== 6){
+      showErr(verifyErrEl, 'Enter the 6-digit code from your email.');
+      return;
+    }
+    verifyBtn.disabled = true;
+    const orig = verifyBtn.textContent;
+    verifyBtn.textContent = 'Verifying…';
+    try {
+      const r = await fetch('/api/auth/verify-2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ code }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if(!r.ok){
+        showErr(verifyErrEl, data.error || 'Verification failed.');
+        return;
+      }
+      window.location.href = dashboardFor(data.user && data.user.role);
+    } catch (e) {
+      showErr(verifyErrEl, 'Network error: ' + (e.message || 'could not reach the server.'));
+    } finally {
+      verifyBtn.disabled = false;
+      verifyBtn.textContent = orig;
+    }
+  }
+
   btn.addEventListener('click', attemptLogin);
-  // Enter on either input also submits
   [userEl, passEl].forEach(el => {
     if(!el) return;
     el.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); attemptLogin(); } });
   });
+
+  if(verifyBtn){
+    verifyBtn.addEventListener('click', attemptVerify);
+    codeEl.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); attemptVerify(); } });
+  }
+  if(resendLink){
+    resendLink.addEventListener('click', async (e) => {
+      e.preventDefault();
+      clearErr(verifyErrEl);
+      try {
+        const r = await fetch('/api/auth/resend-2fa', { method:'POST', credentials:'include' });
+        const data = await r.json().catch(() => ({}));
+        if(!r.ok){ showErr(verifyErrEl, data.error || 'Could not resend code.'); return; }
+        if(data.hint && emailHintEl) emailHintEl.textContent = data.hint;
+        showErr(verifyErrEl, 'New code sent.');
+        verifyErrEl.style.background = '#ECFDF5';
+        verifyErrEl.style.color = '#065F46';
+        verifyErrEl.style.borderColor = '#A7F3D0';
+        setTimeout(() => {
+          verifyErrEl.style.cssText = '';
+          clearErr(verifyErrEl);
+        }, 2500);
+      } catch (e) { showErr(verifyErrEl, 'Network error: ' + e.message); }
+    });
+  }
+  if(backLink){
+    backLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      if(verifyBox) verifyBox.style.display = 'none';
+      clearErr(verifyErrEl);
+      if(codeEl) codeEl.value = '';
+      userEl.focus();
+    });
+  }
 }
 
 // If user landed from a plan button on the subscription page, skip auth
