@@ -54,7 +54,7 @@
     background:linear-gradient(135deg,var(--blue-mid),var(--accent));
     color:var(--white);border:none;cursor:pointer;padding:9px 22px;border-radius:50px;
     font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;
-    flex-shrink:0;margin-left:16px;letter-spacing:.03em;transition:opacity .2s,transform .2s;
+    flex-shrink:0;margin-left:auto;letter-spacing:.03em;transition:opacity .2s,transform .2s;
   }
   .nav-cta:hover{opacity:.85;transform:scale(1.03);}
 
@@ -156,48 +156,84 @@
   .plan-btn.featured-btn:hover{opacity:.85;}
 
   /* COMPARE TABLES */
-  .compare-section{margin-bottom:80px;}
+  .compare-section{
+    margin-bottom:80px;padding:48px 40px;border-radius:24px;
+    background:linear-gradient(150deg,rgba(31,76,143,.12),rgba(235,240,250,.5));
+    border:1px solid rgba(125,160,202,.18);
+  }
+  .compare-header{text-align:center;margin-bottom:32px;}
   .compare-title{
     font-family:'Cormorant Garamond',serif;
-    font-size:32px;font-weight:700;margin-bottom:10px;
+    font-size:clamp(28px,3.5vw,38px);font-weight:700;margin-bottom:10px;line-height:1.15;
   }
-  .compare-subtitle{color:var(--white);font-size:14px;font-weight:300;margin-bottom:30px;line-height:1.6;}
+  .compare-title em{font-style:italic;color:var(--accent);font-weight:600;}
+  .compare-subtitle{color:var(--blue-pale);font-size:14px;font-weight:300;line-height:1.6;max-width:520px;margin:0 auto;}
 
   /* Tabs */
-  .compare-tabs{display:flex;gap:10px;margin-bottom:24px;}
+  .compare-tabs{display:flex;gap:10px;margin-bottom:28px;justify-content:center;flex-wrap:wrap;}
   .tab-btn{
-    padding:9px 22px;border-radius:50px;border:1px solid rgba(125,160,202,.25);
-    background:transparent;color:var(--blue-pale);
+    padding:10px 24px;border-radius:50px;border:1px solid rgba(125,160,202,.3);
+    background:rgba(235,240,250,.6);color:var(--blue-pale);
     font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:500;
     cursor:pointer;letter-spacing:.04em;transition:all .2s;
   }
   .tab-btn.active{
     background:linear-gradient(135deg,var(--blue-mid),var(--accent));
     border-color:transparent;color:white;
+    box-shadow:0 6px 18px rgba(15,112,240,.22);
   }
-  .tab-btn:hover:not(.active){border-color:rgba(193,232,255,.35);color:var(--white);}
+  .tab-btn:hover:not(.active){border-color:var(--accent);color:var(--accent);background:rgba(15,112,240,.05);}
 
-  .compare-panel{display:none;}
+  .compare-panel{display:none;animation:fadeCompare .25s ease-out;}
   .compare-panel.active{display:block;}
+  @keyframes fadeCompare{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
+  .compare-table-wrap{
+    background:rgba(255,255,255,.6);border:1px solid rgba(125,160,202,.18);
+    border-radius:16px;overflow:hidden;
+  }
   .compare-table{width:100%;border-collapse:collapse;}
   .compare-table th,.compare-table td{
-    padding:13px 18px;text-align:center;font-size:13px;
-    border-bottom:1px solid rgba(125,160,202,.09);
+    padding:14px 20px;text-align:center;font-size:13.5px;
+    border-bottom:1px solid rgba(125,160,202,.12);
   }
+  .compare-table tbody tr:last-child td{border-bottom:none;}
+  .compare-table thead tr{background:rgba(31,76,143,.08);}
   .compare-table thead th{
-    background:linear-gradient(90deg,var(--grad-a),var(--grad-b));
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-    font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;padding-bottom:18px;
+    color:var(--blue-pale);
+    font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;
+    padding:16px 20px;border-bottom:1px solid rgba(125,160,202,.22);
   }
-  .compare-table th:first-child,.compare-table td:first-child{text-align:left;color:var(--blue-pale);}
-  .compare-table tr:hover td{background:rgba(31,76,143,.1);}
+  .compare-table thead th.col-feature{text-align:left;}
+  .compare-table thead th.col-highlight{
+    background:linear-gradient(180deg,rgba(15,112,240,.14),rgba(15,112,240,.06));
+    background-clip:padding-box;-webkit-text-fill-color:initial;
+    color:var(--accent);position:relative;
+  }
+  .compare-table thead th.col-highlight::after{
+    content:'POPULAR';position:absolute;top:4px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,var(--blue-mid),var(--accent));
+    color:#fff;font-size:8.5px;padding:2px 8px;border-radius:8px;letter-spacing:.1em;font-weight:600;
+  }
+  .compare-table th:first-child,.compare-table td:first-child{
+    text-align:left;color:var(--blue-pale);font-weight:500;
+  }
+  .compare-table tbody td.col-highlight{background:rgba(15,112,240,.05);font-weight:500;color:var(--white);}
+  .compare-table tbody tr:hover td{background:rgba(15,112,240,.06);}
+  .compare-table tbody tr:hover td.col-highlight{background:rgba(15,112,240,.1);}
   .tick{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:24px;height:24px;border-radius:50%;
     background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-    font-size:15px;
+    color:#fff;-webkit-text-fill-color:#fff;
+    font-size:13px;font-weight:700;
   }
-  .cross{color:rgba(125,160,202,.28);font-size:15px;}
+  .cross{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:24px;height:24px;border-radius:50%;
+    background:rgba(125,160,202,.15);color:rgba(125,160,202,.55);
+    font-size:14px;font-weight:600;
+  }
 
   /* BG */
   .bg-orb{position:fixed;border-radius:50%;filter:blur(110px);pointer-events:none;z-index:-1;}
@@ -214,6 +250,56 @@
   }
 
   .logo-img{height:32px;width:auto;display:block;}
+
+  /* CHAT NAV ICON */
+  .nav-chat-link{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:30px;height:30px;border-radius:50%;
+    border:1px solid rgba(31,76,143,.22);background:rgba(31,76,143,.05);
+    color:var(--blue-pale);text-decoration:none;
+    transition:color .2s,border-color .2s,background .2s,transform .2s;
+  }
+  .nav-chat-link:hover{color:var(--accent);border-color:var(--accent);background:rgba(15,112,240,.08);transform:translateY(-1px);}
+  .nav-chat-link svg{width:14px;height:14px;display:block;}
+
+  /* RESPONSIVE — phones & tablets */
+  @media (max-width:1024px){
+    nav{padding:12px 22px;}
+    .nav-links{gap:14px;}
+    .page{padding:120px 30px 70px;}
+    .plans-grid{grid-template-columns:repeat(2,1fr);}
+    .compare-section{padding:36px 28px;}
+  }
+  @media (max-width:720px){
+    nav{padding:10px 14px;flex-wrap:wrap;gap:8px;}
+    .nav-logo{margin-right:10px;}
+    .nav-links{gap:8px;flex-wrap:wrap;order:3;flex-basis:100%;justify-content:center;margin-right:0;padding:4px 0;}
+    .nav-links a{font-size:10.5px;letter-spacing:.05em;}
+    .nav-chatbar{display:none;}
+    .nav-spacer{display:none;}
+    .nav-cta{order:2;margin-left:auto;padding:8px 16px;font-size:11.5px;}
+    .nav-chat-link{width:28px;height:28px;}
+
+    .page{padding:120px 18px 60px;}
+    .page-title{font-size:clamp(34px,9vw,46px);}
+    .page-sub{font-size:14px;padding:0 6px;}
+
+    .billing-toggle{margin-bottom:40px;gap:10px;flex-wrap:wrap;}
+    .save-badge{font-size:10px;padding:3px 9px;}
+
+    .plans-grid{grid-template-columns:1fr;gap:16px;margin-bottom:50px;}
+    .plan-card{padding:26px 22px;}
+
+    .compare-section{padding:28px 18px;margin-bottom:50px;}
+    .compare-tabs{gap:6px;}
+    .tab-btn{padding:8px 14px;font-size:11.5px;}
+    .compare-table-wrap{overflow-x:auto;}
+    .compare-table{min-width:480px;}
+    .compare-table th,.compare-table td{padding:11px 12px;font-size:12.5px;}
+    .compare-table thead th{font-size:10px;padding:14px 12px;}
+
+    footer{padding:32px 18px;flex-direction:column;gap:8px;text-align:center;}
+  }
 
   /* light theme: text on blue gradient surfaces stays white */
   .nav-cta, .nav-cta *, .submit-btn, .submit-btn *, .plan-btn.featured-btn, .featured-btn, .modal-actions button, .team-photo, .feature-icon, .split-icon, .value-icon, .step-icon, .ty-icon, .plan-badge, .save-badge, .btn-primary, .chatbar-send, .chatbar-send svg { color: #FFFFFF !important; fill: white; }
@@ -233,6 +319,7 @@
     <li><a href="dunper_about.html">About</a></li>
     <li><a href="dunper_services.html">Services</a></li>
     <li><a href="dunper_contact.html">Contact</a></li>
+    <li><a href="dunper_chat.html" class="nav-chat-link" title="Chat with Dunper" aria-label="Chat with Dunper"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></a></li>
     <li><a href="dunper_join.html" class="active">Join Us</a></li>
   </ul>
   <div class="nav-chatbar">
@@ -240,7 +327,7 @@
     <button class="chatbar-send"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
   </div>
   <div class="nav-spacer"></div>
-  <a href="dunper_signin.html" style="text-decoration:none"><button class="nav-cta">Sign In</button></a>
+  <a href="dunper_signin.html" style="text-decoration:none;margin-left:auto"><button class="nav-cta">Sign In</button></a>
 </nav>
 
 <div class="page">
@@ -327,8 +414,10 @@
 
   <!-- COMPARE FEATURES — TABBED -->
   <div class="compare-section">
-    <div class="compare-title">Compare features</div>
-    <p class="compare-subtitle">See exactly what's included in each plan so you can choose with confidence.</p>
+    <div class="compare-header">
+      <div class="compare-title">Compare <em>features</em></div>
+      <p class="compare-subtitle">See exactly what's included in each plan so you can choose with confidence.</p>
+    </div>
 
     <div class="compare-tabs">
       <button class="tab-btn active" data-tab="starter-pro">Starter vs Pro</button>
@@ -338,61 +427,70 @@
 
     <!-- Starter vs Pro -->
     <div class="compare-panel active" id="tab-starter-pro">
-      <table class="compare-table">
-        <thead>
-          <tr>
-            <th style="text-align:left">Feature</th>
-            <th>Starter</th>
-            <th>Pro</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Conversations / month</td><td>100</td><td>500</td></tr>
-          <tr><td>Languages</td><td>1</td><td>5</td></tr>
-          <tr><td>Unlimited data</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-          <tr><td>Custom agent</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-          <tr><td>All chatbot features</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        </tbody>
-      </table>
+      <div class="compare-table-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th class="col-feature">Feature</th>
+              <th>Starter</th>
+              <th class="col-highlight">Pro</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Conversations / month</td><td>100</td><td class="col-highlight">500</td></tr>
+            <tr><td>Languages</td><td>1</td><td class="col-highlight">5</td></tr>
+            <tr><td>Unlimited data</td><td><span class="tick">✓</span></td><td class="col-highlight"><span class="tick">✓</span></td></tr>
+            <tr><td>Custom agent</td><td><span class="tick">✓</span></td><td class="col-highlight"><span class="tick">✓</span></td></tr>
+            <tr><td>All chatbot features</td><td><span class="tick">✓</span></td><td class="col-highlight"><span class="tick">✓</span></td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Pro vs Max -->
     <div class="compare-panel" id="tab-pro-max">
-      <table class="compare-table">
-        <thead>
-          <tr>
-            <th style="text-align:left">Feature</th>
-            <th>Pro</th>
-            <th>Max</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Conversations / month</td><td>500</td><td>2,000</td></tr>
-          <tr><td>Languages</td><td>5</td><td>40+</td></tr>
-          <tr><td>Unlimited data</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-          <tr><td>Custom agent</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-          <tr><td>All chatbot features</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        </tbody>
-      </table>
+      <div class="compare-table-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th class="col-feature">Feature</th>
+              <th class="col-highlight">Pro</th>
+              <th>Max</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Conversations / month</td><td class="col-highlight">500</td><td>2,000</td></tr>
+            <tr><td>Languages</td><td class="col-highlight">5</td><td>40+</td></tr>
+            <tr><td>Unlimited data</td><td class="col-highlight"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+            <tr><td>Custom agent</td><td class="col-highlight"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+            <tr><td>All chatbot features</td><td class="col-highlight"><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- All Plans -->
     <div class="compare-panel" id="tab-all">
-      <table class="compare-table">
-        <thead>
-          <tr>
-            <th style="text-align:left">Feature</th>
-            <th>Starter</th><th>Pro</th><th>Max</th><th>Custom</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Conversations / month</td><td>100</td><td>500</td><td>2,000</td><td>Custom</td></tr>
-          <tr><td>Languages</td><td>1</td><td>5</td><td>40+</td><td>Any</td></tr>
-          <tr><td>Unlimited data</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-          <tr><td>Custom agent</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-          <tr><td>All chatbot features</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        </tbody>
-      </table>
+      <div class="compare-table-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th class="col-feature">Feature</th>
+              <th>Starter</th>
+              <th class="col-highlight">Pro</th>
+              <th>Max</th>
+              <th>Custom</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Conversations / month</td><td>100</td><td class="col-highlight">500</td><td>2,000</td><td>Custom</td></tr>
+            <tr><td>Languages</td><td>1</td><td class="col-highlight">5</td><td>40+</td><td>Any</td></tr>
+            <tr><td>Unlimited data</td><td><span class="tick">✓</span></td><td class="col-highlight"><span class="tick">✓</span></td><td><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+            <tr><td>Custom agent</td><td><span class="tick">✓</span></td><td class="col-highlight"><span class="tick">✓</span></td><td><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+            <tr><td>All chatbot features</td><td><span class="tick">✓</span></td><td class="col-highlight"><span class="tick">✓</span></td><td><span class="tick">✓</span></td><td><span class="tick">✓</span></td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>

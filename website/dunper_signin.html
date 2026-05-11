@@ -242,6 +242,26 @@
 
   .logo-img{height:32px;width:auto;display:block;}
 
+  /* RESPONSIVE — phones & tablets */
+  @media (max-width:720px){
+    .topbar{padding:14px 18px;}
+    .back-link{font-size:12px;}
+    .step-bar{padding:18px 14px;gap:0;flex-wrap:wrap;}
+    .step-connector{width:18px;}
+    .step-label{font-size:9px;margin:0 4px;}
+    .step-dot{width:26px;height:26px;font-size:10px;}
+    .auth-wrap{padding:18px 14px;}
+    .auth-card{padding:28px 22px;border-radius:22px;}
+    .auth-card.wide{max-width:100%;}
+    .card-title{font-size:clamp(24px,7vw,30px);}
+    .field-row{grid-template-columns:1fr;gap:14px;}
+    .auth-tabs{margin-bottom:22px;}
+  }
+  @media (max-width:480px){
+    .step-label{display:none;}
+    .step-connector{width:14px;}
+  }
+
   /* light theme: text on blue gradient surfaces stays white */
   .nav-cta, .nav-cta *, .submit-btn, .submit-btn *, .plan-btn.featured-btn, .featured-btn, .modal-actions button, .team-photo, .feature-icon, .split-icon, .value-icon, .step-icon, .ty-icon, .plan-badge, .save-badge, .btn-primary, .chatbar-send, .chatbar-send svg { color: #FFFFFF !important; fill: white; }
   .nav-cta:hover, .submit-btn:hover, .plan-btn.featured-btn:hover, .modal-actions button:hover, .btn-primary:hover { color: #FFFFFF !important; }
@@ -396,7 +416,11 @@
         </div>
         <div class="field"><label>Phone Number</label><input type="tel" placeholder="+1 (555) 000-0000" inputmode="tel" autocomplete="tel" oninput="this.value=this.value.replace(/[^0-9+\-\s()]/g,'')"/></div>
         <div class="field"><label>Email Address</label><input type="email" placeholder="you@company.com"/></div>
-        <div class="field"><label>Create Password</label><input type="password" placeholder="Min. 8 characters"/></div>
+        <div class="field-row">
+          <div class="field"><label>Create Password</label><input type="password" id="acctPassword" placeholder="Min. 8 characters" minlength="8" autocomplete="new-password"/></div>
+          <div class="field"><label>Confirm Password</label><input type="password" id="acctConfirmPassword" placeholder="Re-enter password" minlength="8" autocomplete="new-password"/></div>
+        </div>
+        <p id="acctPwdMismatch" style="display:none;color:#B91C1C;background:#FEF2F2;border:1px solid rgba(220,38,38,.2);padding:8px 12px;border-radius:10px;font-size:12px;margin-top:-6px;">Passwords do not match.</p>
         <div class="field-row">
           <div class="field">
             <label>Date of Birth <span style="color:rgba(31,76,143,.5);font-size:10px">(must be 18+)</span></label>
@@ -832,9 +856,24 @@ function validateAndContinue(currentPageId, nextPageId, nextStep){
     if(!v) bad = true;
     else if(el.type === 'email' && !emailRe.test(v)) bad = true;
     else if(el.type === 'tel' && !phoneRe.test(v)) bad = true;
+    else if(el.type === 'password' && v.length < 8) bad = true;
     if(bad){ el.classList.add('field-error'); if(!firstInvalid) firstInvalid = el; }
     else { el.classList.remove('field-error'); }
   });
+  // Confirm-password match check (account step)
+  const pwd = container.querySelector('#acctPassword');
+  const confirm = container.querySelector('#acctConfirmPassword');
+  const mismatchMsg = container.querySelector('#acctPwdMismatch');
+  if(pwd && confirm){
+    if(pwd.value && confirm.value && pwd.value !== confirm.value){
+      pwd.classList.add('field-error');
+      confirm.classList.add('field-error');
+      if(mismatchMsg) mismatchMsg.style.display = 'block';
+      if(!firstInvalid) firstInvalid = confirm;
+    } else if(mismatchMsg){
+      mismatchMsg.style.display = 'none';
+    }
+  }
   const requiredCheckboxes = container.querySelectorAll('input[type=checkbox][required]');
   requiredCheckboxes.forEach(cb => {
     const labelEl = cb.closest('label');
@@ -854,6 +893,10 @@ function validateAndContinue(currentPageId, nextPageId, nextStep){
 document.addEventListener('input', function(e){
   if(e.target.classList && e.target.classList.contains('field-error')){
     e.target.classList.remove('field-error');
+  }
+  if(e.target.id === 'acctPassword' || e.target.id === 'acctConfirmPassword'){
+    const msg = document.getElementById('acctPwdMismatch');
+    if(msg) msg.style.display = 'none';
   }
 });
 document.addEventListener('change', function(e){
