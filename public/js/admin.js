@@ -102,7 +102,7 @@ function setStatus(text, kind) {
 
 function handleUnauthorized(res) {
   if (res.status === 401) {
-    window.location.href = '/login.html';
+    window.location.href = '/dunper_signin.html';
     return true;
   }
   return false;
@@ -121,7 +121,7 @@ async function loadBusiness() {
 
 async function logout() {
   await fetch('/api/auth/logout', { method: 'POST' });
-  window.location.href = '/login.html';
+  window.location.href = '/dunper_signin.html';
 }
 document.getElementById('logout-btn')?.addEventListener('click', logout);
 

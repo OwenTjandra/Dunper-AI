@@ -2,100 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sign in — Dunper AI</title>
-  <link rel="icon" type="image/png" href="/img/logo.png" />
-  <link rel="stylesheet" href="/css/admin.css" />
+  <meta http-equiv="refresh" content="0; url=/dunper_signin.html">
+  <link rel="canonical" href="/dunper_signin.html">
   <style>
-    body { display: flex; align-items: center; justify-content: center; }
-    .login-card { max-width: 400px; width: 100%; text-align: center; }
-    .login-card label, .login-card form { text-align: left; }
-    .login-logo {
-      width: 90px; height: 90px; object-fit: contain;
-      margin: 0 auto 12px; display: block;
-    }
-    .login-card h1 {
-      font-size: 24px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-      margin-bottom: 4px;
-    }
-    .login-card p.subtitle { margin-bottom: 16px; color: #555; }
-    .login-error {
-      background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5;
-      border-radius: 8px; padding: 10px 12px; font-size: 13px;
-      display: none; text-align: left;
-    }
-    .login-error.show { display: block; }
-    .step { display: none; }
-    .step.active { display: block; }
-    .code-input {
-      letter-spacing: 12px !important; text-align: center;
-      font-family: 'Courier New', monospace !important;
-      font-size: 22px !important; font-weight: 700 !important;
-      padding: 14px !important;
-    }
-    .meta-line {
-      font-size: 13px; color: #555; text-align: left; margin-bottom: 10px;
-    }
-    .meta-line strong { color: #1a1916; }
-    .link-btn {
-      background: none; border: none; padding: 0; cursor: pointer;
-      color: #4f46e5; font-size: 13px; text-decoration: underline;
-      font-family: inherit;
-    }
-    .link-row { display: flex; justify-content: space-between; margin-top: 10px; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #EBF0FA; color: #1F4C8F; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    a { color: #1F4C8F; }
   </style>
 </head>
 <body>
-  <div class="card login-card">
-    <img src="/img/logo.png" class="login-logo" alt="Dunper" />
-    <h1>Sign in</h1>
-    <p class="subtitle">Business dashboard access only. Customers don't need this.</p>
-
-    <!-- STEP 1: credentials -->
-    <form id="login-form" class="step active" autocomplete="on">
-      <label>
-        <span>Username</span>
-        <input name="username" type="text" required autocomplete="username" autofocus />
-      </label>
-      <label>
-        <span>Password</span>
-        <input name="password" type="password" required autocomplete="current-password" />
-      </label>
-      <div id="login-error" class="login-error"></div>
-      <button type="submit" class="primary-btn" id="login-btn">Sign in</button>
-    </form>
-
-    <!-- STEP 2: 6-digit code from email -->
-    <form id="verify-form" class="step" autocomplete="off">
-      <div class="meta-line">
-        We've sent a 6-digit code to <strong id="email-hint">your email</strong>.
-        Enter it below to finish signing in. The code expires in 10 minutes.
-      </div>
-      <label>
-        <span>6-digit code</span>
-        <input
-          name="code"
-          type="text"
-          required
-          inputmode="numeric"
-          autocomplete="one-time-code"
-          maxlength="6"
-          pattern="[0-9]{6}"
-          class="code-input"
-          placeholder="000000"
-        />
-      </label>
-      <div id="verify-error" class="login-error"></div>
-      <button type="submit" class="primary-btn" id="verify-btn">Verify &amp; sign in</button>
-      <div class="link-row">
-        <button type="button" class="link-btn" id="resend-btn">Resend code</button>
-        <button type="button" class="link-btn" id="back-btn">Use a different account</button>
-      </div>
-    </form>
-  </div>
-
-  <script src="/js/login.js"></script>
+  <p>Redirecting to <a href="/dunper_signin.html">sign in</a>…</p>
+  <script>window.location.replace('/dunper_signin.html');</script>
 </body>
 </html>

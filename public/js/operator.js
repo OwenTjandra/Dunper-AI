@@ -48,13 +48,13 @@ function metricCard(label, value, sub) {
 }
 
 function handleUnauthorized(res) {
-  if (res.status === 401) { window.location.href = '/login.html'; return true; }
+  if (res.status === 401) { window.location.href = '/dunper_signin.html'; return true; }
   return false;
 }
 
 logoutBtn?.addEventListener('click', async () => {
   await fetch('/api/auth/logout', { method: 'POST' });
-  window.location.href = '/login.html';
+  window.location.href = '/dunper_signin.html';
 });
 
 async function loadOverview() {

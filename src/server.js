@@ -699,7 +699,7 @@ app.get('/api/integrations/google/connect', requireBusinessOwner,(req, res) => {
 
 app.get('/api/integrations/google/callback', async (req, res) => {
   if (!req.user) {
-    return res.redirect('/login.html');
+    return res.redirect('/dunper_signin.html');
   }
   const { code, state, error } = req.query;
   if (error) {

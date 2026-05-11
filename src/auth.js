@@ -74,7 +74,7 @@ function requireAuth(req, res, next) {
   if (req.path.startsWith('/api/')) {
     return res.status(401).json({ error: 'Authentication required' });
   }
-  return res.redirect('/login.html');
+  return res.redirect('/dunper_signin.html');
 }
 
 function requireRole(role) {
@@ -83,7 +83,7 @@ function requireRole(role) {
       if (req.path.startsWith('/api/')) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      return res.redirect('/login.html');
+      return res.redirect('/dunper_signin.html');
     }
     if (req.user.role !== role) {
       if (req.path.startsWith('/api/')) {

@@ -658,7 +658,7 @@
   async function hydrateUser() {
     try {
       const r = await fetch('/api/auth/me', { credentials: 'include' });
-      if (!r.ok) { window.location.href = '/login.html'; return; }
+      if (!r.ok) { window.location.href = '/dunper_signin.html'; return; }
       const data = await r.json();
       const username = (data && data.user && data.user.username) || 'user';
       const initial = (username[0] || 'U').toUpperCase();
@@ -675,7 +675,7 @@
 
   document.getElementById('logout-btn').addEventListener('click', async () => {
     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch {}
-    window.location.href = '/login.html';
+    window.location.href = '/dunper_signin.html';
   });
 
   window.addEventListener('load', () => {
