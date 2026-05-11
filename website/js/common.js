@@ -858,6 +858,26 @@
 
       .nav-cta { margin-left: 0 !important; padding: 9px 18px !important; font-size: 12px !important; }
     }
+
+    /* Discreet footer link to the Founder Console (operator.html).
+       Visible to everyone; the page itself redirects to /dunper_signin.html
+       if the visitor isn't logged in as a founder. */
+    .founder-link {
+      color: #94A3B8 !important;
+      font-size: 11.5px !important;
+      font-weight: 500 !important;
+      text-decoration: none !important;
+      letter-spacing: 0 !important;
+      transition: color .2s ease;
+      -webkit-text-fill-color: #94A3B8 !important;
+      background: none !important;
+      -webkit-background-clip: padding-box !important;
+      background-clip: padding-box !important;
+    }
+    .founder-link:hover {
+      color: #1E3A8A !important;
+      -webkit-text-fill-color: #1E3A8A !important;
+    }
   `;
 
   function injectStyles() {
@@ -966,12 +986,28 @@
     });
   }
 
+  // Drop a discreet "Founder Console" link into every page's footer
+  function injectFounderLink() {
+    const footers = document.querySelectorAll('footer');
+    if (!footers.length) return;
+    footers.forEach(footer => {
+      if (footer.querySelector('.founder-link')) return;
+      const a = document.createElement('a');
+      a.href = '/operator.html';
+      a.className = 'founder-link';
+      a.textContent = 'Founder Console →';
+      a.title = 'Dunper AI Founder Dashboard (sign in required)';
+      footer.appendChild(a);
+    });
+  }
+
   function init() {
     tagPage();
     injectStyles();
     wireChatbar();
     wireScrollAnim();
     wireHamburger();
+    injectFounderLink();
   }
 
   if (document.readyState === 'loading') {

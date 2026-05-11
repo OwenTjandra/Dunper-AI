@@ -119,6 +119,11 @@
     align-self:flex-start;transition:opacity .2s,transform .2s;letter-spacing:.03em;
   }
   .submit-btn:hover{opacity:.85;transform:scale(1.03);}
+  .submit-btn:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+  .cf-status{font-size:13.5px;line-height:1.5;min-height:18px;margin:-4px 0 4px;}
+  .cf-status.ok{color:#15803d;}
+  .cf-status.err{color:#b91c1c;}
+  input.cf-error,textarea.cf-error,select.cf-error{border-color:rgba(220,38,38,.6) !important;}
 
   /* INFO CARDS */
   .contact-info{display:flex;flex-direction:column;gap:20px;}
@@ -219,15 +224,15 @@
   <p class="page-sub">Have a question about Dunper AI? Want to explore a partnership or enterprise plan? Send us a message and we'll get back to you within 24 hours.</p>
 
   <div class="contact-grid">
-    <div class="contact-form">
+    <form class="contact-form" id="contact-form" novalidate>
       <div class="field-group">
-        <div><label>First Name</label><input type="text" placeholder="Alex"/></div>
-        <div><label>Last Name</label><input type="text" placeholder="Rivera"/></div>
+        <div><label for="cf-first">First Name</label><input type="text" id="cf-first" name="firstName" placeholder="Alex" autocomplete="given-name"/></div>
+        <div><label for="cf-last">Last Name</label><input type="text" id="cf-last" name="lastName" placeholder="Rivera" autocomplete="family-name"/></div>
       </div>
-      <div><label>Email Address</label><input type="email" placeholder="you@company.com"/></div>
+      <div><label for="cf-email">Email Address</label><input type="email" id="cf-email" name="email" placeholder="you@company.com" autocomplete="email" required/></div>
       <div>
-        <label>Subject</label>
-        <select>
+        <label for="cf-subject">Subject</label>
+        <select id="cf-subject" name="subject">
           <option value="">Select a topic…</option>
           <option>General Inquiry</option>
           <option>Sales & Pricing</option>
@@ -236,9 +241,10 @@
           <option>Enterprise Plan</option>
         </select>
       </div>
-      <div><label>Message</label><textarea placeholder="Tell us how we can help…"></textarea></div>
-      <button class="submit-btn">Send Message →</button>
-    </div>
+      <div><label for="cf-message">Message</label><textarea id="cf-message" name="message" placeholder="Tell us how we can help…" required></textarea></div>
+      <p id="cf-status" class="cf-status" role="status" aria-live="polite"></p>
+      <button class="submit-btn" type="submit" id="cf-submit">Send Message →</button>
+    </form>
 
     <div class="contact-info">
       <div class="info-card">
@@ -273,6 +279,86 @@
   <span class="footer-copy">© 2026 Dunper AI. All rights reserved.</span>
   <span class="footer-contact">dunperai@gmail.com &nbsp;·&nbsp; @dunper.ai</span>
 </footer>
+<script>
+  (function(){
+    const form     = document.getElementById('contact-form');
+    if (!form) return;
+    const first    = document.getElementById('cf-first');
+    const last     = document.getElementById('cf-last');
+    const email    = document.getElementById('cf-email');
+    const subject  = document.getElementById('cf-subject');
+    const message  = document.getElementById('cf-message');
+    const btn      = document.getElementById('cf-submit');
+    const status   = document.getElementById('cf-status');
+    const emailRe  = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    function setStatus(msg, kind){
+      status.textContent = msg || '';
+      status.className   = 'cf-status' + (kind ? ' ' + kind : '');
+    }
+    function markErr(el, bad){
+      if (!el) return;
+      el.classList.toggle('cf-error', !!bad);
+    }
+    [email, message].forEach(el => el && el.addEventListener('input', () => markErr(el, false)));
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setStatus('');
+      const v = {
+        firstName: (first?.value || '').trim(),
+        lastName:  (last?.value  || '').trim(),
+        email:     (email?.value || '').trim(),
+        subject:   (subject?.value || '').trim(),
+        message:   (message?.value || '').trim(),
+      };
+      let bad = false;
+      if (!v.email || !emailRe.test(v.email)) { markErr(email, true); bad = true; }
+      if (!v.message) { markErr(message, true); bad = true; }
+      if (bad) { setStatus('Please add a valid email and a message.', 'err'); return; }
+
+      btn.disabled = true;
+      const origText = btn.textContent;
+      btn.textContent = 'Sending…';
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(v),
+        });
+        let data = {};
+        try { data = await res.json(); } catch (_) {}
+        if (!res.ok) {
+          throw new Error(data.error || `Request failed (HTTP ${res.status})`);
+        }
+        setStatus("Thanks — we got your message. We'll reply within 24 hours.", 'ok');
+        form.reset();
+      } catch (err) {
+        // If the API is unreachable, fall back to a mailto so the message
+        // still lands in our inbox instead of disappearing.
+        const mailtoBody = encodeURIComponent(
+          (v.subject ? 'Subject: ' + v.subject + '\n\n' : '') +
+          v.message +
+          '\n\n— From ' + (v.firstName + ' ' + v.lastName).trim() + ' <' + v.email + '>'
+        );
+        const subj = encodeURIComponent(v.subject || 'Dunper AI — Inquiry');
+        setStatus(
+          "Couldn't reach the server. Click here to email us directly: ",
+          'err'
+        );
+        const a = document.createElement('a');
+        a.href = `mailto:dunperai@gmail.com?subject=${subj}&body=${mailtoBody}`;
+        a.textContent = 'dunperai@gmail.com';
+        a.style.textDecoration = 'underline';
+        status.appendChild(a);
+        console.error('[contact] submit failed:', err);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
+    });
+  })();
+</script>
 <script src="/js/common.js"></script>
 </body>
 </html>

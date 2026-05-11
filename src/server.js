@@ -94,6 +94,15 @@ const adminApiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Public marketing contact form — strict per-IP cap to deter spam bots.
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  message: { error: 'Too many submissions — try again in a few minutes.' },
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+});
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -133,6 +142,51 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'Server is running', business: getBusiness().name });
+});
+
+// Public — dunper.com marketing contact form. Each submission is dropped
+// into sales_clients as a lead so it surfaces in the Founder Dashboard.
+app.post('/api/contact', contactLimiter, (req, res) => {
+  const b = req.body || {};
+  const first = String(b.firstName || '').trim();
+  const last  = String(b.lastName  || '').trim();
+  const email = String(b.email     || '').trim().toLowerCase();
+  const subject = String(b.subject || '').trim();
+  const message = String(b.message || '').trim();
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'A valid email is required.' });
+  }
+  if (!message) {
+    return res.status(400).json({ error: 'A message is required.' });
+  }
+  if (message.length > 4000) {
+    return res.status(400).json({ error: 'Message is too long (max 4000 characters).' });
+  }
+
+  const fullName = [first, last].filter(Boolean).join(' ').trim();
+  const today    = new Date().toISOString().slice(0, 10);
+  const notes    = [
+    subject ? `Subject: ${subject}` : null,
+    '',
+    message,
+    '',
+    `— Inbound from dunper.com contact form on ${today}`,
+  ].filter(v => v !== null).join('\n');
+
+  try {
+    const client = createSalesClient({
+      businessName: fullName || email,
+      contactName:  fullName || null,
+      contactEmail: email,
+      status: 'lead',
+      notes,
+    });
+    return res.json({ ok: true, id: client.id });
+  } catch (err) {
+    console.error('[contact] could not save submission:', err);
+    return res.status(500).json({ error: 'Could not save your message — please try again or email dunperai@gmail.com.' });
+  }
 });
 
 app.get('/api/business', requireBusinessOwner,(req, res) => {

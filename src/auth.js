@@ -10,6 +10,7 @@ const {
   setUserEmail,
   createLoginCode,
   consumeLoginCode,
+  createSalesClient,
 } = require('./db');
 const { sendLoginCode, generateCode, emailHint } = require('./mailer');
 
@@ -169,6 +170,20 @@ router.post('/signup', async (req, res) => {
   const user = createBusinessOwnerUser({ username: cleanEmail, password, email: cleanEmail });
   if (!user) {
     return res.status(409).json({ error: 'An account with that email already exists. Try logging in.' });
+  }
+
+  // Mirror the new signup into sales_clients so it shows up on the
+  // Founder Dashboard right away (status=lead until they convert/pay).
+  try {
+    createSalesClient({
+      businessName: cleanName || cleanEmail,
+      contactName: cleanName || null,
+      contactEmail: cleanEmail,
+      status: 'lead',
+      notes: `Self-service signup via dunper.com on ${new Date().toISOString().slice(0, 10)}`,
+    });
+  } catch (err) {
+    console.warn('[signup] could not mirror to sales_clients:', err.message);
   }
 
   // If SMTP isn't configured we can't actually deliver the 2FA code, so
