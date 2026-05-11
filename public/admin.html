@@ -1,316 +1,688 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Business Settings — Dunper AI</title>
-  <link rel="icon" type="image/png" href="/img/logo.png" />
-  <link rel="stylesheet" href="/css/admin.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dunper — AI Front Desk Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --brand: #1e3a5f;
+    --accent: #e8334a;
+    --accent-soft: #fef0f2;
+    --accent-mid: #f5a0ab;
+    --neutral-50: #fafaf9;
+    --neutral-100: #f4f3f0;
+    --neutral-200: #e8e6e1;
+    --neutral-400: #9c9a94;
+    --neutral-600: #5c5a56;
+    --neutral-800: #2a2926;
+    --text-primary: #1a1916;
+    --text-secondary: #6b6966;
+    --text-tertiary: #9c9a94;
+    --sidebar-w: 220px;
+    --header-h: 60px;
+    --font-display: 'DM Serif Display', serif;
+    --font-body: 'DM Sans', sans-serif;
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 16px;
+  }
+
+  html, body { height: 100%; font-family: var(--font-body); background: #fff; color: var(--text-primary); font-size: 14px; line-height: 1.5; overflow: hidden; }
+
+  .shell { display: flex; height: 100vh; width: 100%; }
+
+  /* SIDEBAR */
+  .sidebar { width: var(--sidebar-w); min-width: var(--sidebar-w); background: var(--brand); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .sidebar::after { content: ''; position: absolute; top: -60px; right: -60px; width: 160px; height: 160px; border-radius: 50%; background: rgba(232,51,74,0.12); pointer-events: none; }
+  .sidebar-logo { padding: 20px 20px 16px; border-bottom: 0.5px solid rgba(255,255,255,0.08); }
+  .logo-mark { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; }
+  .logo-icon i { color: #fff; font-size: 16px; }
+  .logo-name { font-family: var(--font-display); font-size: 18px; color: #fff; letter-spacing: -0.3px; }
+  .logo-tagline { font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 0.5px; text-transform: uppercase; margin-top: 1px; }
+
+  .sidebar-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+  .nav-section-label { font-size: 10px; letter-spacing: 0.8px; text-transform: uppercase; color: rgba(255,255,255,0.3); padding: 8px 8px 4px; margin-top: 8px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--r-sm); cursor: pointer; transition: background 0.15s; color: rgba(255,255,255,0.55); font-size: 13.5px; font-weight: 400; position: relative; user-select: none; }
+  .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
+  .nav-item.active { background: rgba(232,51,74,0.18); color: #fff; }
+  .nav-item.active::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 60%; background: var(--accent); border-radius: 0 2px 2px 0; }
+  .nav-item i { font-size: 17px; flex-shrink: 0; }
+  .nav-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 10px; min-width: 18px; text-align: center; }
+  .sidebar-footer { padding: 16px 12px; border-top: 0.5px solid rgba(255,255,255,0.08); }
+  .user-chip { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r-sm); cursor: pointer; }
+  .user-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: #fff; flex-shrink: 0; }
+  .user-name { font-size: 13px; color: rgba(255,255,255,0.8); }
+  .user-plan { font-size: 10px; color: rgba(255,255,255,0.35); }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--neutral-50); }
+  .topbar { height: var(--header-h); background: #fff; border-bottom: 0.5px solid var(--neutral-200); display: flex; align-items: center; padding: 0 28px; gap: 16px; flex-shrink: 0; }
+  .page-title { font-family: var(--font-display); font-size: 20px; color: var(--text-primary); letter-spacing: -0.3px; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .search-box { display: flex; align-items: center; gap: 8px; background: var(--neutral-100); border: 0.5px solid var(--neutral-200); border-radius: 20px; padding: 6px 14px; width: 220px; }
+  .search-box i { color: var(--text-tertiary); font-size: 15px; }
+  .search-box input { border: none; background: transparent; font-family: var(--font-body); font-size: 13px; color: var(--text-primary); outline: none; width: 100%; }
+  .search-box input::placeholder { color: var(--text-tertiary); }
+  .icon-btn { width: 34px; height: 34px; border-radius: var(--r-sm); background: var(--neutral-100); border: 0.5px solid var(--neutral-200); display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; color: var(--text-secondary); }
+  .icon-btn i { font-size: 17px; }
+  .notif-dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); border: 1.5px solid #fff; }
+  .chatbot-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #2d7a2d; background: #eef6ed; padding: 5px 10px; border-radius: 20px; }
+  .chatbot-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #3cb97a; }
+
+  .content { flex: 1; overflow-y: auto; padding: 28px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .card { background: #fff; border: 0.5px solid var(--neutral-200); border-radius: var(--r-lg); padding: 20px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+  .card-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+
+  .dash-grid { display: grid; grid-template-columns: 1fr 360px; gap: 20px; margin-bottom: 20px; }
+  .dash-grid-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .kpi-card { background: #fff; border: 0.5px solid var(--neutral-200); border-radius: var(--r-lg); padding: 18px 20px; position: relative; overflow: hidden; }
+  .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-tertiary); margin-bottom: 8px; }
+  .kpi-value { font-family: var(--font-display); font-size: 28px; color: var(--text-primary); letter-spacing: -0.5px; line-height: 1; }
+  .kpi-tag { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 500; padding: 2px 6px; border-radius: 6px; margin-top: 6px; }
+  .kpi-tag.up { background: #eef6ed; color: #2d7a2d; }
+  .kpi-tag.dn { background: #fef0f2; color: #c0253a; }
+  .kpi-accent-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; }
+  .kpi-accent-bar.r { background: var(--accent); }
+  .kpi-accent-bar.g { background: #3cb97a; }
+  .kpi-accent-bar.b { background: #3b82f6; }
+  .kpi-accent-bar.o { background: #f59e0b; }
+
+  .btn-primary { background: var(--accent); color: #fff; border: none; border-radius: var(--r-sm); padding: 9px 18px; font-family: var(--font-body); font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-primary:hover { background: #cc2a3f; }
+  .btn-ghost { background: transparent; color: var(--text-secondary); border: 0.5px solid var(--neutral-200); border-radius: var(--r-sm); padding: 8px 16px; font-family: var(--font-body); font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-ghost:hover { background: var(--neutral-100); }
+
+  .period-pill { display: flex; background: var(--neutral-100); border-radius: 20px; padding: 2px; }
+  .period-pill button { font-family: var(--font-body); font-size: 11px; color: var(--text-tertiary); border: none; background: transparent; padding: 4px 10px; border-radius: 16px; cursor: pointer; }
+  .period-pill button.active { background: #fff; color: var(--text-primary); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  .alerts-list { display: flex; flex-direction: column; gap: 8px; }
+  .alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--neutral-50); border: 0.5px solid var(--neutral-200); }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .alert-dot.red { background: var(--accent); }
+  .alert-dot.yellow { background: #f59e0b; }
+  .alert-dot.green { background: #3cb97a; }
+  .alert-text { font-size: 12.5px; color: var(--text-primary); line-height: 1.4; }
+  .alert-time { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+  .bookings-list { display: flex; flex-direction: column; }
+  .booking-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 0.5px solid var(--neutral-200); font-size: 13px; }
+  .booking-row:last-child { border-bottom: none; }
+  .booking-name { color: var(--text-primary); }
+  .booking-type { font-size: 11px; color: var(--text-secondary); }
+  .booking-status { font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 500; }
+  .status-confirmed { background: #eef6ed; color: #2d7a2d; }
+  .status-pending { background: #fef3cd; color: #856404; }
+  .status-cancelled { background: var(--accent-soft); color: var(--accent); }
+
+  .sentiment-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .sentiment-label { font-size: 12px; color: var(--text-secondary); width: 60px; flex-shrink: 0; }
+  .sentiment-bar-bg { flex: 1; height: 6px; background: var(--neutral-200); border-radius: 3px; overflow: hidden; }
+  .sentiment-bar-fill { height: 100%; border-radius: 3px; }
+  .sentiment-pct { font-size: 12px; font-weight: 500; color: var(--text-primary); width: 32px; text-align: right; }
+
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .section-title { font-family: var(--font-display); font-size: 22px; letter-spacing: -0.3px; }
+
+  .dash-greeting { margin-bottom: 24px; }
+  .dash-greeting h2 { font-family: var(--font-display); font-size: 28px; color: var(--text-primary); letter-spacing: -0.5px; }
+  .dash-greeting p { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }
+  .date-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--brand); color: rgba(255,255,255,0.9); padding: 4px 10px; border-radius: 20px; font-size: 12px; margin-top: 8px; }
+
+  .metric-tabs { display: flex; gap: 2px; background: var(--neutral-100); border-radius: var(--r-md); padding: 3px; margin-bottom: 24px; width: fit-content; }
+  .metric-tab { font-family: var(--font-body); font-size: 13px; padding: 7px 18px; border: none; background: transparent; border-radius: var(--r-sm); cursor: pointer; color: var(--text-secondary); transition: all 0.15s; }
+  .metric-tab.active { background: #fff; color: var(--text-primary); font-weight: 500; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-tertiary); font-weight: 500; border-bottom: 0.5px solid var(--neutral-200); }
+  .data-table td { padding: 11px 12px; border-bottom: 0.5px solid var(--neutral-100); color: var(--text-primary); }
+  .data-table tr:hover td { background: var(--neutral-50); }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .sub-metric { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+  .sm-card { background: #fff; border: 0.5px solid var(--neutral-200); border-radius: var(--r-md); padding: 14px 16px; }
+  .sm-label { font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .sm-val { font-family: var(--font-display); font-size: 22px; color: var(--text-primary); }
+
+  .settings-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
+  .setting-group { margin-bottom: 24px; }
+  .setting-group-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-tertiary); margin-bottom: 12px; font-weight: 500; }
+  .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 0.5px solid var(--neutral-200); }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-name { font-size: 13.5px; color: var(--text-primary); }
+  .setting-desc { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+  .toggle { width: 38px; height: 22px; border-radius: 11px; background: var(--neutral-200); position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.2s; }
+  .toggle.on { background: var(--accent); }
+  .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .toggle.on::after { transform: translateX(16px); }
+  .select-field { font-family: var(--font-body); font-size: 13px; border: 0.5px solid var(--neutral-200); border-radius: var(--r-sm); padding: 6px 10px; background: #fff; color: var(--text-primary); outline: none; cursor: pointer; }
+
+  .preview-frame { background: var(--brand); border-radius: var(--r-lg); padding: 20px; color: rgba(255,255,255,0.9); }
+  .preview-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.4); margin-bottom: 12px; }
+  .chat-bubble-bot { background: rgba(255,255,255,0.1); border-radius: 0 12px 12px 12px; padding: 10px 14px; font-size: 13px; margin-bottom: 8px; line-height: 1.5; max-width: 85%; }
+  .chat-bubble-user { background: var(--accent); border-radius: 12px 0 12px 12px; padding: 10px 14px; font-size: 13px; margin-left: auto; margin-bottom: 8px; line-height: 1.5; max-width: 85%; }
+  .chat-input-mock { background: rgba(255,255,255,0.08); border: 0.5px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 8px 14px; font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 12px; display: flex; align-items: center; justify-content: space-between; }
+
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .cal-month { font-family: var(--font-display); font-size: 22px; color: var(--text-primary); }
+  .cal-nav { display: flex; gap: 4px; }
+  .cal-nav-btn { width: 30px; height: 30px; border-radius: var(--r-sm); border: 0.5px solid var(--neutral-200); background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-day-label { text-align: center; font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 0 8px; }
+  .cal-day { aspect-ratio: 1; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; color: var(--text-primary); transition: background 0.1s; position: relative; flex-direction: column; gap: 2px; }
+  .cal-day:hover { background: var(--neutral-100); }
+  .cal-day.today { background: var(--accent); color: #fff; font-weight: 500; }
+  .cal-day.has-event::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
+  .cal-day.today.has-event::after { background: rgba(255,255,255,0.7); }
+  .cal-day.other-month { color: var(--text-tertiary); }
+
+  .profile-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .field-group { margin-bottom: 16px; }
+  .field-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-tertiary); margin-bottom: 6px; font-weight: 500; }
+  .field-input { width: 100%; font-family: var(--font-body); font-size: 13.5px; border: 0.5px solid var(--neutral-200); border-radius: var(--r-sm); padding: 9px 12px; background: #fff; color: var(--text-primary); outline: none; }
+  .field-input:focus { border-color: var(--accent); }
+  .plan-card { background: var(--brand); border-radius: var(--r-lg); padding: 20px; color: #fff; position: relative; overflow: hidden; }
+  .plan-card::before { content: ''; position: absolute; right: -20px; top: -20px; width: 100px; height: 100px; border-radius: 50%; background: rgba(232,51,74,0.2); }
+  .plan-name { font-family: var(--font-display); font-size: 24px; margin-bottom: 6px; }
+  .plan-feature { font-size: 12px; color: rgba(255,255,255,0.6); margin: 4px 0; display: flex; align-items: center; gap: 6px; }
+  .upgrade-btn { margin-top: 16px; background: var(--accent); color: #fff; border: none; border-radius: var(--r-sm); padding: 9px 20px; font-family: var(--font-body); font-size: 13px; font-weight: 500; cursor: pointer; }
+
+  .chart-wrap { position: relative; width: 100%; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--neutral-200); border-radius: 2px; }
+</style>
 </head>
 <body>
-  <div class="page">
-    <header class="page-header">
-      <div class="page-title">
-        <img src="/img/logo.png" class="brand-mark" alt="Dunper" />
+<div class="shell">
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon" style="background:transparent;overflow:hidden;padding:0;"><img src="/img/logo.png" style="width:32px;height:32px;object-fit:contain;" alt="Dunper"></div>
         <div>
-          <h1>Business Settings</h1>
-          <p class="subtitle">This is what Dunper AI knows about your business. Changes save instantly.</p>
+          <div class="logo-name">Dunper</div>
+          <div class="logo-tagline">AI Front Desk</div>
         </div>
       </div>
-      <div class="header-actions">
-        <a href="/" class="link-btn">← Back to chat</a>
-        <button type="button" id="logout-btn" class="link-btn">Sign out</button>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <div class="nav-item active" data-page="dashboard" onclick="navigate(this)"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+      <div class="nav-item" data-page="metrics" onclick="navigate(this)"><i class="ti ti-chart-bar"></i> Customer Metrics</div>
+      <div class="nav-item" data-page="calendar" onclick="navigate(this)"><i class="ti ti-calendar"></i> Calendar</div>
+      <div class="nav-section-label">System</div>
+      <div class="nav-item" data-page="ai-settings" onclick="navigate(this)"><i class="ti ti-settings-2"></i> AI Settings</div>
+      <div class="nav-item" data-page="alerts" onclick="navigate(this)"><i class="ti ti-bell"></i> Alerts <span class="nav-badge">3</span></div>
+      <div class="nav-item" data-page="profile" onclick="navigate(this)"><i class="ti ti-user-circle"></i> Profile</div>
+    </div>
+    <div class="sidebar-footer">
+      <a class="nav-item" href="https://instagram.com/dunper.ai" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.4);font-size:12px;text-decoration:none;"><i class="ti ti-brand-instagram"></i> Instagram</a>
+      <a class="nav-item" href="https://dunper.com" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.4);font-size:12px;text-decoration:none;"><i class="ti ti-world"></i> Website</a>
+      <a class="nav-item" href="/dunper_contact.html" style="color:rgba(255,255,255,0.4);font-size:12px;text-decoration:none;"><i class="ti ti-mail"></i> Contact us</a>
+      <div class="user-chip" id="sidebar-user-chip" style="margin-top:8px;">
+        <div class="user-avatar" id="sidebar-avatar">U</div>
+        <div><div class="user-name" id="sidebar-username">Loading…</div><div class="user-plan">Pro Plan</div></div>
       </div>
-    </header>
+    </div>
+  </nav>
 
-    <section class="card assistant-card">
-      <div class="card-head">
-        <h2>Edit with AI</h2>
-        <button type="button" class="ghost-btn" id="assistant-reset">New conversation</button>
-      </div>
-      <p class="hint">Ask in plain language — "change our hours to Mon–Sat 9–6", "add a $200 deep cleaning that takes 75 min", "drop the no-Sundays rule". Each change is saved and added to History below, so you can always restore.</p>
-      <div id="assistant-messages" class="assistant-messages"></div>
-      <form id="assistant-form" class="assistant-form" autocomplete="off">
-        <input id="assistant-input" type="text" placeholder="What do you want to change?" required />
-        <button type="submit" class="primary-btn" id="assistant-send">Send</button>
-      </form>
-    </section>
-
-    <form id="business-form" class="form">
-      <section class="card">
-        <h2>Basic Info</h2>
-        <label>
-          <span>Business Name</span>
-          <input name="name" type="text" required />
-        </label>
-        <label>
-          <span>Business Type</span>
-          <input name="type" type="text" placeholder="e.g. dental clinic, salon, bakery" required />
-        </label>
-        <label>
-          <span>Operating Hours</span>
-          <textarea name="hours" rows="2" placeholder="Mon-Fri 9am-5pm. Closed weekends." required></textarea>
-        </label>
-        <div class="row">
-          <label>
-            <span>Address</span>
-            <input name="address" type="text" required />
-          </label>
-          <label>
-            <span>Phone</span>
-            <input name="phone" type="text" required />
-          </label>
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title" id="page-title">Dashboard</div>
+      <div class="topbar-right">
+        <div class="chatbot-status">Chatbot online</div>
+        <div class="search-box">
+          <i class="ti ti-search"></i>
+          <input type="text" placeholder="Search anything…">
         </div>
-      </section>
-
-      <section class="card">
-        <div class="card-head">
-          <h2>Services</h2>
-          <button type="button" class="ghost-btn" id="add-service">+ Add service</button>
+        <div class="icon-btn" onclick="navigate(document.querySelector('[data-page=alerts]'))">
+          <i class="ti ti-bell"></i><div class="notif-dot"></div>
         </div>
-        <div id="services-list" class="list"></div>
-      </section>
-
-      <section class="card">
-        <div class="card-head">
-          <h2>Booking Rules</h2>
-          <button type="button" class="ghost-btn" id="add-rule">+ Add rule</button>
+        <div class="icon-btn" onclick="navigate(document.querySelector('[data-page=profile]'))">
+          <i class="ti ti-user"></i>
         </div>
-        <p class="hint">One rule per line. Example: "Minimum 24 hours advance notice."</p>
-        <div id="rules-list" class="list"></div>
-      </section>
-
-      <section class="card">
-        <h2>Voice & Fallback</h2>
-        <label>
-          <span>Tone of voice</span>
-          <textarea name="tone" rows="2" placeholder="Warm, professional, reassuring." required></textarea>
-        </label>
-        <label>
-          <span>Fallback message (when AI doesn't know)</span>
-          <textarea name="fallback_contact" rows="2" placeholder="If a question is outside what you can help with, ask the customer to call us at..." required></textarea>
-        </label>
-      </section>
-
-      <section class="card">
-        <h2>Branding</h2>
-        <p class="hint">Shown as the avatar in the top-left of the customer chat. Upload an image or paste a URL — your choice.</p>
-        <div class="logo-upload-row">
-          <div class="logo-preview">
-            <img id="logo-preview-img" alt="" hidden />
-            <span id="logo-preview-fallback">No logo</span>
-          </div>
-          <div class="logo-controls">
-            <input type="file" id="logo-file-input" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml" hidden />
-            <button type="button" class="ghost-btn" id="logo-upload-btn">Upload image</button>
-            <button type="button" class="ghost-btn" id="logo-clear-btn">Clear</button>
-            <span id="logo-upload-status" class="status"></span>
-          </div>
-        </div>
-        <label>
-          <span>Or paste a URL</span>
-          <input name="logo_url" type="text" placeholder="https://yourdomain.com/logo.png  or  /uploads/business-logos/..." />
-        </label>
-      </section>
-
-      <section class="card">
-        <h2>WhatsApp</h2>
-        <p class="hint">If you put a WhatsApp number here, customers will see a green WhatsApp button in the chat header. Tapping it opens WhatsApp directly to your number (uses wa.me — no API setup needed).</p>
-        <label>
-          <span>WhatsApp number (international format, no + or spaces — e.g. 6281234567890)</span>
-          <input name="whatsapp_number" type="text" placeholder="6281234567890" />
-        </label>
-        <label>
-          <span>Pre-filled message (optional)</span>
-          <input name="whatsapp_prefill_message" type="text" placeholder="Hi, I have a question about my booking..." />
-        </label>
-      </section>
-
-      <div class="actions">
-        <button type="submit" class="primary-btn" id="save-btn">Save Changes</button>
-        <span id="status" class="status"></span>
-      </div>
-    </form>
-
-    <section class="card integrations-card">
-      <div class="card-head">
-        <h2>Google Calendar &amp; Sheets</h2>
-        <button type="button" class="ghost-btn" id="refresh-integrations">Refresh</button>
-      </div>
-      <p class="hint">When connected, every new booking is added to your Google Calendar and a Google Sheet — and customer profiles (with summaries) are kept in sync. Sheet tabs created automatically: <strong>Bookings</strong> and <strong>Customers</strong>.</p>
-      <div id="integration-status" class="integration-status">
-        <p class="hint">Loading…</p>
-      </div>
-    </section>
-
-    <section class="card integrations-card">
-      <div class="card-head">
-        <h2>WhatsApp (auto-reply)</h2>
-        <button type="button" class="ghost-btn" id="refresh-whatsapp">Refresh</button>
-      </div>
-      <p class="hint">When configured, customers messaging your WhatsApp Business number get auto-replies from the AI. Conversations show up in Customers below tagged <strong>WhatsApp</strong>. See <a href="https://github.com/OwenTjandra/FrontDesk/blob/main/docs/whatsapp-setup.md" target="_blank" rel="noopener">whatsapp-setup.md</a> for the Meta + Cloudflare Tunnel walkthrough.</p>
-      <div id="whatsapp-status" class="integration-status">
-        <p class="hint">Loading…</p>
-      </div>
-    </section>
-
-    <section class="card documents-card">
-      <div class="card-head">
-        <h2>Knowledge documents</h2>
-        <button type="button" class="ghost-btn" id="refresh-documents">Refresh</button>
-      </div>
-      <p class="hint">Upload PDFs or text files (price sheets, policies, FAQs). The customer-facing AI gets these on every chat, so it can answer questions grounded in your real documents. Max 10MB each. PDF, TXT, MD only.</p>
-      <form id="documents-form" class="documents-form">
-        <input type="file" id="documents-file" accept="application/pdf,text/plain,text/markdown,.pdf,.txt,.md" required />
-        <button type="submit" class="primary-btn" id="documents-upload-btn">Upload</button>
-      </form>
-      <div id="documents-status" class="status"></div>
-      <div id="documents-list" class="documents-list">
-        <p class="hint">Loading…</p>
-      </div>
-    </section>
-
-    <section class="card metrics-card">
-      <div class="card-head">
-        <h2>Metrics</h2>
-        <button type="button" class="ghost-btn" id="refresh-metrics">Refresh</button>
-      </div>
-      <p class="hint">Live snapshot from your data. Updates whenever you click Refresh.</p>
-      <div id="metrics-grid" class="metrics-grid">
-        <p class="hint">Loading…</p>
-      </div>
-    </section>
-
-    <section class="card metrics-card">
-      <div class="card-head">
-        <h2>Anthropic API usage</h2>
-        <button type="button" class="ghost-btn" id="refresh-usage">Refresh</button>
-      </div>
-      <p class="hint">What you've spent on Claude API calls. Tracks cache hit rate (higher = cheaper). Use this to spot runaway customers early.</p>
-      <div id="usage-grid" class="metrics-grid">
-        <p class="hint">Loading…</p>
-      </div>
-      <div id="usage-extras" class="usage-extras"></div>
-    </section>
-
-    <section class="card alerts-card">
-      <div class="card-head">
-        <h2>Customers waiting for an agent</h2>
-        <button type="button" class="ghost-btn" id="refresh-escalations">Refresh</button>
-      </div>
-      <p class="hint">Customers who tapped the "Human" button in the chat. Reply directly via WhatsApp/phone, then mark resolved here.</p>
-      <div id="escalations-list" class="alerts-list">
-        <p class="hint">Loading…</p>
-      </div>
-    </section>
-
-    <section class="card alerts-card">
-      <div class="card-head">
-        <h2>Unanswered questions</h2>
-        <button type="button" class="ghost-btn" id="refresh-unanswered">Refresh</button>
-      </div>
-      <p class="hint">Times the AI gave a fallback answer (didn't know). Add the answer to your knowledge documents or business config and the AI will handle it next time.</p>
-      <div id="unanswered-list" class="alerts-list">
-        <p class="hint">Loading…</p>
-      </div>
-    </section>
-
-    <section class="card email-card">
-      <div class="card-head">
-        <h2>Email confirmations</h2>
-        <button type="button" class="ghost-btn" id="refresh-emails">Refresh</button>
-      </div>
-      <p class="hint">Booking-confirmation emails sent to customers. If SMTP isn't configured in <code>.env</code>, emails get queued here as <code>skipped_no_smtp</code> so you have a paper trail.</p>
-      <div id="email-status-line" class="hint"></div>
-      <div id="emails-list" class="alerts-list">
-        <p class="hint">Loading…</p>
-      </div>
-    </section>
-
-    <section class="card bookings-card">
-      <div class="card-head">
-        <h2>Bookings</h2>
-        <div class="header-actions">
-          <button type="button" class="primary-btn" id="new-booking-btn">+ New booking</button>
-          <button type="button" class="ghost-btn" id="refresh-bookings">Refresh</button>
-        </div>
-      </div>
-      <p class="hint">Appointments customers have scheduled through the chat — and ones you create here. Both sync to Google Calendar and the Bookings sheet.</p>
-      <div id="bookings-list" class="bookings-list">
-        <p class="hint">Loading…</p>
-      </div>
-    </section>
-
-    <div id="admin-booking-modal" class="modal" hidden>
-      <div class="modal-card">
-        <header class="modal-head">
-          <h2>Create booking</h2>
-          <button type="button" class="modal-close" id="admin-booking-close" aria-label="Close">×</button>
-        </header>
-        <form id="admin-booking-form" class="modal-body">
-          <label>
-            <span>Service</span>
-            <select id="admin-booking-service" required></select>
-          </label>
-          <label>
-            <span>Date</span>
-            <input type="date" id="admin-booking-date" required />
-          </label>
-          <div class="slots-wrap">
-            <span class="slots-label">Available times</span>
-            <div id="admin-booking-slots" class="slots">
-              <p class="hint">Pick a date and service to see times.</p>
-            </div>
-          </div>
-          <div class="row-2">
-            <label>
-              <span>Customer name</span>
-              <input type="text" id="admin-booking-name" required />
-            </label>
-            <label>
-              <span>Phone</span>
-              <input type="tel" id="admin-booking-phone" required />
-            </label>
-          </div>
-          <label>
-            <span>Email</span>
-            <input type="email" id="admin-booking-email" required placeholder="customer@example.com" />
-          </label>
-          <label>
-            <span>Notes (optional)</span>
-            <textarea id="admin-booking-notes" rows="2"></textarea>
-          </label>
-          <div class="modal-actions">
-            <button type="submit" id="admin-booking-submit" class="primary-btn" disabled>Confirm booking</button>
-            <span id="admin-booking-status" class="status"></span>
-          </div>
-        </form>
       </div>
     </div>
 
-    <section class="card customers-card">
-      <div class="card-head">
-        <h2>Customers</h2>
-        <button type="button" class="ghost-btn" id="refresh-customers">Refresh</button>
+    <div class="content">
+      <div class="page active" id="page-dashboard">
+        <div class="dash-greeting">
+          <h2 id="greeting">Hello. 👋</h2>
+          <p>Here's what's happening with your chatbot today.</p>
+          <div class="date-chip"><i class="ti ti-calendar-event" style="font-size:12px;"></i> <span id="today-date">Today</span></div>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Daily Revenue</div><div class="kpi-value">$352,800</div><div class="kpi-tag up"><i class="ti ti-trending-up" style="font-size:11px;"></i> +12.4%</div><div class="kpi-accent-bar r"></div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Conversations</div><div class="kpi-value">1,284</div><div class="kpi-tag up"><i class="ti ti-trending-up" style="font-size:11px;"></i> +8.1%</div><div class="kpi-accent-bar b"></div></div>
+          <div class="kpi-card"><div class="kpi-label">Conversion Rate</div><div class="kpi-value">34.2%</div><div class="kpi-tag dn"><i class="ti ti-trending-down" style="font-size:11px;"></i> -1.8%</div><div class="kpi-accent-bar o"></div></div>
+          <div class="kpi-card"><div class="kpi-label">Bookings Today</div><div class="kpi-value">87</div><div class="kpi-tag up"><i class="ti ti-trending-up" style="font-size:11px;"></i> +5.3%</div><div class="kpi-accent-bar g"></div></div>
+        </div>
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card-header">
+              <div><div class="card-title">Daily Revenue</div><div class="card-sub">Updated as of 3:00 PM</div></div>
+              <div class="period-pill"><button class="active">Weekly</button><button onclick="switchPeriod(this)">Monthly</button></div>
+            </div>
+            <div class="chart-wrap" style="height:200px;"><canvas id="revenueChart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Alerts</div>
+              <div style="font-size:12px;color:var(--accent);cursor:pointer;" onclick="navigate(document.querySelector('[data-page=alerts]'))">View all →</div>
+            </div>
+            <div class="alerts-list">
+              <div class="alert-item"><div class="alert-dot red"></div><div><div class="alert-text">Customer waiting for agent — escalation triggered</div><div class="alert-time">2 min ago</div></div></div>
+              <div class="alert-item"><div class="alert-dot yellow"></div><div><div class="alert-text">Double booking detected: Slot 14:00 Jun 11</div><div class="alert-time">18 min ago</div></div></div>
+              <div class="alert-item"><div class="alert-dot green"></div><div><div class="alert-text">3 new bookings confirmed this hour</div><div class="alert-time">1 hr ago</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="dash-grid-bottom">
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">Conversion Rate</div><div class="card-sub">Chats → Bookings</div></div></div>
+            <div class="chart-wrap" style="height:180px;"><canvas id="convChart"></canvas></div>
+            <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;font-size:12px;color:var(--text-secondary);">
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#e8334a;display:inline-block;"></span>Converted 34%</span>
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#e8e6e1;display:inline-block;"></span>Not converted 66%</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Upcoming Bookings</div>
+              <div class="period-pill"><button class="active">Week</button><button onclick="switchPeriod(this)">Month</button></div>
+            </div>
+            <div class="bookings-list">
+              <div class="booking-row"><div><div class="booking-name">Priya Sharma</div><div class="booking-type">Hair Treatment · Jun 11</div></div><span class="booking-status status-confirmed">Confirmed</span></div>
+              <div class="booking-row"><div><div class="booking-name">Marcus Wells</div><div class="booking-type">Massage · Jun 12</div></div><span class="booking-status status-pending">Pending</span></div>
+              <div class="booking-row"><div><div class="booking-name">Sofia Chen</div><div class="booking-type">Facial · Jun 13</div></div><span class="booking-status status-confirmed">Confirmed</span></div>
+              <div class="booking-row"><div><div class="booking-name">Ethan Brooks</div><div class="booking-type">Consult · Jun 14</div></div><span class="booking-status status-cancelled">Cancelled</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Customer Sentiment</div><div class="card-sub">Based on chat feedback</div></div>
+          <div style="max-width:480px;">
+            <div class="sentiment-row"><div class="sentiment-label">Positive</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:68%;background:#3cb97a;"></div></div><div class="sentiment-pct">68%</div></div>
+            <div class="sentiment-row"><div class="sentiment-label">Neutral</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:22%;background:#f59e0b;"></div></div><div class="sentiment-pct">22%</div></div>
+            <div class="sentiment-row"><div class="sentiment-label">Negative</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:10%;background:var(--accent);"></div></div><div class="sentiment-pct">10%</div></div>
+          </div>
+        </div>
       </div>
-      <p class="hint">Everyone who's chatted with Dunper AI. Click a row to read the conversation, generate an AI summary, and add notes.</p>
-      <div id="customers-list" class="customers-list">
-        <p class="hint">Loading…</p>
-      </div>
-    </section>
 
-    <section class="card history-card">
-      <div class="card-head">
-        <h2>History</h2>
-        <button type="button" class="ghost-btn" id="refresh-history">Refresh</button>
+      <div class="page" id="page-metrics">
+        <div class="section-head">
+          <div class="section-title">Customer Metrics</div>
+          <button class="btn-primary"><i class="ti ti-download"></i> Export</button>
+        </div>
+        <div class="metric-tabs">
+          <button class="metric-tab active" onclick="switchMetricTab(this,'tab-customers')">Customer Data</button>
+          <button class="metric-tab" onclick="switchMetricTab(this,'tab-bookings')">Booking History</button>
+          <button class="metric-tab" onclick="switchMetricTab(this,'tab-sales')">Sales Metrics</button>
+          <button class="metric-tab" onclick="switchMetricTab(this,'tab-chatbot')">Chatbot Performance</button>
+        </div>
+        <div id="tab-customers">
+          <div class="card">
+            <table class="data-table">
+              <thead><tr><th>Customer Name</th><th>Phone</th><th>Email</th><th>Country</th><th>Total Visits</th><th>Preferred Service</th></tr></thead>
+              <tbody>
+                <tr><td>Priya Sharma</td><td>+44 7700 123456</td><td>priya@email.com</td><td>UK</td><td>12</td><td>Hair Treatment</td></tr>
+                <tr><td>Marcus Wells</td><td>+1 415 555 0171</td><td>marcus@email.com</td><td>USA</td><td>7</td><td>Massage</td></tr>
+                <tr><td>Sofia Chen</td><td>+65 9123 4567</td><td>sofia@email.com</td><td>SG</td><td>24</td><td>Facial</td></tr>
+                <tr><td>Ethan Brooks</td><td>+61 4 1234 5678</td><td>ethan@email.com</td><td>AU</td><td>3</td><td>Consultation</td></tr>
+                <tr><td>Yasmin Al-Amin</td><td>+971 50 123 4567</td><td>yasmin@email.com</td><td>UAE</td><td>18</td><td>Hair Treatment</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div id="tab-bookings" style="display:none;">
+          <div class="card">
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Full Name</th><th>Booking ID</th><th>Product Type</th><th>Status</th><th>Source</th></tr></thead>
+              <tbody>
+                <tr><td>Jun 11, 2026</td><td>Priya Sharma</td><td>#BK-7821</td><td>Hair Treatment</td><td><span class="booking-status status-confirmed">Confirmed</span></td><td>Chatbot</td></tr>
+                <tr><td>Jun 12, 2026</td><td>Marcus Wells</td><td>#BK-7822</td><td>Massage</td><td><span class="booking-status status-pending">Pending</span></td><td>Website</td></tr>
+                <tr><td>Jun 13, 2026</td><td>Sofia Chen</td><td>#BK-7823</td><td>Facial</td><td><span class="booking-status status-confirmed">Confirmed</span></td><td>Chatbot</td></tr>
+                <tr><td>Jun 14, 2026</td><td>Ethan Brooks</td><td>#BK-7824</td><td>Consultation</td><td><span class="booking-status status-cancelled">Cancelled</span></td><td>Instagram</td></tr>
+                <tr><td>Jun 15, 2026</td><td>Yasmin Al-Amin</td><td>#BK-7825</td><td>Hair Treatment</td><td><span class="booking-status status-confirmed">Confirmed</span></td><td>Chatbot</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div id="tab-sales" style="display:none;">
+          <div class="sub-metric">
+            <div class="sm-card"><div class="sm-label">Daily Revenue</div><div class="sm-val">$352,800</div></div>
+            <div class="sm-card"><div class="sm-label">Avg Order Value</div><div class="sm-val">$148</div></div>
+            <div class="sm-card"><div class="sm-label">Best Seller</div><div class="sm-val" style="font-size:16px;">Hair Treatment</div></div>
+          </div>
+          <div class="dash-grid">
+            <div class="card">
+              <div class="card-header"><div class="card-title">Conversion Rate — Chats to Bookings</div></div>
+              <div class="chart-wrap" style="height:220px;"><canvas id="salesConvChart"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Daily Revenue Curve</div></div>
+              <div class="chart-wrap" style="height:220px;"><canvas id="revCurveChart"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div id="tab-chatbot" style="display:none;">
+          <div class="sub-metric" style="grid-template-columns:repeat(4,1fr);">
+            <div class="sm-card"><div class="sm-label">Total Conversations</div><div class="sm-val">1,284</div></div>
+            <div class="sm-card"><div class="sm-label">Successful Bookings</div><div class="sm-val">439</div></div>
+            <div class="sm-card"><div class="sm-label">Avg Response Time</div><div class="sm-val">1.4s</div></div>
+            <div class="sm-card"><div class="sm-label">Failed Conversations</div><div class="sm-val">62</div></div>
+          </div>
+          <div class="dash-grid">
+            <div class="card">
+              <div class="card-header"><div class="card-title">Customer Sentiment</div></div>
+              <div class="chart-wrap" style="height:200px;"><canvas id="sentChart"></canvas></div>
+              <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;font-size:12px;color:var(--text-secondary);">
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#3cb97a;display:inline-block;"></span>Positive 68%</span>
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#f59e0b;display:inline-block;"></span>Neutral 22%</span>
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#e8334a;display:inline-block;"></span>Negative 10%</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Escalation Breakdown</div></div>
+              <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+                <div class="sentiment-row"><div class="sentiment-label">To Agent</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:55%;background:#3b82f6;"></div></div><div class="sentiment-pct">55%</div></div>
+                <div class="sentiment-row"><div class="sentiment-label">Unanswered</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:30%;background:#f59e0b;"></div></div><div class="sentiment-pct">30%</div></div>
+                <div class="sentiment-row"><div class="sentiment-label">Failed</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:15%;background:var(--accent);"></div></div><div class="sentiment-pct">15%</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <p class="hint">Every save is logged. Restore any earlier version — restoring also creates a new entry, so you can always undo.</p>
-      <div id="history-list" class="history-list">
-        <p class="hint">Loading…</p>
+
+      <div class="page" id="page-calendar">
+        <div class="section-head">
+          <div class="section-title">Calendar</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn-ghost">Sync Google Calendar <i class="ti ti-brand-google"></i></button>
+            <button class="btn-primary"><i class="ti ti-plus"></i> New event</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="cal-header">
+            <div class="cal-month">June 2026</div>
+            <div class="cal-nav">
+              <button class="cal-nav-btn"><i class="ti ti-chevron-left"></i></button>
+              <button class="cal-nav-btn"><i class="ti ti-chevron-right"></i></button>
+            </div>
+          </div>
+          <div class="cal-grid">
+            <div class="cal-day-label">Sun</div><div class="cal-day-label">Mon</div><div class="cal-day-label">Tue</div>
+            <div class="cal-day-label">Wed</div><div class="cal-day-label">Thu</div><div class="cal-day-label">Fri</div><div class="cal-day-label">Sat</div>
+            <div class="cal-day other-month">25</div><div class="cal-day other-month">26</div><div class="cal-day other-month">27</div>
+            <div class="cal-day other-month">28</div><div class="cal-day other-month">29</div><div class="cal-day other-month">30</div><div class="cal-day other-month">31</div>
+            <div class="cal-day">1</div><div class="cal-day has-event">2</div><div class="cal-day">3</div>
+            <div class="cal-day has-event">4</div><div class="cal-day">5</div><div class="cal-day has-event">6</div><div class="cal-day">7</div>
+            <div class="cal-day">8</div><div class="cal-day has-event">9</div><div class="cal-day today has-event">10</div>
+            <div class="cal-day has-event">11</div><div class="cal-day">12</div><div class="cal-day has-event">13</div><div class="cal-day">14</div>
+            <div class="cal-day">15</div><div class="cal-day has-event">16</div><div class="cal-day">17</div>
+            <div class="cal-day">18</div><div class="cal-day has-event">19</div><div class="cal-day">20</div><div class="cal-day">21</div>
+            <div class="cal-day has-event">22</div><div class="cal-day">23</div><div class="cal-day">24</div>
+            <div class="cal-day">25</div><div class="cal-day">26</div><div class="cal-day has-event">27</div><div class="cal-day">28</div>
+            <div class="cal-day">29</div><div class="cal-day">30</div><div class="cal-day other-month">1</div>
+            <div class="cal-day other-month">2</div><div class="cal-day other-month">3</div><div class="cal-day other-month">4</div><div class="cal-day other-month">5</div>
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Today's Bookings — Jun 10</div></div>
+            <div class="bookings-list">
+              <div class="booking-row"><div><div class="booking-name">10:00 AM · Priya Sharma</div><div class="booking-type">Hair Treatment · 60 min</div></div><span class="booking-status status-confirmed">Confirmed</span></div>
+              <div class="booking-row"><div><div class="booking-name">2:00 PM · Sofia Chen</div><div class="booking-type">Facial · 45 min</div></div><span class="booking-status status-confirmed">Confirmed</span></div>
+              <div class="booking-row"><div><div class="booking-name">4:30 PM · Marcus Wells</div><div class="booking-type">Massage · 90 min</div></div><span class="booking-status status-pending">Pending</span></div>
+            </div>
+          </div>
+        </div>
       </div>
-    </section>
+
+      <div class="page" id="page-ai-settings">
+        <div class="section-head">
+          <div class="section-title">AI Settings</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-ghost">Reset</button>
+            <button class="btn-primary"><i class="ti ti-device-floppy"></i> Save changes</button>
+          </div>
+        </div>
+        <div class="settings-layout">
+          <div class="card">
+            <div class="setting-group">
+              <div class="setting-group-label">Conversation</div>
+              <div class="setting-row">
+                <div><div class="setting-name">Fallout Message</div><div class="setting-desc">Shown when AI can't answer</div></div>
+                <input class="field-input" value="Sorry, let me connect you to our team!" style="width:220px;">
+              </div>
+              <div class="setting-row">
+                <div><div class="setting-name">Starter Message</div><div class="setting-desc">Opening line on chat load</div></div>
+                <input class="field-input" value="Hi! How can I help you today?" style="width:220px;">
+              </div>
+              <div class="setting-row">
+                <div><div class="setting-name">Tone</div><div class="setting-desc">Overall personality style</div></div>
+                <select class="select-field"><option>Professional</option><option>Friendly</option><option>Casual</option></select>
+              </div>
+            </div>
+            <div class="setting-group">
+              <div class="setting-group-label">Behaviour</div>
+              <div class="setting-row"><div><div class="setting-name">Human Handoff</div><div class="setting-desc">Escalate to agent when needed</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="setting-row"><div><div class="setting-name">Business Policy Enforcement</div><div class="setting-desc">Apply business rules to responses</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="setting-row"><div><div class="setting-name">Language Detection</div><div class="setting-desc">Auto-respond in customer's language</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+              <div class="setting-row"><div><div class="setting-name">AI Boundaries</div><div class="setting-desc">Restrict off-topic conversations</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="preview-frame">
+              <div class="preview-label">Live preview</div>
+              <div class="chat-bubble-bot">Hi! How can I help you today? 👋</div>
+              <div class="chat-bubble-user">I'd like to book a facial for next week.</div>
+              <div class="chat-bubble-bot">Of course! I have availability on Tuesday Jun 17 at 2pm and Thursday Jun 19 at 11am. Which works for you?</div>
+              <div class="chat-input-mock"><span>Type a message…</span><i class="ti ti-send" style="font-size:15px;color:rgba(255,255,255,0.4);"></i></div>
+            </div>
+            <div style="margin-top:16px;" class="card">
+              <div class="card-title" style="margin-bottom:12px;">Landing page reload</div>
+              <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">Preview refreshes automatically after each setting change.</div>
+              <div style="margin-top:12px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-tertiary);"><i class="ti ti-refresh"></i> Last synced 2 min ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-alerts">
+        <div class="section-head">
+          <div class="section-title">Alerts</div>
+          <button class="btn-ghost">Mark all read</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Chats with Customers</div></div>
+            <div class="alerts-list">
+              <div class="alert-item"><div class="alert-dot red"></div><div><div class="alert-text">Customer waiting for agent — urgent escalation</div><div class="alert-time">2 min ago · <span style="color:var(--accent);cursor:pointer;">View chat →</span></div></div></div>
+              <div class="alert-item"><div class="alert-dot yellow"></div><div><div class="alert-text">Unanswered question detected in session #4821</div><div class="alert-time">15 min ago</div></div></div>
+              <div class="alert-item"><div class="alert-dot green"></div><div><div class="alert-text">Yasmin Al-Amin completed booking via chat</div><div class="alert-time">32 min ago</div></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Bookings</div></div>
+            <div class="alerts-list">
+              <div class="alert-item"><div class="alert-dot green"></div><div><div class="alert-text">Coming up: 3 bookings tomorrow, Jun 11</div><div class="alert-time">Scheduled</div></div></div>
+              <div class="alert-item"><div class="alert-dot red"></div><div><div class="alert-text">Cancellation: Ethan Brooks — Jun 14 consultation</div><div class="alert-time">1 hr ago</div></div></div>
+              <div class="alert-item"><div class="alert-dot yellow"></div><div><div class="alert-text">Double booking conflict: Slot 14:00, Jun 11</div><div class="alert-time">18 min ago</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Reminder Notes</div>
+            <button class="btn-primary" style="padding:6px 12px;font-size:12px;"><i class="ti ti-plus"></i> Add note</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="alert-item" style="align-items:center;"><input type="checkbox" style="width:14px;height:14px;accent-color:var(--accent);"><div class="alert-text">Update chatbot business hours for June public holidays</div></div>
+            <div class="alert-item" style="align-items:center;"><input type="checkbox" style="width:14px;height:14px;accent-color:var(--accent);" checked><div class="alert-text" style="text-decoration:line-through;color:var(--text-tertiary);">Review last week's failed conversations</div></div>
+            <div class="alert-item" style="align-items:center;"><input type="checkbox" style="width:14px;height:14px;accent-color:var(--accent);"><div class="alert-text">Prepare monthly revenue report for stakeholders</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-profile">
+        <div class="section-head">
+          <div class="section-title">Profile</div>
+          <button class="btn-primary"><i class="ti ti-device-floppy"></i> Save changes</button>
+        </div>
+        <div class="profile-layout">
+          <div class="card">
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:0.5px solid var(--neutral-200);">
+              <div style="width:56px;height:56px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;font-weight:500;" id="profile-avatar">U</div>
+              <div><div style="font-family:var(--font-display);font-size:18px;" id="profile-name">Loading…</div><div style="font-size:13px;color:var(--text-tertiary);">Pro Plan · Since Jan 2025</div></div>
+            </div>
+            <div class="field-group"><div class="field-label">Full Name</div><input class="field-input" value="" id="profile-fullname"></div>
+            <div class="field-group"><div class="field-label">Email</div><input class="field-input" value="" type="email" id="profile-email"></div>
+            <div class="field-group"><div class="field-label">Phone Number</div><input class="field-input" value="" type="tel"></div>
+            <div class="field-group"><div class="field-label">Country</div><input class="field-input" value=""></div>
+            <div class="field-group"><div class="field-label">Date of Birth</div><input class="field-input" type="date" value=""></div>
+            <div class="field-group"><div class="field-label">Language</div><select class="field-input"><option>English</option><option>Spanish</option><option>French</option><option>Japanese</option></select></div>
+            <div style="margin-top:16px;padding-top:16px;border-top:0.5px solid var(--neutral-200);">
+              <button class="btn-ghost" id="logout-btn" style="color:var(--accent);border-color:var(--accent-mid);"><i class="ti ti-logout"></i> Log out</button>
+            </div>
+          </div>
+          <div>
+            <div class="plan-card" style="margin-bottom:16px;">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:rgba(255,255,255,0.4);margin-bottom:8px;">Current plan</div>
+              <div class="plan-name">Pro</div>
+              <div class="plan-feature"><i class="ti ti-check" style="color:#3cb97a;font-size:14px;"></i> 5,000 conversations/month</div>
+              <div class="plan-feature"><i class="ti ti-check" style="color:#3cb97a;font-size:14px;"></i> Human handoff included</div>
+              <div class="plan-feature"><i class="ti ti-check" style="color:#3cb97a;font-size:14px;"></i> Advanced analytics</div>
+              <div style="margin-top:12px;font-size:12px;color:rgba(255,255,255,0.4);">Next billing: July 10, 2026</div>
+              <button class="upgrade-btn">Upgrade to Enterprise →</button>
+              <div style="margin-top:10px;font-size:12px;color:rgba(255,255,255,0.3);cursor:pointer;text-decoration:underline;">Cancel subscription</div>
+            </div>
+            <div class="card">
+              <div class="card-title" style="margin-bottom:12px;">Account security</div>
+              <div class="setting-row"><div><div class="setting-name">Two-factor auth</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+              <div class="setting-row" style="border-bottom:none;"><div><div class="setting-name">Email notifications</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
+</div>
 
-  <script src="/js/admin.js"></script>
+<script>
+  const chartsInit = {};
+
+  function navigate(el) {
+    const page = el.dataset.page;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('page-' + page).classList.add('active');
+    const titles = { dashboard: 'Dashboard', metrics: 'Customer Metrics', calendar: 'Calendar', 'ai-settings': 'AI Settings', alerts: 'Alerts', profile: 'Profile' };
+    document.getElementById('page-title').textContent = titles[page] || page;
+    setTimeout(initCharts, 80);
+  }
+
+  function switchMetricTab(btn, tabId) {
+    document.querySelectorAll('.metric-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    ['tab-customers','tab-bookings','tab-sales','tab-chatbot'].forEach(t => {
+      const el = document.getElementById(t);
+      if (el) el.style.display = 'none';
+    });
+    const show = document.getElementById(tabId);
+    if (show) show.style.display = 'block';
+    setTimeout(initCharts, 80);
+  }
+
+  function switchPeriod(btn) {
+    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function initCharts() {
+    const rev = document.getElementById('revenueChart');
+    if (rev && !chartsInit.rev && rev.offsetParent !== null) {
+      chartsInit.rev = true;
+      new Chart(rev, {
+        type: 'bar',
+        data: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets: [{ label: 'Revenue', data: [280000,312000,295000,340000,385000,420000,352800], backgroundColor: (ctx) => ctx.dataIndex === 6 ? '#e8334a' : '#f4f3f0', borderRadius: 6, borderSkipped: false }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9c9a94' } }, y: { grid: { color: '#f4f3f0' }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9c9a94', callback: v => '$' + Math.round(v/1000) + 'k' } } } }
+      });
+    }
+    const conv = document.getElementById('convChart');
+    if (conv && !chartsInit.conv && conv.offsetParent !== null) {
+      chartsInit.conv = true;
+      new Chart(conv, { type: 'doughnut', data: { labels: ['Converted','Not converted'], datasets: [{ data: [34,66], backgroundColor: ['#e8334a','#e8e6e1'], borderWidth: 0, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false } } } });
+    }
+    const salesConv = document.getElementById('salesConvChart');
+    if (salesConv && !chartsInit.salesConv && salesConv.offsetParent !== null) {
+      chartsInit.salesConv = true;
+      new Chart(salesConv, { type: 'doughnut', data: { labels: ['Converted','Browsed only'], datasets: [{ data: [34,66], backgroundColor: ['#e8334a','#e8e6e1'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } } });
+    }
+    const revCurve = document.getElementById('revCurveChart');
+    if (revCurve && !chartsInit.revCurve && revCurve.offsetParent !== null) {
+      chartsInit.revCurve = true;
+      new Chart(revCurve, { type: 'line', data: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets: [{ label: 'Revenue', data: [280000,312000,295000,340000,385000,420000,352800], borderColor: '#e8334a', backgroundColor: 'rgba(232,51,74,0.06)', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#e8334a', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9c9a94' } }, y: { grid: { color: '#f4f3f0' }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9c9a94', callback: v => '$' + Math.round(v/1000) + 'k' } } } } });
+    }
+    const sent = document.getElementById('sentChart');
+    if (sent && !chartsInit.sent && sent.offsetParent !== null) {
+      chartsInit.sent = true;
+      new Chart(sent, { type: 'doughnut', data: { labels: ['Positive','Neutral','Negative'], datasets: [{ data: [68,22,10], backgroundColor: ['#3cb97a','#f59e0b','#e8334a'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false } } } });
+    }
+  }
+
+  function setTodayDate() {
+    const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    const el = document.getElementById('today-date');
+    if (el) el.textContent = new Date().toLocaleDateString('en-GB', opts);
+  }
+
+  async function hydrateUser() {
+    try {
+      const r = await fetch('/api/auth/me', { credentials: 'include' });
+      if (!r.ok) { window.location.href = '/login.html'; return; }
+      const data = await r.json();
+      const username = (data && data.user && data.user.username) || 'user';
+      const initial = (username[0] || 'U').toUpperCase();
+      const set = (id, val, prop) => { const el = document.getElementById(id); if (el) { if (prop === 'value') el.value = val; else el.textContent = val; } };
+      const greet = document.getElementById('greeting');
+      if (greet) greet.innerHTML = 'Hello, ' + username + '. 👋';
+      set('sidebar-username', username);
+      set('sidebar-avatar', initial);
+      set('profile-avatar', initial);
+      set('profile-name', username);
+      set('profile-fullname', username, 'value');
+    } catch (e) { /* leave defaults */ }
+  }
+
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch {}
+    window.location.href = '/login.html';
+  });
+
+  window.addEventListener('load', () => {
+    setTodayDate();
+    hydrateUser();
+    setTimeout(initCharts, 200);
+  });
+</script>
 </body>
 </html>
