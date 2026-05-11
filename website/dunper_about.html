@@ -12,20 +12,20 @@
 <meta property="og:description" content="The story behind Dunper AI — the team, the design philosophy, and the vision for the always-on AI receptionist.">
 <meta property="og:url" content="https://dunper.com/dunper_about.html">
 <meta property="og:image" content="https://dunper.com/img/logo.png">
-<meta name="theme-color" content="#EDF4FF">
+<meta name="theme-color" content="#D9E8F8">
 <link rel="icon" type="image/png" href="/img/logo.png" />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@200;300;400;500&family=Outfit:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --navy:#EDF4FF; --blue-deep:#1F4C8F; --blue-mid:#2E78D4;
-    --blue-soft:#3D6CB5; --blue-pale:#2E5DA8; --sky:#E8F1FF;
-    --white:#1F4C8F; --accent:#0F70F0;
+    --navy:#D9E8F8; --blue-deep:#0F2E5C; --blue-mid:#2E78D4;
+    --blue-soft:#2E5DA8; --blue-pale:#1F4C8F; --sky:#E8F1FF;
+    --white:#0F2E5C; --accent:#0F70F0;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   body{background:var(--navy);color:var(--white);font-family:'DM Sans',sans-serif;overflow-x:hidden;line-height:1.6;}
 
   /* NAV */
-  nav{position:fixed;top:0;width:100%;z-index:100;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 44px;background:rgba(237,244,255,0.88);backdrop-filter:blur(20px);border-bottom:1px solid rgba(31,76,143,0.15);}
+  nav{position:fixed;top:0;width:100%;z-index:100;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 44px;background:rgba(217,232,248,0.88);backdrop-filter:blur(20px);border-bottom:1px solid rgba(31,76,143,0.15);}
   .nav-left{display:flex;align-items:center;gap:28px;flex-shrink:0;}
   .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
   .logo-img{height:32px;width:auto;display:block;}
@@ -65,7 +65,7 @@
 
   /* SPLIT (vision & mission) */
   .split-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-top:32px;}
-  .split-card{padding:40px 36px;border-radius:24px;background:linear-gradient(145deg,rgba(31,76,143,.32),rgba(237,244,255,.55));border:1px solid rgba(31,76,143,.2);position:relative;overflow:hidden;}
+  .split-card{padding:40px 36px;border-radius:24px;background:linear-gradient(145deg,rgba(31,76,143,.32),rgba(217,232,248,.55));border:1px solid rgba(31,76,143,.2);position:relative;overflow:hidden;}
   .split-card::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(15,112,240,.1),transparent 70%);}
   .split-icon{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--blue-mid),var(--accent));display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px;position:relative;}
   .split-card h3{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:26px;letter-spacing:0.02em;margin-bottom:12px;position:relative;}
@@ -73,7 +73,7 @@
 
   /* 3-COL FEATURE GRID */
   .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:32px;}
-  .feature-card{padding:32px 28px;border-radius:20px;background:linear-gradient(145deg,rgba(31,76,143,.24),rgba(237,244,255,.5));border:1px solid rgba(31,76,143,.18);transition:transform .3s, border-color .3s;}
+  .feature-card{padding:32px 28px;border-radius:20px;background:linear-gradient(145deg,rgba(31,76,143,.24),rgba(217,232,248,.5));border:1px solid rgba(31,76,143,.18);transition:transform .3s, border-color .3s;}
   .feature-card:hover{transform:translateY(-6px);border-color:rgba(15,112,240,.35);}
   .feature-icon{width:50px;height:50px;border-radius:13px;background:linear-gradient(135deg,var(--blue-mid),var(--accent));display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:18px;color:white;}
   .feature-card h4{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:21px;margin-bottom:10px;}
@@ -81,14 +81,14 @@
 
   /* STEPS (design process) */
   .step-list{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:32px;}
-  .step{padding:32px 28px;border-radius:20px;border:1px solid rgba(31,76,143,.18);background:rgba(237,244,255,.3);position:relative;}
+  .step{padding:32px 28px;border-radius:20px;border:1px solid rgba(31,76,143,.18);background:rgba(217,232,248,.3);position:relative;}
   .step-num{font-family:'Space Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:.18em;margin-bottom:14px;}
   .step h4{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:21px;margin-bottom:10px;}
   .step p{color:var(--blue-pale);font-size:14px;line-height:1.7;}
 
   /* TEAM */
   .team-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:20px;margin-top:32px;}
-  .team-card{padding:30px 20px 26px;border-radius:20px;background:linear-gradient(180deg,rgba(31,76,143,.3),rgba(237,244,255,.55));border:1px solid rgba(31,76,143,.18);text-align:center;transition:transform .3s, border-color .3s;}
+  .team-card{padding:30px 20px 26px;border-radius:20px;background:linear-gradient(180deg,rgba(31,76,143,.3),rgba(217,232,248,.55));border:1px solid rgba(31,76,143,.18);text-align:center;transition:transform .3s, border-color .3s;}
   .team-card:hover{transform:translateY(-6px);border-color:rgba(15,112,240,.4);}
   .team-photo{width:104px;height:104px;border-radius:50%;background:linear-gradient(135deg,var(--blue-deep),var(--accent));display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-weight:600;font-size:38px;color:var(--white);margin:0 auto 18px;border:2px solid rgba(31,76,143,.25);overflow:hidden;}
   .team-photo img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}
@@ -120,7 +120,7 @@
   .nav-cta, .nav-cta *, .submit-btn, .submit-btn *, .plan-btn.featured-btn, .featured-btn, .modal-actions button, .team-photo, .feature-icon, .split-icon, .value-icon, .step-icon, .ty-icon, .plan-badge, .save-badge, .btn-primary, .chatbar-send, .chatbar-send svg { color: #FFFFFF !important; fill: white; }
   .nav-cta:hover, .submit-btn:hover, .plan-btn.featured-btn:hover, .modal-actions button:hover, .btn-primary:hover { color: #FFFFFF !important; }
   /* placeholders need darker text on the now-light input fields */
-  .nav-chatbar input::placeholder, input::placeholder, textarea::placeholder { color: #2E5DA8 !important; opacity: 0.85; }
+  .nav-chatbar input::placeholder, input::placeholder, textarea::placeholder { color: #1F4C8F !important; opacity: 0.85; }
 </style>
 </head>
 <body>
@@ -278,7 +278,7 @@
     <span class="logo-text">dunper</span>
   </a>
   <span>© 2026 Dunper AI. All rights reserved.</span>
-  <span>dunper.com@gmail.com &nbsp;·&nbsp; @dunper.ai</span>
+  <span>dunperai@gmail.com &nbsp;·&nbsp; @dunper.ai</span>
 </footer>
 
 <script src="/js/common.js"></script>
