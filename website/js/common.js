@@ -630,6 +630,68 @@
       font-size: 15px !important;
     }
 
+    /* Hero badge already has its own .badge-dot child — hide it so the
+       chip-style ::before doesn't render a second dot. */
+    .hero-badge .badge-dot { display: none !important; }
+
+    /* "For developers" CTA section on the home page */
+    body.page-home .dev-cta {
+      padding: 60px 40px 100px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    body.page-home .dev-cta-inner {
+      background: #FFFFFF;
+      border: 1px solid rgba(15,23,42,0.06);
+      border-radius: 28px;
+      padding: 56px 48px;
+      box-shadow: 0 14px 40px rgba(15,23,42,0.06);
+      position: relative;
+      overflow: hidden;
+      background-image:
+        radial-gradient(ellipse 60% 50% at 100% 0%, rgba(30,58,138,.07) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 0% 100%, rgba(46,120,212,.06) 0%, transparent 60%);
+    }
+    body.page-home .dev-cta-inner h2 {
+      font-family: 'Outfit', sans-serif !important;
+      font-weight: 700;
+      font-size: clamp(28px, 4vw, 40px);
+      letter-spacing: -0.02em;
+      color: #0A1430;
+      margin: 12px 0 14px;
+      line-height: 1.15;
+    }
+    body.page-home .dev-cta-inner h2 em {
+      font-style: normal;
+      color: #1E3A8A;
+    }
+    body.page-home .dev-cta-inner p {
+      color: #475569;
+      font-size: 16px;
+      line-height: 1.7;
+      max-width: 560px;
+      margin-bottom: 24px;
+    }
+    body.page-home .dev-cta-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    body.page-home .dev-cta-buttons .btn-primary,
+    body.page-home .dev-cta-buttons .btn-outline {
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: background .2s ease, transform .2s ease;
+    }
+    @media (max-width: 720px) {
+      body.page-home .dev-cta-inner { padding: 36px 24px; }
+    }
+
     /* (5) Nav chatbar — dark blue outline */
     .nav-chatbar {
       border: 1.5px solid #1E3A8A !important;
