@@ -1,15 +1,8 @@
 /* Business Dashboard — minimal wire-up.
  *
- * Replaces the legacy form-based admin.js (preserved at admin.legacy.js)
- * which referenced ~50 DOM IDs that no longer exist in the new sidebar
- * layout. The legacy script crashed on line 7 trying to attach a click
- * handler to an element that didn't exist, taking the whole dashboard
- * down with it.
- *
- * This rewrite hits only the IDs that actually live in the new admin.html
- * (verified: greeting, kpi-*, upcoming-bookings-list, bookings-tbody,
- * customers-tbody, sm-*, alerts-bookings-list, alerts-chats-list,
- * dash-alerts-list, etc).
+ * Hits only the IDs that actually live in the sidebar admin.html
+ * (greeting, kpi-*, upcoming-bookings-list, bookings-tbody, customers-tbody,
+ * sm-*, alerts-bookings-list, alerts-chats-list, dash-alerts-list, etc).
  */
 
 // ===== auth helpers =====

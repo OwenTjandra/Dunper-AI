@@ -145,8 +145,12 @@ inputEl.addEventListener('keydown', (e) => {
 
 async function sendMessage(text, files) {
   const filesCopy = files.slice();
-  const localAttachments = filesCopy.map(f => ({
-    url: URL.createObjectURL(f),
+  // Track blob URLs created for the local preview so they can be revoked
+  // once the server returns its hosted version, otherwise long sessions
+  // accumulate every previewed image in memory.
+  const localBlobUrls = filesCopy.map(f => URL.createObjectURL(f));
+  const localAttachments = filesCopy.map((f, i) => ({
+    url: localBlobUrls[i],
     filename: f.name,
   }));
   addMessage('user', text, localAttachments);
@@ -178,6 +182,10 @@ async function sendMessage(text, files) {
     sendBtn.disabled = false;
     attachmentBtn.disabled = false;
     inputEl.focus();
+    // Give the DOM a tick to swap to server-hosted urls on reload, then
+    // free the local blobs. Defer past current task to avoid revoking
+    // before the <img> has fully rendered.
+    setTimeout(() => localBlobUrls.forEach(URL.revokeObjectURL), 60_000);
   }
 }
 

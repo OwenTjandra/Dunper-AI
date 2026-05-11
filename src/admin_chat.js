@@ -232,11 +232,17 @@ async function runAdminChat(userMessages, user) {
   let mutated = false;
   const systemPrompt = buildAdminSystemPrompt(getBusiness());
 
+  // The system prompt embeds the entire business config and is reused on
+  // every tool-loop iteration. Mark it ephemeral so Anthropic prompt-caches
+  // it for the duration of the turn — same trick as the customer chat path
+  // (see config/claude.js buildSystem).
+  const systemBlocks = [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }];
+
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     const response = await client.messages.create({
       model: MODEL,
       max_tokens: 2048,
-      system: systemPrompt,
+      system: systemBlocks,
       tools,
       messages,
     });

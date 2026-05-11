@@ -255,7 +255,13 @@ async function createCalendarEvent(booking, business) {
 function shown(v) {
   if (v === null || v === undefined) return 'Not Given';
   const s = String(v).trim();
-  return s ? s : 'Not Given';
+  if (!s) return 'Not Given';
+  // Defang Sheets formula injection — a customer name like
+  //   =HYPERLINK("https://evil.example", "Click")
+  // becomes a live formula when written into a cell. Prefix with apostrophe
+  // (Sheets' standard "treat as text" escape) for any leading control char.
+  if (/^[=+\-@\t\r]/.test(s)) return `'${s}`;
+  return s;
 }
 
 function columnLetter(n) {

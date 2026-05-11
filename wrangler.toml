@@ -13,7 +13,11 @@ compatibility_date = "2024-10-01"
 
 [assets]
 directory = "./website"
-not_found_handling = "single-page-application"
+# Dunper is a multi-page static site, not an SPA. With single-page-application
+# mode Cloudflare returned the home page for any unknown URL — a typo like
+# /dnper_about.html silently 200'd instead of 404'ing, which is bad for SEO
+# and confuses users. Plain 404 is correct here.
+not_found_handling = "none"
 
 # dunper.com custom domain — NOT wired via wrangler.toml.
 # Attempting to add [[routes]] here broke the entire deployment twice

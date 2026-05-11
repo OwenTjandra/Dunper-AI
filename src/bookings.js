@@ -20,7 +20,9 @@ function dayHours(business, dayOfWeek) {
 }
 
 function hmToMin(hm) {
-  if (!/^\d{2}:\d{2}$/.test(String(hm))) return NaN;
+  // Accept both "9:00" and "09:00" — strict 2-digit hour was rejecting
+  // single-digit times that customers commonly type.
+  if (!/^\d{1,2}:\d{2}$/.test(String(hm))) return NaN;
   const [h, m] = hm.split(':').map(Number);
   if (h < 0 || h > 23 || m < 0 || m > 59) return NaN;
   return h * 60 + m;

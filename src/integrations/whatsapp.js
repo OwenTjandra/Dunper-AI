@@ -34,7 +34,15 @@ function verifyWebhookHandshake(query) {
 
 function verifySignature(rawBody, signatureHeader) {
   const appSecret = process.env.WHATSAPP_APP_SECRET;
-  if (!appSecret) return { ok: true, skipped: true };
+  if (!appSecret) {
+    // In production, refuse to accept unsigned WhatsApp webhooks. Without
+    // the app secret anyone who guesses the URL can trigger Claude calls,
+    // burning the API budget and writing into customer profiles.
+    if (process.env.NODE_ENV === 'production') {
+      return { ok: false, reason: 'app secret not configured (refusing in production)' };
+    }
+    return { ok: true, skipped: true };
+  }
   if (!signatureHeader) return { ok: false, reason: 'missing signature header' };
 
   const expected = signatureHeader.startsWith('sha256=')

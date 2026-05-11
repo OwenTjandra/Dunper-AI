@@ -363,7 +363,7 @@
         <p class="form-status" id="signupStatus" style="font-size:13px;text-align:center;min-height:18px;margin-top:-4px"></p>
         <div class="divider">or</div>
         <button class="social-btn" type="button" onclick="alert('Google sign-up coming soon. Use the email form above for now.');"><span class="social-icon">G</span> Continue with Google</button>
-        <div class="terms-note">By signing up you agree to our <a href="#">Terms</a> & <a href="#">Privacy Policy</a>. Must be 18+.</div>
+        <div class="terms-note">By signing up you agree to our <a href="#" onclick="goToPage('page-terms');setStep(1);showStepBar();return false;">Terms</a> &amp; <a href="#" onclick="openPrivacyModal(event);return false;">Privacy Policy</a>. Must be 18+.</div>
         <div class="join-link">Already have an account? <a href="#" onclick="switchTab('signin');return false;">Log in</a></div>
       </div>
     </div>
@@ -392,7 +392,7 @@
       <br>
       <label class="check-row" id="termsCheck">
         <input type="checkbox" id="agreeTerms" onchange="checkTerms()"/>
-        <span>I have read and agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. I confirm I am 18 years of age or older.</span>
+        <span>I have read and agree to the <a href="#" onclick="event.preventDefault();document.querySelector('.terms-box')?.scrollIntoView({behavior:'smooth',block:'start'});">Terms of Service</a> and <a href="#" onclick="openPrivacyModal(event);return false;">Privacy Policy</a>. I confirm I am 18 years of age or older.</span>
       </label>
       <br>
       <button class="submit-btn" id="termsBtn" style="opacity:.4;pointer-events:none"
@@ -424,7 +424,7 @@
         <div class="field-row">
           <div class="field">
             <label>Date of Birth <span style="color:rgba(31,76,143,.5);font-size:10px">(must be 18+)</span></label>
-            <input type="date" max="2008-01-01"/>
+            <input type="date" id="acctDob" />
           </div>
           <div class="field">
             <label>Country</label>
@@ -1164,6 +1164,14 @@ function addPasswordToggles(){
   wireLoginButton();
   wireSignupButton();
   addPasswordToggles();
+  // 18+ DOB cutoff was hard-coded to 2008-01-01 — silently rejected anyone
+  // born after Jan 1 of (currentYear - 18). Compute today minus 18 years.
+  const dob = document.getElementById('acctDob');
+  if (dob) {
+    const cutoff = new Date();
+    cutoff.setFullYear(cutoff.getFullYear() - 18);
+    dob.max = cutoff.toISOString().slice(0, 10);
+  }
   const params = new URLSearchParams(window.location.search);
   if(params.get('plan')){
     goToPage('page-terms');
