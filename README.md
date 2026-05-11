@@ -1,145 +1,178 @@
+<div align="center">
+
 # Dunper AI
 
-An AI-powered chatbot frontdesk for local SMEs. Customers chat in the browser; Claude answers questions, helps with bookings, and surfaces business info — all configured per-client through a simple admin form.
+**An AI receptionist for small businesses.**
+Always-on chat. Real bookings. 60+ languages. Built for Indonesian SMEs first.
 
-## Stack
+[**Visit dunper.com →**](https://dunper.com)
 
-- **Backend:** Node.js + Express
-- **AI:** Anthropic Claude Sonnet 4.6
-- **Frontend:** Plain HTML/CSS/JS (no framework)
-- **Storage:** SQLite (`data.db`) for users + sessions; `business.json` for live business config
-- **Config:** Editable in-browser at `/admin.html` (login required)
+</div>
 
-## Getting started
+---
+
+## What it does
+
+Dunper drops onto your website (or your WhatsApp Business number) and answers every customer who messages you — 24/7, in the language they're using, with knowledge of your hours, services, prices, and policies.
+
+It books real appointments into your Google Calendar. It logs every customer to a dashboard you control. It hands off to a human the moment it doesn't know.
+
+It's built for the 10-person warung in Surabaya whose owner has never heard the word "API," not the SaaS company with a developer ops team.
+
+## What's in this repo
+
+This is the **full product**:
+
+| Path | What it is |
+|---|---|
+| `src/` | Node.js + Express server — chat API, admin API, auth, integrations |
+| `public/` | Customer chat UI (`index.html`) + business dashboard (`admin.html`) + founder dashboard (`operator.html`) |
+| `website/` | The marketing site at [dunper.com](https://dunper.com) — static HTML/CSS/JS |
+| `scripts/` | Dev tools, including `seed-demo-data.js` for populating a realistic demo |
+| `docs/` | Deploy runbooks, demo script, scaling plan |
+| `migrations/` | SQL schema migrations |
+
+## Tech
+
+- **Node.js + Express** — single server, ~1k lines
+- **SQLite** (`better-sqlite3`) — one `data.db` file holds everything
+- **Anthropic Claude Sonnet 4.6** — the brain, with prompt caching for unit economics
+- **Plain HTML/CSS/JS frontend** — no React, no build step
+- **WhatsApp Cloud API** + **Google Calendar/Sheets OAuth** — real integrations, not stubs
+- **Cloudflare Tunnel** — deploy from a laptop, no VPS required
+
+## Quick start (local dev)
 
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Add your Anthropic API key + admin credentials
-cp .env.example .env
-# then edit .env: paste your sk-ant-api03-... key
-# and set ADMIN_USERNAME / ADMIN_PASSWORD (used to seed the first admin user)
-
-# 3. Run the server
-npm start
+cp .env.example .env       # then edit: paste your Anthropic API key + admin creds
+node src/server.js
 ```
 
-Open http://localhost:3000 for the chat, or http://localhost:3000/admin.html for the business dashboard (you'll be redirected to /login.html the first time).
+Open:
 
-The first time the server starts with no users in `data.db`, it seeds an admin from `ADMIN_USERNAME` / `ADMIN_PASSWORD`. After that, changing those env vars has no effect — log in with the seeded credentials and (later) use the dashboard to change them.
+| URL | What you see |
+|---|---|
+| http://localhost:3000 | Customer chat |
+| http://localhost:3000/dunper_home.html | Marketing site |
+| http://localhost:3000/admin.html | Business dashboard (after login) |
+| http://localhost:3000/operator.html | Founder dashboard |
+| http://localhost:3000/dunper_signin.html | Sign in / sign up |
 
-## Testing on your local network
+The first run seeds an admin from `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env`. After that, manage users through the dashboard.
 
-Other devices on the same Wi-Fi (your phone, another laptop) can hit the server too — useful for testing the chat on mobile without deploying anywhere.
+### Make it look alive (for a demo)
 
-On startup the server prints all reachable URLs, e.g.:
-
-```
-Local:  http://localhost:3000
-LAN:    http://192.168.11.68:3000
-Admin:  http://localhost:3000/admin.html
-```
-
-To allow inbound connections, open the port in the OS firewall once.
-
-**Windows** (run PowerShell as Administrator):
-
-```powershell
-New-NetFirewallRule -DisplayName "FrontDesk Dev (TCP 3000)" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow -Profile Private
+```bash
+node scripts/seed-demo-data.js --reset
 ```
 
-**macOS** (for the Mac mini): System Settings → Network → Firewall → Options → allow incoming connections for `node`. Or disable the firewall on a trusted LAN.
+Populates 8 fake customers (with realistic Bahasa / English / Mandarin chats), 4 bookings, 5 sales pipeline prospects across stages, and 30 days of Anthropic usage history. Idempotent.
 
-> ⚠ **Security note:** the admin page now requires login, but the customer chat is fully open. Anyone on the same Wi-Fi can use the chat (which is the point) and that means consuming your API quota. The Windows rule above is scoped to the `Private` network profile so it won't apply on coffee-shop / airport Wi-Fi — confirm your home network is marked **Private** in Windows network settings.
+## Going live (dunper.com)
 
-## Project layout
+See [`docs/deploy-dunper-com.md`](docs/deploy-dunper-com.md). It's a Cloudflare Tunnel from your laptop to `dunper.com` — no VPS, free TLS, runs in 5 minutes.
+
+For the marketing site as a static deploy on Cloudflare Workers, see [`wrangler.toml`](wrangler.toml).
+
+## License
+
+[Specify your license here — MIT, Apache 2.0, AGPL, or BUSL.]
+
+## Contributing
+
+We're a 5-person team building this in public, mostly out of Jakarta. If you spot a bug, file an issue. If you're an SME owner who'd try the beta, email **dunperai@gmail.com**.
+
+---
+
+## For developers — deeper docs
+
+<details>
+<summary>Project layout (click to expand)</summary>
 
 ```
 frontdesk-ai/
 ├── src/
-│   ├── server.js          Express server, routes, middleware wiring
-│   ├── business.js        Business config state, validation, applyBusinessUpdate
-│   ├── admin_chat.js      Admin AI assistant: tool definitions + tool-use loop
-│   ├── documents.js       Owner knowledge doc storage (multer) + Claude doc blocks
-│   ├── auth.js            Login/logout endpoints + session middleware
-│   ├── db.js              SQLite setup (users, sessions, business_versions, customers, documents) + seeds
-│   └── config/claude.js   Claude SDK wrapper
+│   ├── server.js              Express server, routes, middleware
+│   ├── business.js            Business config state + applyBusinessUpdate
+│   ├── admin_chat.js          Admin AI assistant (tool-use for editing config)
+│   ├── conversation.js        Customer chat history + compaction
+│   ├── bookings.js            Availability + booking logic
+│   ├── auth.js                Login/signup/2FA endpoints
+│   ├── db.js                  SQLite schema + all DB helpers
+│   ├── email.js               Lazy SMTP transport for confirmations
+│   ├── mailer.js              2FA code emails
+│   ├── migrations.js          Migration runner
+│   ├── documents.js           Owner knowledge docs (PDF/text upload)
+│   ├── config/claude.js       Anthropic SDK wrapper w/ prompt caching
+│   ├── integrations/
+│   │   ├── google.js          OAuth + Calendar + Sheets + retry logic
+│   │   └── whatsapp.js        Cloud API webhook + sendText
+│   └── routes/webhooks.js     WhatsApp + Meta webhook handlers
 ├── public/
-│   ├── index.html         Chat UI (open to all)
-│   ├── login.html         Sign-in page for the dashboard
-│   ├── admin.html         Business dashboard (login required)
-│   ├── css/               Styles
-│   └── js/                Frontend logic
-├── business.json          Live business config (name, hours, services, rules)
-├── data.db                SQLite database — users, sessions, customers, documents, version log (gitignored)
-├── uploads/               Stored knowledge docs and customer attachments (gitignored)
-├── .env                   API key + admin seed (gitignored)
-└── package.json
+│   ├── index.html             Customer chat UI
+│   ├── admin.html             Business dashboard (login required)
+│   ├── operator.html          Founder dashboard (founder role required)
+│   ├── dunper_signin.html     (marketing site auth — symlink target)
+│   ├── css/  js/  img/  uploads/
+├── website/                   Static marketing site (deployed to dunper.com)
+├── scripts/
+│   └── seed-demo-data.js      Demo data populator
+├── migrations/                Numbered SQL migrations
+├── docs/
+│   ├── deploy-dunper-com.md   Cloudflare Tunnel runbook
+│   ├── demo-runbook.md        Click-by-click pitch demo script
+│   ├── scaling-roadmap.md     1 → 1000 customer plan
+│   └── whatsapp-setup.md      WhatsApp Cloud API setup
+├── business.json              Live business config (gitignored)
+├── data.db                    SQLite (gitignored)
+└── .env                       Secrets (gitignored)
 ```
+</details>
 
-## Configuring a new business
+<details>
+<summary>Architecture decisions</summary>
 
-Either edit `business.json` directly or open `/admin.html` in the browser. The form has fields for:
+- **Single-tenant SQLite for now.** Multi-tenancy migration is planned around customer #15 — see `docs/scaling-roadmap.md`. The architecture is "shaped clay" until then.
+- **Prompt caching aggressively.** The system prompt (business config + knowledge docs) gets `cache_control: ephemeral` on every call. 90%+ cache hit rate in steady state → cost per conversation drops to ~$0.005.
+- **Conversation compaction.** Once a conversation hits 30 messages, the oldest are summarized into a single context block. Keeps token cost flat over long chats.
+- **Tunnel-first deploy.** No VPS, no Docker, no Kubernetes — Cloudflare Tunnel from a laptop is enough for the first 100 customers. Scaling roadmap covers the migration to a real host when needed.
+- **All UI is plain HTML.** Three independent surfaces (customer chat, business admin, founder operator) share styles via two CSS files. No SPA, no router, no build step.
+</details>
 
-- Name, type, hours, address, phone
-- Services (name + duration + price, repeatable)
-- Booking rules (free-text, repeatable)
-- Tone of voice
-- Fallback message for questions the AI can't answer
+<details>
+<summary>Environment variables</summary>
 
-Saving from the admin form rebuilds the system prompt immediately — no server restart needed.
+See `.env.example` for the full list. Required for basic operation:
+- `ANTHROPIC_API_KEY` — Claude API key
+- `ADMIN_USERNAME` + `ADMIN_PASSWORD` — seeds the first business_owner user
+- `PENDING_LOGIN_SECRET` — random 32-char string (for 2FA cookie HMAC)
 
-Every save is logged to the `business_versions` table in `data.db` with the username and timestamp. The dashboard's "History" panel lists them newest-first; click **Restore** on any earlier version to roll back. A restore is just another write, so it shows up in the log too — you can always undo it.
+Optional (enables corresponding features):
+- `SMTP_*` — Gmail SMTP for booking confirmations + 2FA codes
+- `GOOGLE_OAUTH_*` — Calendar + Sheets integration
+- `WHATSAPP_*` — Cloud API webhook + outbound messages
+- `FOUNDERS` — seeds founder accounts (access to operator dashboard)
+</details>
 
-The "Edit with AI" panel at the top of the dashboard is a chat interface that can mutate the config via tool use. Type natural-language requests ("add a deep cleaning, Rp 750,000, 75 min", "drop the no-Sundays rule", "change our hours to Mon–Sat 8–6") and the assistant calls `update_business_field`, `add_service`, `update_service`, `remove_service`, `add_rule`, or `remove_rule` as appropriate. Each successful tool call goes through the same `applyBusinessUpdate` path as the form save, so the version log captures everything. Ambiguous requests trigger a clarifying question rather than a guess.
+<details>
+<summary>Roadmap</summary>
 
-## Customers
-
-Every customer browser gets a long-lived `frontdesk_customer` cookie on first chat. That cookie maps to a row in `customer_profiles`, and every message they exchange is stored in `customer_messages`. The customer chat sends just the new message text — the server reads the prior history from the database, so a page reload no longer loses the conversation.
-
-The dashboard's "Customers" panel lists everyone who's chatted, newest activity first. Click a row to expand and read the full transcript. You can fill in the customer's name, phone number, and free-form internal notes — those don't go to the AI, they're just for you.
-
-## Knowledge documents
-
-Upload PDFs, plain text, or markdown files in the dashboard's "Knowledge documents" panel — price sheets, policies, FAQs, anything the customer-facing AI should answer from. On every customer chat, the server prepends each document as an Anthropic `document` content block to the first user message of the conversation. Claude can read them directly (PDFs are sent natively, no text extraction step), and once a doc is removed it stops appearing in chats. Files live under `uploads/business/` (gitignored), 10MB max each.
-
-## Customer attachments
-
-The customer chat has a paperclip button that lets a customer attach an image (JPEG / PNG / GIF / WEBP, 5MB max) to a message. The server stores the file under `uploads/customer/<profile_id>/<uuid>.<ext>` and links it to the message. When Claude is called, the image is included as an `image` content block alongside the text — Sonnet sees and reasons about it. Attachments persist across page reloads, just like text messages.
-
-Owner sees the same images inline in the dashboard's transcript view. The download route (`/api/attachments/:id`) only serves the file if the request comes from the customer's own session cookie or an authenticated owner.
-
-## Google Calendar + Sheets
-
-Owner-driven, OAuth-based. From the dashboard's "Google Calendar & Sheets" card, click **Connect Google** → consent on Google's screen → come back authorized. After connecting, pick a calendar and a sheet from dropdowns (or click "+ Create new" to make a fresh sheet). Tokens are stored in the singleton `google_connection` row in `data.db` and refreshed automatically.
-
-To enable the feature on a deploy, set three env vars (see `.env.example`):
-
-```
-GOOGLE_OAUTH_CLIENT_ID=
-GOOGLE_OAUTH_CLIENT_SECRET=
-GOOGLE_OAUTH_REDIRECT_URI=http://localhost:3000/api/integrations/google/callback
-```
-
-Create the OAuth client in [Google Cloud Console](https://console.cloud.google.com) → **APIs & Services → Credentials** → **Create Credentials** → **OAuth client ID** (Web application). The redirect URI on the OAuth client must match `GOOGLE_OAUTH_REDIRECT_URI` exactly. Enable the Calendar, Sheets, and Drive APIs in the same project.
-
-When connected, every new booking syncs to the chosen calendar (as an event) and to the chosen sheet (rows in `Bookings` / `Customers` tabs, auto-created on first write).
-
-## Roadmap
-
-- [x] Day 1 — Server + Claude API connection
-- [x] Day 2 — `/chat` endpoint with conversation history
-- [x] Day 3 — Chat UI (message bubbles, typing indicator, mobile-responsive)
-- [x] Day 3.5 — Per-business config + admin form
-- [x] Stage 1a — Admin auth wall (SQLite users + sessions, login page)
-- [x] Stage 1b — Version log of business.json changes + restore UI
-- [x] Stage 2 — AI assistant in the dashboard that edits business config via tool use
-- [x] Stage 3a — Customer profiles + persistent conversation history (server-side, viewable in dashboard)
-- [x] Stage 3b owner docs — Owner uploads PDFs/text/markdown the customer AI grounds answers in
-- [x] Stage 3b customer attachments — Customer attaches images that Claude sees via vision
-- [x] Google Calendar + Sheets sync via OAuth (owner connects from dashboard)
-- [ ] Day 4 — Google Calendar integration + `book_appointment` tool
-- [ ] Day 5 — Business dashboard (bookings, sentiment, customer log)
-- [ ] Day 6 — Cloudflare Tunnel + PM2 for going live
-- [ ] Day 7 — Demo polish
+- [x] Customer chat with conversation history
+- [x] Business config admin dashboard
+- [x] AI-assistant config editing (tool use)
+- [x] Customer profiles + transcript review
+- [x] Knowledge document upload (PDF + text)
+- [x] Customer image attachments (Claude vision)
+- [x] Google Calendar + Sheets sync
+- [x] WhatsApp Cloud API integration
+- [x] 2FA email-code sign-in
+- [x] Founder dashboard with sales CRM
+- [x] Marketing site at dunper.com
+- [x] Self-service signup → real account → real dashboard
+- [ ] Multi-tenant migration (`workspace_id` everywhere)
+- [ ] Stripe billing
+- [ ] Bahasa-language UI for the business dashboard
+- [ ] QRIS / GoPay / OVO payment links in chat
+- [ ] Multi-location support per business
+</details>
