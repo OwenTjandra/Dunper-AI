@@ -7,8 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@200;300;400;500&family=Outfit:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --navy:#FFFFFF;--blue-mid:#2E78D4;--blue-soft:#4A7BC8;
-    --blue-pale:#5A8AD6;--white:#1F4C8F;--accent:#0F70F0;
+    --navy:#EDF4FF;--blue-mid:#2E78D4;--blue-soft:#3D6CB5;
+    --blue-pale:#2E5DA8;--white:#1F4C8F;--accent:#0F70F0;
     --green:#34d399;--red:#f87171;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -42,7 +42,7 @@
     padding:20px 48px;display:flex;align-items:center;justify-content:space-between;
     flex-shrink:0;position:relative;z-index:10;
     border-bottom:1px solid rgba(31,76,143,.1);
-    background:rgba(255,255,255,.5);backdrop-filter:blur(16px);
+    background:rgba(237,244,255,.5);backdrop-filter:blur(16px);
   }
   .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;}
   .logo-img{height:32px;width:auto;display:block;}
@@ -63,7 +63,7 @@
     font-size:11px;font-family:'Space Mono',monospace;
     color:rgba(31,76,143,.5);
     transition:all .4s;
-    background:rgba(255,255,255,.6);
+    background:rgba(237,244,255,.6);
     position:relative;z-index:1;
   }
   .step-dot.active{
@@ -86,7 +86,7 @@
 
   /* CARD */
   .auth-card{
-    background:rgba(255,255,255,.75);
+    background:rgba(237,244,255,.75);
     border:1px solid rgba(31,76,143,.2);
     border-radius:28px;padding:44px;
     width:100%;max-width:480px;
@@ -246,7 +246,7 @@
   .nav-cta, .nav-cta *, .submit-btn, .submit-btn *, .plan-btn.featured-btn, .featured-btn, .modal-actions button, .team-photo, .feature-icon, .split-icon, .value-icon, .step-icon, .ty-icon, .plan-badge, .save-badge, .btn-primary, .chatbar-send, .chatbar-send svg { color: #FFFFFF !important; fill: white; }
   .nav-cta:hover, .submit-btn:hover, .plan-btn.featured-btn:hover, .modal-actions button:hover, .btn-primary:hover { color: #FFFFFF !important; }
   /* placeholders need darker text on the now-light input fields */
-  .nav-chatbar input::placeholder, input::placeholder, textarea::placeholder { color: #5A8AD6 !important; opacity: 0.85; }
+  .nav-chatbar input::placeholder, input::placeholder, textarea::placeholder { color: #2E5DA8 !important; opacity: 0.85; }
 </style>
 </head>
 <body>
@@ -378,7 +378,7 @@
           <div class="field"><label>First Name</label><input type="text" placeholder="Alex"/></div>
           <div class="field"><label>Last Name</label><input type="text" placeholder="Rivera"/></div>
         </div>
-        <div class="field"><label>Phone Number</label><input type="tel" placeholder="+1 (555) 000-0000"/></div>
+        <div class="field"><label>Phone Number</label><input type="tel" placeholder="+1 (555) 000-0000" inputmode="tel" autocomplete="tel" oninput="this.value=this.value.replace(/[^0-9+\-\s()]/g,'')"/></div>
         <div class="field"><label>Email Address</label><input type="email" placeholder="you@company.com"/></div>
         <div class="field"><label>Create Password</label><input type="password" placeholder="Min. 8 characters"/></div>
         <div class="field-row">
@@ -808,9 +808,15 @@ function validateAndContinue(currentPageId, nextPageId, nextStep){
   const container = document.getElementById(currentPageId);
   const inputs = container.querySelectorAll('input:not([type=checkbox]), select');
   let firstInvalid = null;
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const phoneRe = /^[+]?[0-9][0-9\-\s()]{5,}$/;
   inputs.forEach(el => {
     const v = (el.value||'').trim();
-    if(!v){ el.classList.add('field-error'); if(!firstInvalid) firstInvalid = el; }
+    let bad = false;
+    if(!v) bad = true;
+    else if(el.type === 'email' && !emailRe.test(v)) bad = true;
+    else if(el.type === 'tel' && !phoneRe.test(v)) bad = true;
+    if(bad){ el.classList.add('field-error'); if(!firstInvalid) firstInvalid = el; }
     else { el.classList.remove('field-error'); }
   });
   const requiredCheckboxes = container.querySelectorAll('input[type=checkbox][required]');
