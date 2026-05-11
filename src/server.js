@@ -129,16 +129,24 @@ app.use((req, res, next) => {
   next();
 });
 
+// dunper.com root → marketing home page (not the customer chat).
+// Explicit route runs BEFORE the static middlewares so it wins at '/'.
+// The customer chatbot UI is still reachable at /chat (and /index.html
+// for any legacy widget embed that hardcodes the old root path).
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../website/dunper_home.html'));
+});
+app.get('/chat', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
 // Marketing site (website/) — served alongside the app at the same
-// origin so login cookies work across both, and so dunper.com can serve
-// marketing + app from one process. {index:false} keeps
-// website/index.html (the marketing redirect) from shadowing
-// public/index.html (the customer chat) at the root, which is
-// referenced by the WhatsApp webhook, the dashboards' preview links,
-// and the widget embed.
+// origin so login cookies work across both. {index:false} keeps
+// website/index.html (the redirect-to-home page) from shadowing
+// the customer chat at /index.html for legacy widget embeds.
 app.use(express.static(path.join(__dirname, '../website'), { index: false }));
 
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, '../public'), { index: false }));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'Server is running', business: getBusiness().name });
