@@ -500,6 +500,149 @@
       .nav-logo .logo-img { transition: none !important; }
     }
 
+    /* ===========================================================
+       Round-specific tweaks
+       =========================================================== */
+
+    /* (1) Terms & Privacy Policy body text — darker blue */
+    .terms-box, .terms-box p, .terms-box strong,
+    .terms-box h4, .modal-card .terms-box,
+    .modal-card .terms-box p, .modal-card .terms-box strong,
+    .modal-card .modal-sub {
+      color: #15326B !important;
+      -webkit-text-fill-color: #15326B !important;
+    }
+    .terms-box h4 { color: #0A1430 !important; -webkit-text-fill-color: #0A1430 !important; }
+
+    /* (3) Services page — colour the 6 feature cards a soft blue so they
+       pop against the lavender body */
+    body.page-services .feature-card {
+      background: linear-gradient(180deg, #DEEAFB 0%, #E9F0FB 100%) !important;
+      border-color: rgba(30,58,138,0.14) !important;
+      box-shadow: 0 8px 24px rgba(30,58,138,0.08) !important;
+    }
+    body.page-services .feature-card:hover {
+      border-color: rgba(30,58,138,0.28) !important;
+      box-shadow: 0 18px 44px rgba(30,58,138,0.12) !important;
+      background: linear-gradient(180deg, #D2DFF7 0%, #E1ECFA 100%) !important;
+    }
+    body.page-services .feature-card h4,
+    body.page-services .feature-card h3 {
+      color: #0A1430 !important;
+    }
+    body.page-services .feature-card p {
+      color: #1E3A8A !important;
+      -webkit-text-fill-color: #1E3A8A !important;
+    }
+    body.page-services .feature-icon {
+      background: #FFFFFF !important;
+      color: #1E3A8A !important;
+      box-shadow: inset 0 0 0 1px rgba(30,58,138,0.16) !important;
+    }
+
+    /* (4) Compare features — cleaner table + tab pills */
+    body.page-join .compare-section {
+      padding: 28px !important;
+    }
+    body.page-join .compare-title {
+      font-family: 'Outfit', sans-serif !important;
+      font-weight: 700 !important;
+      color: #0A1430 !important;
+      letter-spacing: -0.02em !important;
+      font-size: clamp(24px, 3.5vw, 32px) !important;
+    }
+    body.page-join .compare-tabs {
+      gap: 6px !important;
+      padding: 4px !important;
+      background: #F1F5F9 !important;
+      border-radius: 100px !important;
+      display: inline-flex !important;
+      margin-bottom: 24px !important;
+    }
+    body.page-join .tab-btn {
+      padding: 8px 18px !important;
+      border: none !important;
+      background: transparent !important;
+      color: #475569 !important;
+      font-size: 12.5px !important;
+      font-weight: 500 !important;
+      border-radius: 100px !important;
+      transition: background .2s ease, color .2s ease !important;
+    }
+    body.page-join .tab-btn:hover:not(.active) {
+      color: #0A1430 !important;
+      background: rgba(15,23,42,0.04) !important;
+    }
+    body.page-join .tab-btn.active {
+      background: #FFFFFF !important;
+      color: #0A1430 !important;
+      box-shadow: 0 2px 8px rgba(15,23,42,0.08) !important;
+      border: none !important;
+    }
+    body.page-join .compare-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+    }
+    body.page-join .compare-table thead th {
+      background: transparent !important;
+      -webkit-background-clip: padding-box !important;
+      background-clip: padding-box !important;
+      -webkit-text-fill-color: #94A3B8 !important;
+      color: #94A3B8 !important;
+      font-size: 11px !important;
+      letter-spacing: .08em !important;
+      text-transform: uppercase !important;
+      font-weight: 600 !important;
+      padding: 16px 20px !important;
+      border-bottom: 1px solid rgba(15,23,42,0.08) !important;
+      text-align: center !important;
+    }
+    body.page-join .compare-table tbody td {
+      padding: 14px 20px !important;
+      border-bottom: 1px solid rgba(15,23,42,0.06) !important;
+      color: #0A1430 !important;
+      font-size: 13.5px !important;
+      text-align: center !important;
+    }
+    body.page-join .compare-table th:first-child,
+    body.page-join .compare-table td:first-child {
+      text-align: left !important;
+      color: #475569 !important;
+      font-weight: 500 !important;
+    }
+    body.page-join .compare-table tbody tr:nth-child(even) td {
+      background: rgba(241,245,249,0.5) !important;
+    }
+    body.page-join .compare-table tbody tr:hover td {
+      background: rgba(30,58,138,0.05) !important;
+    }
+    body.page-join .compare-table .tick {
+      background: none !important;
+      -webkit-background-clip: padding-box !important;
+      background-clip: padding-box !important;
+      -webkit-text-fill-color: #16A34A !important;
+      color: #16A34A !important;
+      font-size: 15px !important;
+    }
+    body.page-join .compare-table .cross {
+      -webkit-text-fill-color: #CBD5E1 !important;
+      color: #CBD5E1 !important;
+      font-size: 15px !important;
+    }
+
+    /* (5) Nav chatbar — dark blue outline */
+    .nav-chatbar {
+      border: 1.5px solid #1E3A8A !important;
+      box-shadow: 0 2px 10px rgba(30,58,138,0.10) !important;
+    }
+    .nav-chatbar:focus-within {
+      border-color: #0A1430 !important;
+      box-shadow: 0 0 0 3px rgba(30,58,138,0.16) !important;
+    }
+    body:has(section.hero) nav .nav-chatbar {
+      border: 1.5px solid #1E3A8A !important;
+    }
+
     /* Responsive hero padding */
     @media (max-width: 720px) {
       section.hero {
@@ -538,7 +681,15 @@
     targets.forEach(el => obs.observe(el));
   }
 
+  function tagPage() {
+    // Add a body class per page so CSS can target page-specific tweaks
+    const path = (window.location.pathname || '').toLowerCase();
+    const m = path.match(/dunper_([a-z]+)\.html/);
+    if (m && m[1]) document.body.classList.add('page-' + m[1]);
+  }
+
   function init() {
+    tagPage();
     injectStyles();
     wireChatbar();
     wireScrollAnim();
