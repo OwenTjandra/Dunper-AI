@@ -52,11 +52,21 @@ function validateBusiness(b) {
   }
   if (!Array.isArray(b.services)) return 'services must be an array.';
   for (const s of b.services) {
-    if (!s.name || typeof s.duration_minutes !== 'number' || !s.price) {
+    if (
+      !s ||
+      typeof s.name !== 'string' ||
+      !s.name.trim() ||
+      typeof s.duration_minutes !== 'number' ||
+      !Number.isFinite(s.duration_minutes) ||
+      s.duration_minutes <= 0 ||
+      typeof s.price !== 'string' ||
+      !s.price.trim()
+    ) {
       return 'Each service needs name, duration_minutes (number), and price.';
     }
   }
   if (!Array.isArray(b.booking_rules)) return 'booking_rules must be an array.';
+  if (!b.booking_rules.every(r => typeof r === 'string')) return 'booking_rules must contain only strings.';
   return null;
 }
 

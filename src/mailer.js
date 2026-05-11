@@ -14,6 +14,7 @@
  */
 
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 let transporter = null;
 let mailerMode = 'console';
@@ -85,8 +86,9 @@ this email — nothing happened to your account.
 }
 
 function generateCode() {
-  // 6-digit numeric code, leading zeros allowed
-  return String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+  // 6-digit numeric code, leading zeros allowed. Uses CSPRNG so codes are
+  // not predictable from V8's Math.random state.
+  return String(crypto.randomInt(0, 1000000)).padStart(6, '0');
 }
 
 function emailHint(email) {

@@ -88,11 +88,13 @@ const tools = [
 ];
 
 function findServiceIndex(business, name) {
+  if (typeof name !== 'string') return -1;
   const lower = name.toLowerCase();
   return business.services.findIndex(s => s.name.toLowerCase() === lower);
 }
 
 function executeTool(toolName, input, user) {
+  input = input && typeof input === 'object' ? input : {};
   const current = getBusiness();
 
   if (toolName === 'get_business') {
@@ -106,6 +108,9 @@ function executeTool(toolName, input, user) {
     if (!TOP_LEVEL_FIELDS.includes(input.field)) {
       return { error: `Unknown field "${input.field}".` };
     }
+    if (typeof input.value !== 'string' || !input.value.trim()) {
+      return { error: 'Field value must be a non-empty string.' };
+    }
     const previous = current[input.field];
     if (previous === input.value) {
       return { error: `${input.field} is already set to "${input.value}" — no change made.` };
@@ -113,6 +118,15 @@ function executeTool(toolName, input, user) {
     next[input.field] = input.value;
     note = `Set ${input.field} to "${input.value}" (was "${previous}")`;
   } else if (toolName === 'add_service') {
+    if (typeof input.name !== 'string' || !input.name.trim()) {
+      return { error: 'Service name is required.' };
+    }
+    if (!Number.isInteger(input.duration_minutes) || input.duration_minutes <= 0) {
+      return { error: 'Service duration must be a positive integer.' };
+    }
+    if (typeof input.price !== 'string' || !input.price.trim()) {
+      return { error: 'Service price is required.' };
+    }
     if (findServiceIndex(next, input.name) !== -1) {
       return { error: `A service named "${input.name}" already exists.` };
     }
@@ -123,25 +137,40 @@ function executeTool(toolName, input, user) {
     });
     note = `Added service "${input.name}" (${input.duration_minutes} min, ${input.price})`;
   } else if (toolName === 'update_service') {
+    if (typeof input.name !== 'string' || !input.name.trim()) {
+      return { error: 'Service name is required.' };
+    }
     const idx = findServiceIndex(next, input.name);
     if (idx === -1) return { error: `No service named "${input.name}".` };
     const svc = next.services[idx];
     const changes = [];
     if (input.new_name !== undefined && input.new_name !== svc.name) {
+      if (typeof input.new_name !== 'string' || !input.new_name.trim()) {
+        return { error: 'New service name must be a non-empty string.' };
+      }
       changes.push(`renamed to "${input.new_name}"`);
       svc.name = input.new_name;
     }
     if (input.duration_minutes !== undefined && input.duration_minutes !== svc.duration_minutes) {
+      if (!Number.isInteger(input.duration_minutes) || input.duration_minutes <= 0) {
+        return { error: 'Service duration must be a positive integer.' };
+      }
       changes.push(`duration ${input.duration_minutes} min`);
       svc.duration_minutes = input.duration_minutes;
     }
     if (input.price !== undefined && input.price !== svc.price) {
+      if (typeof input.price !== 'string' || !input.price.trim()) {
+        return { error: 'Service price must be a non-empty string.' };
+      }
       changes.push(`price ${input.price}`);
       svc.price = input.price;
     }
     if (changes.length === 0) return { error: `No actual changes specified for "${input.name}".` };
     note = `Updated service "${input.name}": ${changes.join(', ')}`;
   } else if (toolName === 'remove_service') {
+    if (typeof input.name !== 'string' || !input.name.trim()) {
+      return { error: 'Service name is required.' };
+    }
     const idx = findServiceIndex(next, input.name);
     if (idx === -1) return { error: `No service named "${input.name}".` };
     next.services.splice(idx, 1);
@@ -154,6 +183,7 @@ function executeTool(toolName, input, user) {
     next.booking_rules.push(input.rule.trim());
     note = `Added booking rule: "${input.rule.trim()}"`;
   } else if (toolName === 'remove_rule') {
+    if (typeof input.rule !== 'string' || !input.rule.trim()) return { error: 'Rule cannot be empty.' };
     const idx = next.booking_rules.findIndex(r => r === input.rule);
     if (idx === -1) return { error: `No rule matching "${input.rule}". Match must be exact.` };
     next.booking_rules.splice(idx, 1);

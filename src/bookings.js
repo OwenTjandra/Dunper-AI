@@ -20,7 +20,9 @@ function dayHours(business, dayOfWeek) {
 }
 
 function hmToMin(hm) {
+  if (!/^\d{2}:\d{2}$/.test(String(hm))) return NaN;
   const [h, m] = hm.split(':').map(Number);
+  if (h < 0 || h > 23 || m < 0 || m > 59) return NaN;
   return h * 60 + m;
 }
 
@@ -40,8 +42,23 @@ function findService(business, serviceName) {
   return (business.services || []).find(s => s.name === serviceName);
 }
 
+function parseLocalDate(dateStr) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr))) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  if (
+    d.getFullYear() !== year ||
+    d.getMonth() !== month - 1 ||
+    d.getDate() !== day
+  ) {
+    return null;
+  }
+  return d;
+}
+
 function isoForDateAndMinute(dateStr, minutes) {
-  const d = new Date(`${dateStr}T00:00:00`);
+  const d = parseLocalDate(dateStr);
+  if (!d) return null;
   d.setMinutes(d.getMinutes() + minutes);
   return d.toISOString();
 }
@@ -51,8 +68,11 @@ function getAvailableSlots(dateStr, serviceName) {
   const service = findService(business, serviceName);
   if (!service) return { error: 'Unknown service.' };
 
-  const target = new Date(`${dateStr}T00:00:00`);
-  if (Number.isNaN(target.getTime())) return { error: 'Invalid date.' };
+  const target = parseLocalDate(dateStr);
+  if (!target) return { error: 'Invalid date.' };
+  if (!Number.isFinite(service.duration_minutes) || service.duration_minutes <= 0) {
+    return { error: 'Invalid service duration.' };
+  }
 
   const now = new Date();
   const earliest = new Date(now.getTime() + MIN_LEAD_HOURS * 60 * 60 * 1000);
@@ -90,11 +110,14 @@ function bookSlot({ profileId, customerName, customerPhone, customerEmail, servi
   const business = getBusiness();
   const service = findService(business, serviceName);
   if (!service) return { error: 'Unknown service.', status: 400 };
+  if (!Number.isFinite(service.duration_minutes) || service.duration_minutes <= 0) {
+    return { error: 'Invalid service duration.', status: 400 };
+  }
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return { error: 'Invalid date format.', status: 400 };
-  if (!/^\d{2}:\d{2}$/.test(time)) return { error: 'Invalid time format.', status: 400 };
+  if (!parseLocalDate(dateStr)) return { error: 'Invalid date format.', status: 400 };
 
   const startMin = hmToMin(time);
+  if (!Number.isFinite(startMin)) return { error: 'Invalid time format.', status: 400 };
   const startsAt = isoForDateAndMinute(dateStr, startMin);
   const endsAt = isoForDateAndMinute(dateStr, startMin + service.duration_minutes);
 

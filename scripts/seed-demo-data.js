@@ -32,8 +32,19 @@ const {
 const DEMO_PREFIX = 'demo-seed-';
 const args = new Set(process.argv.slice(2));
 const RESET = args.has('--reset');
+const YES = args.has('--yes') || args.has('-y');
 
 // ---------- Optional reset ----------
+function requireResetConfirmation() {
+  if (!RESET || YES) return;
+  if (!process.stdin.isTTY) {
+    console.error('Refusing --reset without --yes in a non-interactive shell.');
+    process.exit(1);
+  }
+  console.error('Refusing --reset without explicit confirmation. Re-run with --reset --yes to delete previous demo rows.');
+  process.exit(1);
+}
+
 function reset() {
   console.log('🧹 Wiping previous demo rows...');
   const profileIds = db.prepare(
@@ -318,6 +329,7 @@ function seed() {
   console.log('🎉 Demo seed complete. Open http://localhost:3000/admin.html and http://localhost:3000/operator.html');
 }
 
+requireResetConfirmation();
 if (RESET) reset();
 if (alreadySeeded() && !RESET) {
   console.log('ℹ️  Demo data already present. Run with --reset to wipe and re-seed.');

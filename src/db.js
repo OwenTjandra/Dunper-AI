@@ -98,6 +98,7 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_bookings_starts_at ON bookings(starts_at);
   CREATE INDEX IF NOT EXISTS idx_bookings_profile ON bookings(profile_id);
+  CREATE INDEX IF NOT EXISTS idx_bookings_status_time ON bookings(status, starts_at, ends_at);
 
   CREATE TABLE IF NOT EXISTS customer_summaries (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -631,7 +632,10 @@ function getMetricsSnapshot() {
 
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 7);
-  const monthStart = new Date(); monthStart.setMonth(monthStart.getMonth() - 1);
+  // 30 days back instead of setMonth(-1) — the latter overflows on the
+  // 29th-31st of months whose previous month is shorter (e.g. Mar 31 →
+  // setMonth(1) → Feb 31 → "March 3"), corrupting "month" metrics.
+  const monthStart = new Date(); monthStart.setDate(monthStart.getDate() - 30);
 
   const todayBookings = db.prepare(`SELECT COUNT(*) AS n FROM bookings WHERE status != 'cancelled' AND starts_at >= ?`).get(todayStart.toISOString()).n;
   const weekBookings = db.prepare(`SELECT COUNT(*) AS n FROM bookings WHERE status != 'cancelled' AND starts_at >= ?`).get(weekStart.toISOString()).n;
@@ -804,7 +808,10 @@ function recordAnthropicUsage({ callSite, profileId, model, inputTokens, outputT
 function getUsageSnapshot() {
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 7);
-  const monthStart = new Date(); monthStart.setMonth(monthStart.getMonth() - 1);
+  // 30 days back instead of setMonth(-1) — the latter overflows on the
+  // 29th-31st of months whose previous month is shorter (e.g. Mar 31 →
+  // setMonth(1) → Feb 31 → "March 3"), corrupting "month" metrics.
+  const monthStart = new Date(); monthStart.setDate(monthStart.getDate() - 30);
 
   const totals = db.prepare(`
     SELECT

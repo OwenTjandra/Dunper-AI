@@ -43,7 +43,12 @@ async function askClaude(messages, systemPrompt, opts = {}) {
     system: buildSystem(systemPrompt),
     messages: messages,
   });
-  const text = response.content[0].text;
+  // Robust against responses where content[0] is a thinking/tool_use block
+  // or where content is empty (e.g. a degenerate streaming error).
+  const text = (response.content || [])
+    .filter(b => b.type === 'text')
+    .map(b => b.text || '')
+    .join('\n');
   const usage = response.usage || {};
   return {
     text,

@@ -72,7 +72,9 @@ require('./backup').startBackupSchedule();
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 30,
-  keyGenerator: (req, res) => req.cookies?.frontdesk_customer || ipKeyGenerator(req, res),
+  // Compose cookie + IP so a client can't bypass the limit by rotating
+  // its frontdesk_customer cookie. New cookie still costs an IP-bound slot.
+  keyGenerator: (req, res) => `${req.cookies?.frontdesk_customer || 'anon'}:${ipKeyGenerator(req, res)}`,
   message: { error: 'Too many messages — please slow down.' },
   standardHeaders: 'draft-7',
   legacyHeaders: false,
@@ -94,6 +96,8 @@ const adminApiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const SALES_STATUSES = new Set(['lead', 'demo_scheduled', 'demo_done', 'proposal_sent', 'active', 'churned', 'lost']);
+
 // Public marketing contact form — strict per-IP cap to deter spam bots.
 const contactLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -106,13 +110,49 @@ const contactLimiter = rateLimit({
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.set('trust proxy', 'loopback');
+// Behind Cloudflare Tunnel (production) the real client IP arrives via
+// X-Forwarded-For / CF-Connecting-IP, so we need to trust one hop. In dev
+// (no proxy) we still only trust loopback.
+app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : 'loopback');
 
 app.use(express.json({
+  limit: '1mb',
   verify: (req, _res, buf) => { req.rawBody = buf; },
 }));
 app.use(cookieParser());
 app.use(attachUser);
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
+function isUnsafeMethod(method) {
+  return !['GET', 'HEAD', 'OPTIONS'].includes(method);
+}
+
+function sameOrigin(req, origin) {
+  try {
+    const expected = `${req.protocol}://${req.get('host')}`;
+    return new URL(origin).origin === expected;
+  } catch {
+    return false;
+  }
+}
+
+app.use((req, res, next) => {
+  if (!isUnsafeMethod(req.method) || !req.user) return next();
+  const secFetchSite = req.get('sec-fetch-site');
+  if (secFetchSite === 'cross-site') {
+    return res.status(403).json({ error: 'Cross-site request blocked' });
+  }
+  const origin = req.get('origin');
+  if (origin && !sameOrigin(req, origin)) {
+    return res.status(403).json({ error: 'Cross-site request blocked' });
+  }
+  next();
+});
 
 app.use('/api/auth', authRouter);
 app.use('/api', adminApiLimiter);
@@ -238,14 +278,21 @@ app.post('/api/business/versions/:id/restore', requireBusinessOwner,(req, res) =
 app.post('/api/admin/chat', requireBusinessOwner,async (req, res) => {
   try {
     const { messages } = req.body;
-    if (!Array.isArray(messages) || messages.length === 0) {
+    if (!Array.isArray(messages) || messages.length === 0 || messages.length > 50) {
       return res.status(400).json({ error: 'messages array required' });
     }
-    const result = await runAdminChat(messages, req.user);
+    const normalized = messages.map(m => ({
+      role: m?.role,
+      content: typeof m?.content === 'string' ? m.content.slice(0, 8000) : '',
+    }));
+    if (normalized.some(m => !['user', 'assistant'].includes(m.role) || !m.content.trim())) {
+      return res.status(400).json({ error: 'messages must contain non-empty user/assistant text' });
+    }
+    const result = await runAdminChat(normalized, req.user);
     res.json(result);
   } catch (err) {
     console.error('Admin chat error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(502).json({ error: 'Admin chat is unavailable right now.' });
   }
 });
 
@@ -360,7 +407,7 @@ app.post('/chat', chatLimiter, attachCustomerProfile, (req, res) => {
       res.json({ reply });
     } catch (err) {
       console.error('Chat error:', err);
-      res.status(500).json({ error: err.message });
+      res.status(502).json({ error: 'The assistant is unavailable right now. Please try again in a moment.' });
     }
   });
 });
@@ -488,7 +535,7 @@ app.post('/api/customer/bookings', attachCustomerProfile, (req, res) => {
     console.error('[Email] booking confirmation failed:', err.message)
   ));
 
-  res.json({ ok: true, booking: result.booking });
+  res.status(201).json({ ok: true, booking: result.booking });
 });
 
 function syncBookingToGoogle(booking, profileId) {
@@ -547,7 +594,7 @@ app.post('/api/bookings', requireBusinessOwner,(req, res) => {
     console.error('[Email] booking confirmation failed:', err.message)
   ));
 
-  res.json({ ok: true, booking: result.booking });
+  res.status(201).json({ ok: true, booking: result.booking });
 });
 
 app.post('/api/bookings/:id/cancel', requireBusinessOwner,(req, res) => {
@@ -619,7 +666,7 @@ ${transcript}`;
     res.json({ summary: stored });
   } catch (err) {
     console.error('Summarize error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(502).json({ error: 'Summary generation is unavailable right now.' });
   }
 });
 
@@ -715,15 +762,21 @@ app.post('/api/operator/clients', requireFounder, (req, res) => {
   if (!b.businessName || !String(b.businessName).trim()) {
     return res.status(400).json({ error: 'businessName required' });
   }
+  const status = b.status || 'lead';
+  if (!SALES_STATUSES.has(status)) return res.status(400).json({ error: 'Invalid status' });
+  const mrrUsd = b.mrrUsd === '' || b.mrrUsd == null ? null : Number(b.mrrUsd);
+  if (mrrUsd !== null && (!Number.isFinite(mrrUsd) || mrrUsd < 0)) {
+    return res.status(400).json({ error: 'mrrUsd must be a non-negative number' });
+  }
   const created = createSalesClient({
     businessName: String(b.businessName).trim(),
     contactName: b.contactName ?? null,
     contactEmail: b.contactEmail ?? null,
     contactPhone: b.contactPhone ?? null,
     vertical: b.vertical ?? null,
-    status: b.status || 'lead',
+    status,
     plan: b.plan ?? null,
-    mrrUsd: b.mrrUsd ? Number(b.mrrUsd) : null,
+    mrrUsd,
     notes: b.notes ?? null,
     nextStep: b.nextStep ?? null,
     nextStepAt: b.nextStepAt ?? null,
@@ -737,8 +790,14 @@ app.patch('/api/operator/clients/:id', requireFounder, (req, res) => {
   const fields = {};
   const camel = ['businessName', 'contactName', 'contactEmail', 'contactPhone', 'vertical', 'status', 'plan', 'mrrUsd', 'notes', 'nextStep', 'nextStepAt'];
   for (const k of camel) if (k in (req.body || {})) fields[k] = req.body[k];
+  if (fields.status !== undefined && !SALES_STATUSES.has(fields.status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
   if (fields.mrrUsd != null && fields.mrrUsd !== '') fields.mrrUsd = Number(fields.mrrUsd);
   if (fields.mrrUsd === '') fields.mrrUsd = null;
+  if (fields.mrrUsd !== undefined && fields.mrrUsd !== null && (!Number.isFinite(fields.mrrUsd) || fields.mrrUsd < 0)) {
+    return res.status(400).json({ error: 'mrrUsd must be a non-negative number' });
+  }
   updateSalesClient(id, fields);
   res.json({ client: getSalesClient(id) });
 });
@@ -770,6 +829,9 @@ app.get('/api/integrations/google/callback', async (req, res) => {
   if (!req.user) {
     return res.redirect('/dunper_signin.html');
   }
+  if (req.user.role !== 'business_owner') {
+    return res.redirect('/operator.html');
+  }
   const { code, state, error } = req.query;
   if (error) {
     return res.redirect(`/admin.html?google=error&reason=${encodeURIComponent(String(error))}`);
@@ -784,7 +846,7 @@ app.get('/api/integrations/google/callback', async (req, res) => {
     res.redirect('/admin.html?google=connected');
   } catch (err) {
     console.error('Google OAuth callback failed:', err);
-    res.redirect(`/admin.html?google=error&reason=${encodeURIComponent(err.message)}`);
+    res.redirect('/admin.html?google=error&reason=oauth_failed');
   }
 });
 
@@ -797,7 +859,8 @@ app.get('/api/integrations/google/calendars', requireBusinessOwner,async (req, r
   try {
     res.json({ calendars: await googleIntegration.listCalendars() });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('[Google] list calendars failed:', err.message);
+    res.status(400).json({ error: 'Could not load Google calendars.' });
   }
 });
 
@@ -805,7 +868,8 @@ app.get('/api/integrations/google/sheets', requireBusinessOwner,async (req, res)
   try {
     res.json({ sheets: await googleIntegration.listSheets() });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('[Google] list sheets failed:', err.message);
+    res.status(400).json({ error: 'Could not load Google Sheets.' });
   }
 });
 
@@ -816,7 +880,8 @@ app.post('/api/integrations/google/sheets/create', requireBusinessOwner,async (r
     googleIntegration.selectSheet(sheet.id);
     res.json({ sheet });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('[Google] create sheet failed:', err.message);
+    res.status(400).json({ error: 'Could not create Google Sheet.' });
   }
 });
 
@@ -825,7 +890,8 @@ app.post('/api/integrations/google/reformat', requireBusinessOwner,async (req, r
     const result = await googleIntegration.reformatExistingTabs();
     res.json(result);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('[Google] reformat failed:', err.message);
+    res.status(400).json({ error: 'Could not reformat Google Sheet.' });
   }
 });
 
@@ -947,6 +1013,21 @@ function getLanAddresses() {
     .filter(i => i && i.family === 'IPv4' && !i.internal)
     .map(i => i.address);
 }
+
+app.use((req, res) => {
+  if (req.path.startsWith('/api/') || req.path.startsWith('/webhooks/')) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  res.status(404).sendFile(path.join(__dirname, '../website/dunper_home.html'));
+});
+
+app.use((err, req, res, _next) => {
+  console.error('[request error]', err);
+  if (res.headersSent) return;
+  const status = err.status || err.statusCode || 500;
+  const publicMessage = status >= 500 ? 'Internal server error' : (err.message || 'Bad request');
+  res.status(status).json({ error: publicMessage });
+});
 
 const server = app.listen(PORT, () => {
   console.log(`Configured for: ${getBusiness().name}`);

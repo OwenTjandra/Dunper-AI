@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const express = require('express');
+const { rateLimit } = require('express-rate-limit');
 const {
   findUserByUsername,
   createBusinessOwnerUser,
@@ -13,6 +14,18 @@ const {
   createSalesClient,
 } = require('./db');
 const { sendLoginCode, generateCode, emailHint } = require('./mailer');
+
+// Brute-force guard for auth endpoints. Without this, /login + /verify-2fa
+// are wide open — 1M-space 6-digit codes fall in well under an hour at
+// even modest request rates. 20 attempts / 15 min / IP is generous for
+// real humans and prohibitive for sprayers.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  message: { error: 'Too many auth attempts — try again in a few minutes.' },
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+});
 
 const SESSION_COOKIE = 'frontdesk_session';
 const PENDING_COOKIE = 'frontdesk_pending';
@@ -111,6 +124,19 @@ const requireBusinessOwner = requireRole('business_owner');
 
 const router = express.Router();
 
+// Throttle every auth path. /me is read-only and very chatty from admin.js,
+// so it's exempt — apply the limiter only to mutating endpoints.
+const THROTTLED_AUTH_PATHS = ['/login', '/signup', '/verify-2fa', '/resend-2fa', '/set-email'];
+router.use((req, res, next) => {
+  if (THROTTLED_AUTH_PATHS.includes(req.path)) return authLimiter(req, res, next);
+  next();
+});
+
+// Bcrypt cost-10 dummy hash — compared against on lookup misses so the
+// response time for "user doesn't exist" matches a real bcrypt verify.
+// Avoids username enumeration via timing side-channel.
+const DUMMY_BCRYPT_HASH = bcrypt.hashSync('dunper-timing-dummy', 10);
+
 // Step 1 — verify creds. If the user has 2FA on, mail a code and return
 // { step: 'verify', hint }. If not, log them straight in (legacy path —
 // the deploy checklist recommends getting everyone onto 2FA before launch).
@@ -121,7 +147,11 @@ router.post('/login', async (req, res) => {
   }
 
   const user = findUserByUsername(username);
-  const ok = user && bcrypt.compareSync(password, user.password_hash);
+  // Always do the bcrypt compare, even on lookup misses, so timing doesn't
+  // leak whether the username exists.
+  const compareHash = user ? user.password_hash : DUMMY_BCRYPT_HASH;
+  const passwordOk = bcrypt.compareSync(password, compareHash);
+  const ok = user && passwordOk;
   if (!ok) return res.status(401).json({ error: 'Invalid username or password' });
 
   // Dev escape hatch — DISABLE_2FA=1 in .env skips the email-code step

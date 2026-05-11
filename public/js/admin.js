@@ -71,7 +71,7 @@ async function loadMetrics() {
     setText('sm-month-bookings',     m.monthBookings ?? 0);
     setText('sm-conversion',         (m.conversionRate ?? 0) + '%');
     setText('sm-open-escalations',   m.openEscalations ?? 0);
-    setText('sm-top-service',        m.topService || '—');
+    setText('sm-top-service',        m.topService?.name || '—');
 
     // Alerts badge in sidebar (open escalations + open unanswered)
     const totalAlerts = (m.openEscalations || 0) + (m.openUnanswered || 0);

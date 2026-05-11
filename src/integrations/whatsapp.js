@@ -2,6 +2,7 @@ const crypto = require('crypto');
 
 const GRAPH_VERSION = 'v21.0';
 const MAX_MESSAGE_CHARS = 3900;
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 
 function isConfigured() {
   return Boolean(
@@ -98,6 +99,18 @@ async function sendText(toPhone, text) {
     text: { preview_url: false, body: truncate(text) },
   };
   const url = `https://graph.facebook.com/${GRAPH_VERSION}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
+  let lastError = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const result = await postJson(url, body);
+    if (result.ok) return result;
+    lastError = result;
+    if (!result.retryable || attempt === 2) break;
+    await delay(result.retryAfterMs || 250 * Math.pow(2, attempt));
+  }
+  return lastError || { ok: false, error: 'Unknown WhatsApp send failure' };
+}
+
+async function postJson(url, body) {
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -109,12 +122,24 @@ async function sendText(toPhone, text) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      return { ok: false, status: res.status, error: data?.error?.message || `HTTP ${res.status}`, raw: data };
+      const retryAfter = Number(res.headers.get('retry-after'));
+      return {
+        ok: false,
+        status: res.status,
+        retryable: RETRYABLE_STATUS.has(res.status),
+        retryAfterMs: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : null,
+        error: data?.error?.message || `HTTP ${res.status}`,
+        raw: data,
+      };
     }
     return { ok: true, raw: data };
   } catch (err) {
-    return { ok: false, error: err.message };
+    return { ok: false, retryable: true, error: err.message };
   }
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function truncate(text) {
