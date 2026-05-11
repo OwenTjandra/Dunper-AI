@@ -245,7 +245,16 @@
       pointer-events: none;
       z-index: 0;
     }
-    section.hero > * { position: relative; z-index: 1; }
+    /* lift only the content elements above the ::after fade.
+       Skip decorative absolute-positioned helpers (.hero-bg,
+       .hero-orb, .hero-grid, .scroll-cue) — forcing them to
+       position:relative would put the giant blurred orbs in
+       document flow and blow the hero up to 2000px+ tall. */
+    section.hero > *:not(.hero-bg):not(.hero-orb):not(.hero-grid):not(.scroll-cue) {
+      position: relative;
+      z-index: 1;
+    }
+    section.hero > .scroll-cue { z-index: 1; }
     section.hero h1,
     section.hero .hero-title {
       color: #F0F6FF !important;
