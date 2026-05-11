@@ -148,10 +148,11 @@
     /* ===== Animated blue ambient background =====
        Applied to pages that don't already have a dark <section class="hero">.
        Three drifting, blurred blue orbs sit on a fixed layer behind the page
-       content so the body gets a subtle, alive feel without distracting from
-       the cards/forms. */
+       content. We use isolation:isolate on the body so z-index:-1 reliably
+       puts the orbs BEHIND all body children (nav stays fixed, page sections
+       stay where the page CSS expects them, no extra empty space at top). */
     body.animated-bg {
-      position: relative;
+      isolation: isolate;
       background:
         radial-gradient(ellipse 60% 40% at 8% 12%, rgba(46,120,212,.08) 0%, transparent 60%),
         radial-gradient(ellipse 50% 35% at 92% 88%, rgba(15,112,240,.07) 0%, transparent 60%),
@@ -165,7 +166,7 @@
       border-radius: 50%;
       filter: blur(110px);
       pointer-events: none;
-      z-index: 0;
+      z-index: -1;
       opacity: .85;
       will-change: transform;
     }
@@ -203,8 +204,6 @@
       50%     { transform: translate3d(20vw, 28vh, 0) scale(1.18); }
       75%     { transform: translate3d(28vw, -22vh, 0) scale(1.04); }
     }
-    /* keep page content above the ambient orbs */
-    body.animated-bg > *:not(.ambient-orb) { position: relative; z-index: 1; }
     @media (prefers-reduced-motion: reduce) {
       body.animated-bg::before,
       body.animated-bg::after,
@@ -343,8 +342,11 @@
 
   function wireAmbientBg() {
     // Only apply the animated blue background to pages that DON'T already
-    // have a dark hero (home / about have their own dark gradient hero).
+    // have a dark hero (home / about have their own dark gradient hero) and
+    // don't already ship their own decorative background layer (signin has
+    // its own .bg-wrap with static orbs + grid that would clash).
     if (document.querySelector('section.hero')) return;
+    if (document.querySelector('.bg-wrap')) return;
     document.body.classList.add('animated-bg');
     // Insert a third floating orb (CSS pseudo-elements only give us two).
     if (!document.querySelector('.ambient-orb')) {
