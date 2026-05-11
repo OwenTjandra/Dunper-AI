@@ -15,14 +15,16 @@ compatibility_date = "2024-10-01"
 directory = "./website"
 not_found_handling = "single-page-application"
 
-# Custom domains — auto-attached once dunper.com DNS is on Cloudflare.
-# (If the domain isn't on this Cloudflare account yet, Cloudflare will
-# silently skip these routes; once you swap nameservers at GoDaddy and
-# Cloudflare detects the zone, the next push wires them up.)
-[[routes]]
-pattern = "dunper.com"
-custom_domain = true
-
-[[routes]]
-pattern = "www.dunper.com"
-custom_domain = true
+# Custom domains for dunper.com / www.dunper.com will be added here
+# AFTER you swap GoDaddy nameservers to Cloudflare and Cloudflare
+# detects the zone. Until then, leaving them in this file fails the
+# entire build. Uncomment + push once Cloudflare shows dunper.com as
+# "Active" in the Websites tab:
+#
+# [[routes]]
+# pattern = "dunper.com"
+# custom_domain = true
+#
+# [[routes]]
+# pattern = "www.dunper.com"
+# custom_domain = true
