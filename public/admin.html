@@ -228,7 +228,7 @@
       <div class="nav-item" data-page="calendar" onclick="navigate(this)"><i class="ti ti-calendar"></i> Calendar</div>
       <div class="nav-section-label">System</div>
       <div class="nav-item" data-page="ai-settings" onclick="navigate(this)"><i class="ti ti-settings-2"></i> AI Settings</div>
-      <div class="nav-item" data-page="alerts" onclick="navigate(this)"><i class="ti ti-bell"></i> Alerts <span class="nav-badge">3</span></div>
+      <div class="nav-item" data-page="alerts" onclick="navigate(this)"><i class="ti ti-bell"></i> Alerts <span class="nav-badge" id="alerts-badge" style="display:none;">0</span></div>
       <div class="nav-item" data-page="profile" onclick="navigate(this)"><i class="ti ti-user-circle"></i> Profile</div>
     </div>
     <div class="sidebar-footer">
@@ -268,28 +268,27 @@
           <div class="date-chip"><i class="ti ti-calendar-event" style="font-size:12px;"></i> <span id="today-date">Today</span></div>
         </div>
         <div class="kpi-row">
-          <div class="kpi-card"><div class="kpi-label">Daily Revenue</div><div class="kpi-value">$352,800</div><div class="kpi-tag up"><i class="ti ti-trending-up" style="font-size:11px;"></i> +12.4%</div><div class="kpi-accent-bar r"></div></div>
-          <div class="kpi-card"><div class="kpi-label">Total Conversations</div><div class="kpi-value">1,284</div><div class="kpi-tag up"><i class="ti ti-trending-up" style="font-size:11px;"></i> +8.1%</div><div class="kpi-accent-bar b"></div></div>
-          <div class="kpi-card"><div class="kpi-label">Conversion Rate</div><div class="kpi-value">34.2%</div><div class="kpi-tag dn"><i class="ti ti-trending-down" style="font-size:11px;"></i> -1.8%</div><div class="kpi-accent-bar o"></div></div>
-          <div class="kpi-card"><div class="kpi-label">Bookings Today</div><div class="kpi-value">87</div><div class="kpi-tag up"><i class="ti ti-trending-up" style="font-size:11px;"></i> +5.3%</div><div class="kpi-accent-bar g"></div></div>
+          <div class="kpi-card"><div class="kpi-label">Bookings This Week</div><div class="kpi-value" id="kpi-week-bookings">—</div><div class="kpi-tag up" id="kpi-week-tag" style="display:none;"></div><div class="kpi-accent-bar r"></div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Conversations</div><div class="kpi-value" id="kpi-conversations">—</div><div class="kpi-tag up" id="kpi-conv-tag" style="display:none;"></div><div class="kpi-accent-bar b"></div></div>
+          <div class="kpi-card"><div class="kpi-label">Conversion Rate</div><div class="kpi-value" id="kpi-conversion-rate">—</div><div class="kpi-tag up" id="kpi-cr-tag" style="display:none;"></div><div class="kpi-accent-bar o"></div></div>
+          <div class="kpi-card"><div class="kpi-label">Bookings Today</div><div class="kpi-value" id="kpi-bookings-today">—</div><div class="kpi-tag up" id="kpi-bt-tag" style="display:none;"></div><div class="kpi-accent-bar g"></div></div>
         </div>
         <div class="dash-grid">
           <div class="card">
             <div class="card-header">
-              <div><div class="card-title">Daily Revenue</div><div class="card-sub">Updated as of 3:00 PM</div></div>
+              <div><div class="card-title">Bookings this week</div><div class="card-sub" id="bookings-chart-sub">By day</div></div>
               <div class="period-pill"><button class="active">Weekly</button><button onclick="switchPeriod(this)">Monthly</button></div>
             </div>
             <div class="chart-wrap" style="height:200px;"><canvas id="revenueChart"></canvas></div>
+            <div id="revenue-empty" style="display:none;font-size:13px;color:var(--text-tertiary);text-align:center;padding:60px 0;">No bookings yet this week.</div>
           </div>
           <div class="card">
             <div class="card-header">
               <div class="card-title">Alerts</div>
               <div style="font-size:12px;color:var(--accent);cursor:pointer;" onclick="navigate(document.querySelector('[data-page=alerts]'))">View all →</div>
             </div>
-            <div class="alerts-list">
-              <div class="alert-item"><div class="alert-dot red"></div><div><div class="alert-text">Customer waiting for agent — escalation triggered</div><div class="alert-time">2 min ago</div></div></div>
-              <div class="alert-item"><div class="alert-dot yellow"></div><div><div class="alert-text">Double booking detected: Slot 14:00 Jun 11</div><div class="alert-time">18 min ago</div></div></div>
-              <div class="alert-item"><div class="alert-dot green"></div><div><div class="alert-text">3 new bookings confirmed this hour</div><div class="alert-time">1 hr ago</div></div></div>
+            <div class="alerts-list" id="dash-alerts-list">
+              <div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">Loading…</div>
             </div>
           </div>
         </div>
@@ -298,8 +297,8 @@
             <div class="card-header"><div><div class="card-title">Conversion Rate</div><div class="card-sub">Chats → Bookings</div></div></div>
             <div class="chart-wrap" style="height:180px;"><canvas id="convChart"></canvas></div>
             <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;font-size:12px;color:var(--text-secondary);">
-              <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#e8334a;display:inline-block;"></span>Converted 34%</span>
-              <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#e8e6e1;display:inline-block;"></span>Not converted 66%</span>
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#e8334a;display:inline-block;"></span>Converted <span id="conv-legend-converted">—</span></span>
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#e8e6e1;display:inline-block;"></span>Not converted <span id="conv-legend-not">—</span></span>
             </div>
           </div>
           <div class="card">
@@ -307,20 +306,15 @@
               <div class="card-title">Upcoming Bookings</div>
               <div class="period-pill"><button class="active">Week</button><button onclick="switchPeriod(this)">Month</button></div>
             </div>
-            <div class="bookings-list">
-              <div class="booking-row"><div><div class="booking-name">Priya Sharma</div><div class="booking-type">Hair Treatment · Jun 11</div></div><span class="booking-status status-confirmed">Confirmed</span></div>
-              <div class="booking-row"><div><div class="booking-name">Marcus Wells</div><div class="booking-type">Massage · Jun 12</div></div><span class="booking-status status-pending">Pending</span></div>
-              <div class="booking-row"><div><div class="booking-name">Sofia Chen</div><div class="booking-type">Facial · Jun 13</div></div><span class="booking-status status-confirmed">Confirmed</span></div>
-              <div class="booking-row"><div><div class="booking-name">Ethan Brooks</div><div class="booking-type">Consult · Jun 14</div></div><span class="booking-status status-cancelled">Cancelled</span></div>
+            <div class="bookings-list" id="upcoming-bookings-list">
+              <div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">Loading…</div>
             </div>
           </div>
         </div>
         <div class="card">
           <div class="card-header"><div class="card-title">Customer Sentiment</div><div class="card-sub">Based on chat feedback</div></div>
-          <div style="max-width:480px;">
-            <div class="sentiment-row"><div class="sentiment-label">Positive</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:68%;background:#3cb97a;"></div></div><div class="sentiment-pct">68%</div></div>
-            <div class="sentiment-row"><div class="sentiment-label">Neutral</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:22%;background:#f59e0b;"></div></div><div class="sentiment-pct">22%</div></div>
-            <div class="sentiment-row"><div class="sentiment-label">Negative</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:10%;background:var(--accent);"></div></div><div class="sentiment-pct">10%</div></div>
+          <div style="max-width:480px;" id="dash-sentiment">
+            <div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">No sentiment data yet — sentiment is captured when you summarize a chat from a customer profile.</div>
           </div>
         </div>
       </div>
@@ -339,13 +333,9 @@
         <div id="tab-customers">
           <div class="card">
             <table class="data-table">
-              <thead><tr><th>Customer Name</th><th>Phone</th><th>Email</th><th>Country</th><th>Total Visits</th><th>Preferred Service</th></tr></thead>
-              <tbody>
-                <tr><td>Priya Sharma</td><td>+44 7700 123456</td><td>priya@email.com</td><td>UK</td><td>12</td><td>Hair Treatment</td></tr>
-                <tr><td>Marcus Wells</td><td>+1 415 555 0171</td><td>marcus@email.com</td><td>USA</td><td>7</td><td>Massage</td></tr>
-                <tr><td>Sofia Chen</td><td>+65 9123 4567</td><td>sofia@email.com</td><td>SG</td><td>24</td><td>Facial</td></tr>
-                <tr><td>Ethan Brooks</td><td>+61 4 1234 5678</td><td>ethan@email.com</td><td>AU</td><td>3</td><td>Consultation</td></tr>
-                <tr><td>Yasmin Al-Amin</td><td>+971 50 123 4567</td><td>yasmin@email.com</td><td>UAE</td><td>18</td><td>Hair Treatment</td></tr>
+              <thead><tr><th>Customer Name</th><th>Phone</th><th>Email</th><th>Messages</th><th>Last seen</th><th>Last message</th></tr></thead>
+              <tbody id="customers-tbody">
+                <tr><td colspan="6" style="color:var(--text-tertiary);text-align:center;padding:24px 12px;">Loading…</td></tr>
               </tbody>
             </table>
           </div>
@@ -353,22 +343,18 @@
         <div id="tab-bookings" style="display:none;">
           <div class="card">
             <table class="data-table">
-              <thead><tr><th>Date</th><th>Full Name</th><th>Booking ID</th><th>Product Type</th><th>Status</th><th>Source</th></tr></thead>
-              <tbody>
-                <tr><td>Jun 11, 2026</td><td>Priya Sharma</td><td>#BK-7821</td><td>Hair Treatment</td><td><span class="booking-status status-confirmed">Confirmed</span></td><td>Chatbot</td></tr>
-                <tr><td>Jun 12, 2026</td><td>Marcus Wells</td><td>#BK-7822</td><td>Massage</td><td><span class="booking-status status-pending">Pending</span></td><td>Website</td></tr>
-                <tr><td>Jun 13, 2026</td><td>Sofia Chen</td><td>#BK-7823</td><td>Facial</td><td><span class="booking-status status-confirmed">Confirmed</span></td><td>Chatbot</td></tr>
-                <tr><td>Jun 14, 2026</td><td>Ethan Brooks</td><td>#BK-7824</td><td>Consultation</td><td><span class="booking-status status-cancelled">Cancelled</span></td><td>Instagram</td></tr>
-                <tr><td>Jun 15, 2026</td><td>Yasmin Al-Amin</td><td>#BK-7825</td><td>Hair Treatment</td><td><span class="booking-status status-confirmed">Confirmed</span></td><td>Chatbot</td></tr>
+              <thead><tr><th>Date</th><th>Full Name</th><th>Booking ID</th><th>Service</th><th>Status</th><th>Source</th></tr></thead>
+              <tbody id="bookings-tbody">
+                <tr><td colspan="6" style="color:var(--text-tertiary);text-align:center;padding:24px 12px;">Loading…</td></tr>
               </tbody>
             </table>
           </div>
         </div>
         <div id="tab-sales" style="display:none;">
           <div class="sub-metric">
-            <div class="sm-card"><div class="sm-label">Daily Revenue</div><div class="sm-val">$352,800</div></div>
-            <div class="sm-card"><div class="sm-label">Avg Order Value</div><div class="sm-val">$148</div></div>
-            <div class="sm-card"><div class="sm-label">Best Seller</div><div class="sm-val" style="font-size:16px;">Hair Treatment</div></div>
+            <div class="sm-card"><div class="sm-label">Bookings (month)</div><div class="sm-val" id="sm-month-bookings">—</div></div>
+            <div class="sm-card"><div class="sm-label">Conversion rate</div><div class="sm-val" id="sm-conversion">—</div></div>
+            <div class="sm-card"><div class="sm-label">Top service</div><div class="sm-val" id="sm-top-service" style="font-size:16px;">—</div></div>
           </div>
           <div class="dash-grid">
             <div class="card">
@@ -376,34 +362,30 @@
               <div class="chart-wrap" style="height:220px;"><canvas id="salesConvChart"></canvas></div>
             </div>
             <div class="card">
-              <div class="card-header"><div class="card-title">Daily Revenue Curve</div></div>
+              <div class="card-header"><div class="card-title">Bookings — last 7 days</div></div>
               <div class="chart-wrap" style="height:220px;"><canvas id="revCurveChart"></canvas></div>
+              <div id="rev-curve-empty" style="display:none;font-size:13px;color:var(--text-tertiary);text-align:center;padding:60px 0;">No bookings yet.</div>
             </div>
           </div>
         </div>
         <div id="tab-chatbot" style="display:none;">
           <div class="sub-metric" style="grid-template-columns:repeat(4,1fr);">
-            <div class="sm-card"><div class="sm-label">Total Conversations</div><div class="sm-val">1,284</div></div>
-            <div class="sm-card"><div class="sm-label">Successful Bookings</div><div class="sm-val">439</div></div>
-            <div class="sm-card"><div class="sm-label">Avg Response Time</div><div class="sm-val">1.4s</div></div>
-            <div class="sm-card"><div class="sm-label">Failed Conversations</div><div class="sm-val">62</div></div>
+            <div class="sm-card"><div class="sm-label">Total Conversations</div><div class="sm-val" id="sm-total-convs">—</div></div>
+            <div class="sm-card"><div class="sm-label">Customer Messages</div><div class="sm-val" id="sm-customer-msgs">—</div></div>
+            <div class="sm-card"><div class="sm-label">Confirmed Bookings</div><div class="sm-val" id="sm-confirmed-bookings">—</div></div>
+            <div class="sm-card"><div class="sm-label">Open Escalations</div><div class="sm-val" id="sm-open-escalations">—</div></div>
           </div>
           <div class="dash-grid">
             <div class="card">
               <div class="card-header"><div class="card-title">Customer Sentiment</div></div>
               <div class="chart-wrap" style="height:200px;"><canvas id="sentChart"></canvas></div>
-              <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;font-size:12px;color:var(--text-secondary);">
-                <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#3cb97a;display:inline-block;"></span>Positive 68%</span>
-                <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#f59e0b;display:inline-block;"></span>Neutral 22%</span>
-                <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#e8334a;display:inline-block;"></span>Negative 10%</span>
-              </div>
+              <div id="sent-chart-legend" style="display:none;justify-content:center;gap:16px;margin-top:12px;font-size:12px;color:var(--text-secondary);"></div>
+              <div id="sent-chart-empty" style="font-size:13px;color:var(--text-tertiary);text-align:center;padding:40px 0;">No sentiment data yet.</div>
             </div>
             <div class="card">
               <div class="card-header"><div class="card-title">Escalation Breakdown</div></div>
-              <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
-                <div class="sentiment-row"><div class="sentiment-label">To Agent</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:55%;background:#3b82f6;"></div></div><div class="sentiment-pct">55%</div></div>
-                <div class="sentiment-row"><div class="sentiment-label">Unanswered</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:30%;background:#f59e0b;"></div></div><div class="sentiment-pct">30%</div></div>
-                <div class="sentiment-row"><div class="sentiment-label">Failed</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:15%;background:var(--accent);"></div></div><div class="sentiment-pct">15%</div></div>
+              <div id="escalation-breakdown" style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+                <div style="font-size:13px;color:var(--text-tertiary);">Loading…</div>
               </div>
             </div>
           </div>
@@ -445,11 +427,9 @@
         </div>
         <div style="margin-top:20px;">
           <div class="card">
-            <div class="card-header"><div class="card-title">Today's Bookings — Jun 10</div></div>
-            <div class="bookings-list">
-              <div class="booking-row"><div><div class="booking-name">10:00 AM · Priya Sharma</div><div class="booking-type">Hair Treatment · 60 min</div></div><span class="booking-status status-confirmed">Confirmed</span></div>
-              <div class="booking-row"><div><div class="booking-name">2:00 PM · Sofia Chen</div><div class="booking-type">Facial · 45 min</div></div><span class="booking-status status-confirmed">Confirmed</span></div>
-              <div class="booking-row"><div><div class="booking-name">4:30 PM · Marcus Wells</div><div class="booking-type">Massage · 90 min</div></div><span class="booking-status status-pending">Pending</span></div>
+            <div class="card-header"><div class="card-title" id="calendar-today-title">Today's Bookings</div></div>
+            <div class="bookings-list" id="calendar-today-list">
+              <div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">Loading…</div>
             </div>
           </div>
         </div>
@@ -513,18 +493,14 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
           <div class="card">
             <div class="card-header"><div class="card-title">Chats with Customers</div></div>
-            <div class="alerts-list">
-              <div class="alert-item"><div class="alert-dot red"></div><div><div class="alert-text">Customer waiting for agent — urgent escalation</div><div class="alert-time">2 min ago · <span style="color:var(--accent);cursor:pointer;">View chat →</span></div></div></div>
-              <div class="alert-item"><div class="alert-dot yellow"></div><div><div class="alert-text">Unanswered question detected in session #4821</div><div class="alert-time">15 min ago</div></div></div>
-              <div class="alert-item"><div class="alert-dot green"></div><div><div class="alert-text">Yasmin Al-Amin completed booking via chat</div><div class="alert-time">32 min ago</div></div></div>
+            <div class="alerts-list" id="alerts-chats-list">
+              <div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">Loading…</div>
             </div>
           </div>
           <div class="card">
             <div class="card-header"><div class="card-title">Bookings</div></div>
-            <div class="alerts-list">
-              <div class="alert-item"><div class="alert-dot green"></div><div><div class="alert-text">Coming up: 3 bookings tomorrow, Jun 11</div><div class="alert-time">Scheduled</div></div></div>
-              <div class="alert-item"><div class="alert-dot red"></div><div><div class="alert-text">Cancellation: Ethan Brooks — Jun 14 consultation</div><div class="alert-time">1 hr ago</div></div></div>
-              <div class="alert-item"><div class="alert-dot yellow"></div><div><div class="alert-text">Double booking conflict: Slot 14:00, Jun 11</div><div class="alert-time">18 min ago</div></div></div>
+            <div class="alerts-list" id="alerts-bookings-list">
+              <div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">Loading…</div>
             </div>
           </div>
         </div>
@@ -588,6 +564,8 @@
 
 <script>
   const chartsInit = {};
+  const chartInstances = {};
+  let dashboardData = null;
 
   function navigate(el) {
     const page = el.dataset.page;
@@ -617,35 +595,161 @@
     btn.classList.add('active');
   }
 
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  }
+  function fmtDateLong(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  function fmtTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+  function relativeTime(iso) {
+    if (!iso) return '';
+    const t = new Date(iso).getTime();
+    if (Number.isNaN(t)) return '';
+    const diffMs = Date.now() - t;
+    const m = Math.round(diffMs / 60000);
+    if (m < 1) return 'Just now';
+    if (m < 60) return m + ' min ago';
+    const h = Math.round(m / 60);
+    if (h < 24) return h + ' hr ago';
+    const d = Math.round(h / 24);
+    return d + ' day' + (d === 1 ? '' : 's') + ' ago';
+  }
+  function statusClass(s) {
+    if (s === 'confirmed') return 'status-confirmed';
+    if (s === 'cancelled') return 'status-cancelled';
+    return 'status-pending';
+  }
+  function capitalize(s) { return s ? s[0].toUpperCase() + s.slice(1) : ''; }
+
   function initCharts() {
+    if (!dashboardData) return;
+    const m = dashboardData.metrics || {};
+    const bookings = dashboardData.bookings || [];
+
+    // Bookings-this-week bar chart
     const rev = document.getElementById('revenueChart');
     if (rev && !chartsInit.rev && rev.offsetParent !== null) {
-      chartsInit.rev = true;
-      new Chart(rev, {
-        type: 'bar',
-        data: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets: [{ label: 'Revenue', data: [280000,312000,295000,340000,385000,420000,352800], backgroundColor: (ctx) => ctx.dataIndex === 6 ? '#e8334a' : '#f4f3f0', borderRadius: 6, borderSkipped: false }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9c9a94' } }, y: { grid: { color: '#f4f3f0' }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9c9a94', callback: v => '$' + Math.round(v/1000) + 'k' } } } }
-      });
+      const today = new Date();
+      const labels = [];
+      const values = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        labels.push(d.toLocaleDateString('en-GB', { weekday: 'short' }));
+        const dayStart = new Date(d); dayStart.setHours(0,0,0,0);
+        const dayEnd = new Date(d); dayEnd.setHours(23,59,59,999);
+        const count = bookings.filter(b => {
+          if (b.status === 'cancelled') return false;
+          const t = new Date(b.starts_at).getTime();
+          return t >= dayStart.getTime() && t <= dayEnd.getTime();
+        }).length;
+        values.push(count);
+      }
+      const total = values.reduce((a, b) => a + b, 0);
+      if (total === 0) {
+        rev.style.display = 'none';
+        const empty = document.getElementById('revenue-empty');
+        if (empty) empty.style.display = 'block';
+      } else {
+        chartsInit.rev = true;
+        chartInstances.rev = new Chart(rev, {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Bookings', data: values, backgroundColor: (ctx) => ctx.dataIndex === values.length - 1 ? '#e8334a' : '#f4f3f0', borderRadius: 6, borderSkipped: false }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9c9a94' } }, y: { beginAtZero: true, grid: { color: '#f4f3f0' }, ticks: { stepSize: 1, font: { family: 'DM Sans', size: 11 }, color: '#9c9a94' } } } }
+        });
+      }
     }
+
+    // Conversion doughnut on dashboard
     const conv = document.getElementById('convChart');
     if (conv && !chartsInit.conv && conv.offsetParent !== null) {
+      const rate = Math.max(0, Math.min(100, Number(m.conversionRate) || 0));
       chartsInit.conv = true;
-      new Chart(conv, { type: 'doughnut', data: { labels: ['Converted','Not converted'], datasets: [{ data: [34,66], backgroundColor: ['#e8334a','#e8e6e1'], borderWidth: 0, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false } } } });
+      chartInstances.conv = new Chart(conv, { type: 'doughnut', data: { labels: ['Converted','Not converted'], datasets: [{ data: [rate, 100 - rate], backgroundColor: ['#e8334a','#e8e6e1'], borderWidth: 0, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false } } } });
+      const cl = document.getElementById('conv-legend-converted'); if (cl) cl.textContent = rate + '%';
+      const nl = document.getElementById('conv-legend-not'); if (nl) nl.textContent = (100 - rate) + '%';
     }
+
+    // Sales tab — conversion doughnut
     const salesConv = document.getElementById('salesConvChart');
     if (salesConv && !chartsInit.salesConv && salesConv.offsetParent !== null) {
+      const rate = Math.max(0, Math.min(100, Number(m.conversionRate) || 0));
       chartsInit.salesConv = true;
-      new Chart(salesConv, { type: 'doughnut', data: { labels: ['Converted','Browsed only'], datasets: [{ data: [34,66], backgroundColor: ['#e8334a','#e8e6e1'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } } });
+      chartInstances.salesConv = new Chart(salesConv, { type: 'doughnut', data: { labels: ['Converted','Browsed only'], datasets: [{ data: [rate, 100 - rate], backgroundColor: ['#e8334a','#e8e6e1'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } } });
     }
+
+    // Sales tab — bookings last 7 days line
     const revCurve = document.getElementById('revCurveChart');
     if (revCurve && !chartsInit.revCurve && revCurve.offsetParent !== null) {
-      chartsInit.revCurve = true;
-      new Chart(revCurve, { type: 'line', data: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets: [{ label: 'Revenue', data: [280000,312000,295000,340000,385000,420000,352800], borderColor: '#e8334a', backgroundColor: 'rgba(232,51,74,0.06)', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#e8334a', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9c9a94' } }, y: { grid: { color: '#f4f3f0' }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9c9a94', callback: v => '$' + Math.round(v/1000) + 'k' } } } } });
+      const today = new Date();
+      const labels = [];
+      const values = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        labels.push(d.toLocaleDateString('en-GB', { weekday: 'short' }));
+        const dayStart = new Date(d); dayStart.setHours(0,0,0,0);
+        const dayEnd = new Date(d); dayEnd.setHours(23,59,59,999);
+        const count = bookings.filter(b => {
+          if (b.status === 'cancelled') return false;
+          const t = new Date(b.starts_at).getTime();
+          return t >= dayStart.getTime() && t <= dayEnd.getTime();
+        }).length;
+        values.push(count);
+      }
+      const total = values.reduce((a, b) => a + b, 0);
+      if (total === 0) {
+        revCurve.style.display = 'none';
+        const empty = document.getElementById('rev-curve-empty');
+        if (empty) empty.style.display = 'block';
+      } else {
+        chartsInit.revCurve = true;
+        chartInstances.revCurve = new Chart(revCurve, { type: 'line', data: { labels, datasets: [{ label: 'Bookings', data: values, borderColor: '#e8334a', backgroundColor: 'rgba(232,51,74,0.06)', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#e8334a', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9c9a94' } }, y: { beginAtZero: true, grid: { color: '#f4f3f0' }, ticks: { stepSize: 1, font: { family: 'DM Sans', size: 11 }, color: '#9c9a94' } } } } });
+      }
     }
+
+    // Sentiment chart
     const sent = document.getElementById('sentChart');
     if (sent && !chartsInit.sent && sent.offsetParent !== null) {
-      chartsInit.sent = true;
-      new Chart(sent, { type: 'doughnut', data: { labels: ['Positive','Neutral','Negative'], datasets: [{ data: [68,22,10], backgroundColor: ['#3cb97a','#f59e0b','#e8334a'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false } } } });
+      const rows = m.sentimentBreakdown || [];
+      if (rows.length === 0) {
+        sent.style.display = 'none';
+        const e = document.getElementById('sent-chart-empty'); if (e) e.style.display = 'block';
+        const l = document.getElementById('sent-chart-legend'); if (l) l.style.display = 'none';
+      } else {
+        const map = { positive: 0, neutral: 0, negative: 0, frustrated: 0 };
+        rows.forEach(r => { if (r.sentiment in map) map[r.sentiment] = r.n; });
+        const labels = ['Positive','Neutral','Negative'];
+        const data = [map.positive, map.neutral, map.negative + map.frustrated];
+        const total = data.reduce((a, b) => a + b, 0) || 1;
+        chartsInit.sent = true;
+        chartInstances.sent = new Chart(sent, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: ['#3cb97a','#f59e0b','#e8334a'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false } } } });
+        const e = document.getElementById('sent-chart-empty'); if (e) e.style.display = 'none';
+        const legend = document.getElementById('sent-chart-legend');
+        if (legend) {
+          legend.style.display = 'flex';
+          legend.innerHTML = `
+            <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#3cb97a;display:inline-block;"></span>Positive ${Math.round(data[0]/total*100)}%</span>
+            <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#f59e0b;display:inline-block;"></span>Neutral ${Math.round(data[1]/total*100)}%</span>
+            <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#e8334a;display:inline-block;"></span>Negative ${Math.round(data[2]/total*100)}%</span>`;
+        }
+      }
     }
   }
 
@@ -653,6 +757,8 @@
     const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
     const el = document.getElementById('today-date');
     if (el) el.textContent = new Date().toLocaleDateString('en-GB', opts);
+    const todayTitle = document.getElementById('calendar-today-title');
+    if (todayTitle) todayTitle.textContent = "Today's Bookings — " + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   }
 
   async function hydrateUser() {
@@ -664,13 +770,288 @@
       const initial = (username[0] || 'U').toUpperCase();
       const set = (id, val, prop) => { const el = document.getElementById(id); if (el) { if (prop === 'value') el.value = val; else el.textContent = val; } };
       const greet = document.getElementById('greeting');
-      if (greet) greet.innerHTML = 'Hello, ' + username + '. 👋';
+      if (greet) greet.innerHTML = 'Hello, ' + escapeHtml(username) + '. 👋';
       set('sidebar-username', username);
       set('sidebar-avatar', initial);
       set('profile-avatar', initial);
       set('profile-name', username);
       set('profile-fullname', username, 'value');
     } catch (e) { /* leave defaults */ }
+  }
+
+  function renderKPIs(metrics) {
+    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setText('kpi-week-bookings', metrics.weekBookings != null ? metrics.weekBookings : '—');
+    setText('kpi-conversations', metrics.conversations != null ? metrics.conversations.toLocaleString() : '—');
+    setText('kpi-conversion-rate', metrics.conversionRate != null ? metrics.conversionRate + '%' : '—');
+    setText('kpi-bookings-today', metrics.todayBookings != null ? metrics.todayBookings : '—');
+  }
+
+  function renderUpcomingBookings(bookings) {
+    const list = document.getElementById('upcoming-bookings-list');
+    if (!list) return;
+    const now = Date.now();
+    const upcoming = bookings
+      .filter(b => b.status !== 'cancelled' && new Date(b.starts_at).getTime() >= now - 60000)
+      .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))
+      .slice(0, 6);
+    if (upcoming.length === 0) {
+      list.innerHTML = '<div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">No upcoming bookings.</div>';
+      return;
+    }
+    list.innerHTML = upcoming.map(b => `
+      <div class="booking-row">
+        <div>
+          <div class="booking-name">${escapeHtml(b.customer_name || 'Unknown')}</div>
+          <div class="booking-type">${escapeHtml(b.service_name || '')} · ${escapeHtml(fmtDate(b.starts_at))}</div>
+        </div>
+        <span class="booking-status ${statusClass(b.status)}">${escapeHtml(capitalize(b.status || 'pending'))}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderDashAlerts(escalations, unanswered, bookings) {
+    const list = document.getElementById('dash-alerts-list');
+    if (!list) return;
+    const items = [];
+    escalations.slice(0, 3).forEach(e => {
+      items.push({ dot: 'red', text: `Customer waiting for agent: ${escapeHtml(e.customer_name || 'unknown')}`, time: relativeTime(e.created_at) });
+    });
+    unanswered.slice(0, 2).forEach(u => {
+      items.push({ dot: 'yellow', text: `Unanswered question — ${escapeHtml((u.question || '').slice(0, 80))}`, time: relativeTime(u.created_at) });
+    });
+    const recentConfirmed = bookings
+      .filter(b => b.status !== 'cancelled')
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, 2);
+    recentConfirmed.forEach(b => {
+      items.push({ dot: 'green', text: `Booking confirmed: ${escapeHtml(b.customer_name || '')} — ${escapeHtml(b.service_name || '')}`, time: relativeTime(b.created_at) });
+    });
+    if (items.length === 0) {
+      list.innerHTML = '<div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">No alerts.</div>';
+      return;
+    }
+    list.innerHTML = items.slice(0, 5).map(it => `
+      <div class="alert-item">
+        <div class="alert-dot ${it.dot}"></div>
+        <div><div class="alert-text">${it.text}</div><div class="alert-time">${escapeHtml(it.time)}</div></div>
+      </div>
+    `).join('');
+
+    const badge = document.getElementById('alerts-badge');
+    if (badge) {
+      const count = escalations.length + unanswered.length;
+      if (count > 0) { badge.style.display = 'inline-block'; badge.textContent = count; }
+      else badge.style.display = 'none';
+    }
+  }
+
+  function renderSentiment(metrics) {
+    const wrap = document.getElementById('dash-sentiment');
+    if (!wrap) return;
+    const rows = metrics.sentimentBreakdown || [];
+    if (rows.length === 0) {
+      wrap.innerHTML = '<div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">No sentiment data yet — sentiment is captured when you summarize a chat from a customer profile.</div>';
+      return;
+    }
+    const map = { positive: 0, neutral: 0, negative: 0, frustrated: 0 };
+    rows.forEach(r => { if (r.sentiment in map) map[r.sentiment] = r.n; });
+    const negative = map.negative + map.frustrated;
+    const total = map.positive + map.neutral + negative || 1;
+    const pct = n => Math.round(n / total * 100);
+    wrap.innerHTML = `
+      <div class="sentiment-row"><div class="sentiment-label">Positive</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:${pct(map.positive)}%;background:#3cb97a;"></div></div><div class="sentiment-pct">${pct(map.positive)}%</div></div>
+      <div class="sentiment-row"><div class="sentiment-label">Neutral</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:${pct(map.neutral)}%;background:#f59e0b;"></div></div><div class="sentiment-pct">${pct(map.neutral)}%</div></div>
+      <div class="sentiment-row"><div class="sentiment-label">Negative</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:${pct(negative)}%;background:var(--accent);"></div></div><div class="sentiment-pct">${pct(negative)}%</div></div>
+    `;
+  }
+
+  function renderCustomerTable(profiles) {
+    const tbody = document.getElementById('customers-tbody');
+    if (!tbody) return;
+    if (!profiles.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-tertiary);text-align:center;padding:24px 12px;">No customer profiles yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = profiles.map(p => `
+      <tr>
+        <td>${escapeHtml(p.name || '—')}</td>
+        <td>${escapeHtml(p.phone || '—')}</td>
+        <td>${escapeHtml(p.email || '—')}</td>
+        <td>${p.message_count != null ? p.message_count : '—'}</td>
+        <td>${escapeHtml(fmtDateLong(p.last_seen_at))}</td>
+        <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml((p.last_message || '').slice(0, 60))}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderBookingTable(bookings) {
+    const tbody = document.getElementById('bookings-tbody');
+    if (!tbody) return;
+    if (!bookings.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-tertiary);text-align:center;padding:24px 12px;">No bookings yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = bookings.map(b => `
+      <tr>
+        <td>${escapeHtml(fmtDateLong(b.starts_at))}</td>
+        <td>${escapeHtml(b.customer_name || '—')}</td>
+        <td>#BK-${b.id}</td>
+        <td>${escapeHtml(b.service_name || '—')}</td>
+        <td><span class="booking-status ${statusClass(b.status)}">${escapeHtml(capitalize(b.status || 'pending'))}</span></td>
+        <td>${escapeHtml(b.source ? capitalize(b.source) : '—')}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderSalesTab(metrics) {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('sm-month-bookings', metrics.monthBookings != null ? metrics.monthBookings : '—');
+    set('sm-conversion', metrics.conversionRate != null ? metrics.conversionRate + '%' : '—');
+    set('sm-top-service', metrics.topService && metrics.topService.name ? metrics.topService.name : '—');
+  }
+
+  function renderChatbotTab(metrics) {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('sm-total-convs', metrics.conversations != null ? metrics.conversations.toLocaleString() : '—');
+    set('sm-customer-msgs', metrics.customerMessages != null ? metrics.customerMessages.toLocaleString() : '—');
+    set('sm-confirmed-bookings', metrics.totalBookings != null ? metrics.totalBookings : '—');
+    set('sm-open-escalations', metrics.openEscalations != null ? metrics.openEscalations : '—');
+
+    const wrap = document.getElementById('escalation-breakdown');
+    if (wrap) {
+      const open = metrics.openEscalations || 0;
+      const unanswered = metrics.openUnanswered || 0;
+      if (open === 0 && unanswered === 0) {
+        wrap.innerHTML = '<div style="font-size:13px;color:var(--text-tertiary);">No open escalations or unanswered questions.</div>';
+      } else {
+        const total = open + unanswered || 1;
+        const pct = n => Math.round(n / total * 100);
+        wrap.innerHTML = `
+          <div class="sentiment-row"><div class="sentiment-label">To agent</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:${pct(open)}%;background:#3b82f6;"></div></div><div class="sentiment-pct">${open}</div></div>
+          <div class="sentiment-row"><div class="sentiment-label">Unanswered</div><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:${pct(unanswered)}%;background:#f59e0b;"></div></div><div class="sentiment-pct">${unanswered}</div></div>
+        `;
+      }
+    }
+  }
+
+  function renderAlertsPage(escalations, unanswered, bookings) {
+    const chatsList = document.getElementById('alerts-chats-list');
+    if (chatsList) {
+      const items = [];
+      escalations.forEach(e => {
+        items.push({ dot: 'red', text: `Customer waiting for agent: ${escapeHtml(e.customer_name || 'unknown')} — ${escapeHtml((e.reason || 'Requested from chat').slice(0, 80))}`, time: relativeTime(e.created_at) });
+      });
+      unanswered.forEach(u => {
+        items.push({ dot: 'yellow', text: `Unanswered: ${escapeHtml((u.question || '').slice(0, 100))}`, time: relativeTime(u.created_at) });
+      });
+      if (items.length === 0) {
+        chatsList.innerHTML = '<div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">No chat alerts.</div>';
+      } else {
+        chatsList.innerHTML = items.slice(0, 10).map(it => `
+          <div class="alert-item">
+            <div class="alert-dot ${it.dot}"></div>
+            <div><div class="alert-text">${it.text}</div><div class="alert-time">${escapeHtml(it.time)}</div></div>
+          </div>
+        `).join('');
+      }
+    }
+
+    const bookingsList = document.getElementById('alerts-bookings-list');
+    if (bookingsList) {
+      const items = [];
+      const upcoming = bookings.filter(b => b.status !== 'cancelled' && new Date(b.starts_at).getTime() >= Date.now()).slice(0, 3);
+      const cancelled = bookings.filter(b => b.status === 'cancelled').slice(0, 3);
+      upcoming.forEach(b => {
+        items.push({ dot: 'green', text: `Upcoming: ${escapeHtml(b.customer_name || '')} — ${escapeHtml(b.service_name || '')} (${escapeHtml(fmtDateLong(b.starts_at))})`, time: 'Scheduled' });
+      });
+      cancelled.forEach(b => {
+        items.push({ dot: 'red', text: `Cancellation: ${escapeHtml(b.customer_name || '')} — ${escapeHtml(b.service_name || '')}`, time: relativeTime(b.created_at) });
+      });
+      if (items.length === 0) {
+        bookingsList.innerHTML = '<div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">No booking alerts.</div>';
+      } else {
+        bookingsList.innerHTML = items.map(it => `
+          <div class="alert-item">
+            <div class="alert-dot ${it.dot}"></div>
+            <div><div class="alert-text">${it.text}</div><div class="alert-time">${escapeHtml(it.time)}</div></div>
+          </div>
+        `).join('');
+      }
+    }
+  }
+
+  function renderCalendarToday(bookings) {
+    const list = document.getElementById('calendar-today-list');
+    if (!list) return;
+    const dayStart = new Date(); dayStart.setHours(0,0,0,0);
+    const dayEnd = new Date(); dayEnd.setHours(23,59,59,999);
+    const today = bookings
+      .filter(b => b.status !== 'cancelled')
+      .filter(b => {
+        const t = new Date(b.starts_at).getTime();
+        return t >= dayStart.getTime() && t <= dayEnd.getTime();
+      })
+      .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+    if (today.length === 0) {
+      list.innerHTML = '<div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">No bookings today.</div>';
+      return;
+    }
+    list.innerHTML = today.map(b => `
+      <div class="booking-row">
+        <div>
+          <div class="booking-name">${escapeHtml(fmtTime(b.starts_at))} · ${escapeHtml(b.customer_name || '')}</div>
+          <div class="booking-type">${escapeHtml(b.service_name || '')} · ${b.duration_minutes || 0} min</div>
+        </div>
+        <span class="booking-status ${statusClass(b.status)}">${escapeHtml(capitalize(b.status || 'pending'))}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderBusinessProfile(business) {
+    if (!business) return;
+    const profileEmail = document.getElementById('profile-email');
+    if (profileEmail && !profileEmail.value) profileEmail.value = business.contact_email || '';
+  }
+
+  async function fetchJson(url) {
+    try {
+      const r = await fetch(url, { credentials: 'include' });
+      if (!r.ok) return null;
+      return await r.json();
+    } catch { return null; }
+  }
+
+  async function loadDashboard() {
+    const [metricsR, bookingsR, profilesR, escalationsR, unansweredR, businessR] = await Promise.all([
+      fetchJson('/api/metrics'),
+      fetchJson('/api/bookings'),
+      fetchJson('/api/profiles'),
+      fetchJson('/api/escalations'),
+      fetchJson('/api/unanswered'),
+      fetchJson('/api/business'),
+    ]);
+
+    const metrics = metricsR || {};
+    const bookings = (bookingsR && bookingsR.bookings) || [];
+    const profiles = (profilesR && profilesR.profiles) || [];
+    const escalations = (escalationsR && escalationsR.escalations) || [];
+    const unanswered = (unansweredR && unansweredR.unanswered) || [];
+
+    dashboardData = { metrics, bookings, profiles, escalations, unanswered, business: businessR };
+
+    renderKPIs(metrics);
+    renderUpcomingBookings(bookings);
+    renderDashAlerts(escalations, unanswered, bookings);
+    renderSentiment(metrics);
+    renderCustomerTable(profiles);
+    renderBookingTable(bookings);
+    renderSalesTab(metrics);
+    renderChatbotTab(metrics);
+    renderAlertsPage(escalations, unanswered, bookings);
+    renderCalendarToday(bookings);
+    renderBusinessProfile(businessR);
+    initCharts();
   }
 
   document.getElementById('logout-btn').addEventListener('click', async () => {
@@ -681,7 +1062,7 @@
   window.addEventListener('load', () => {
     setTodayDate();
     hydrateUser();
-    setTimeout(initCharts, 200);
+    loadDashboard();
   });
 </script>
 </body>

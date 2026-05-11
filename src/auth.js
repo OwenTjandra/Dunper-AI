@@ -114,7 +114,15 @@ router.post('/login', async (req, res) => {
   const ok = user && bcrypt.compareSync(password, user.password_hash);
   if (!ok) return res.status(401).json({ error: 'Invalid username or password' });
 
-  if (user.twofa_enabled && user.email) {
+  // Dev escape hatch — DISABLE_2FA=1 in .env skips the email-code step
+  // entirely and signs the user in with just username + password. Refuses
+  // to apply when NODE_ENV=production so this can never accidentally
+  // weaken the live deploy. Prints a warning every time it fires.
+  const bypass2FA =
+    process.env.DISABLE_2FA === '1' &&
+    process.env.NODE_ENV !== 'production';
+
+  if (!bypass2FA && user.twofa_enabled && user.email) {
     const code = generateCode();
     createLoginCode(user.id, code);
     await sendLoginCode(user.email, code, user.username);
@@ -124,6 +132,9 @@ router.post('/login', async (req, res) => {
       step: 'verify',
       hint: emailHint(user.email),
     });
+  }
+  if (bypass2FA && user.twofa_enabled) {
+    console.warn(`[auth] DISABLE_2FA=1 — bypassing 2FA for ${user.username}. NEVER set this in production.`);
   }
 
   // No 2FA — fall through to direct session (legacy)
