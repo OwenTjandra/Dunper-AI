@@ -131,13 +131,11 @@ app.use((req, res, next) => {
 
 // dunper.com root → marketing home page (not the customer chat).
 // Explicit route runs BEFORE the static middlewares so it wins at '/'.
-// The customer chatbot UI is still reachable at /chat (and /index.html
-// for any legacy widget embed that hardcodes the old root path).
+// The early-stage customer chat UI (public/index.html) has been retired
+// from the marketing flow — the file remains in the repo for future
+// widget embedding, but no public URL exposes it anymore.
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../website/dunper_home.html'));
-});
-app.get('/chat', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 // Marketing site (website/) — served alongside the app at the same

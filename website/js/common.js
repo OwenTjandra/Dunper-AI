@@ -9,33 +9,11 @@
  */
 
 (function () {
-  // ===== Nav chatbar (form or div) =====
-  function navigateToChat(q) {
-    const dest = 'dunper_chat.html' + (q ? '?q=' + encodeURIComponent(q) : '');
-    window.location.href = dest;
-  }
-
-  function wireChatbar() {
-    const bar = document.querySelector('.nav-chatbar');
-    if (!bar) return;
-    const input = bar.querySelector('input');
-    if (!input) return;
-    const button = bar.querySelector('.chatbar-send');
-
-    function fire(e) {
-      if (e) e.preventDefault();
-      navigateToChat((input.value || '').trim());
-    }
-
-    if (bar.tagName === 'FORM') {
-      bar.addEventListener('submit', fire);
-    } else {
-      if (button) button.addEventListener('click', fire);
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') fire(e);
-      });
-    }
-  }
+  // ===== Nav chatbar (REMOVED) =====
+  // The "Ask our chatbot anything" search box used to redirect to
+  // dunper_chat.html (an early-stage Q&A preview). The bar is now
+  // CSS-hidden site-wide and this handler is a no-op.
+  function wireChatbar() { /* removed */ }
 
   // ===== Injected stylesheet (Pinterest-style refresh + animations) =====
   const animCss = `
@@ -176,24 +154,11 @@
     .nav-links a.active { color: #1E3A8A !important; }
     .nav-links a::after { background: #1E3A8A !important; }
 
-    /* Nav chatbar */
-    .nav-chatbar {
-      background: #FFFFFF !important;
-      border: 1px solid rgba(15,23,42,0.08) !important;
-      box-shadow: 0 2px 10px rgba(15,23,42,0.04) !important;
-    }
-    .nav-chatbar input {
-      color: #0A1430 !important;
-      font-family: 'Outfit', sans-serif !important;
-    }
-    .nav-chatbar input::placeholder {
-      color: #94A3B8 !important;
-      opacity: 1 !important;
-    }
-    .nav-chatbar:focus-within {
-      border-color: rgba(30,58,138,0.4) !important;
-      box-shadow: 0 0 0 3px rgba(30,58,138,0.08) !important;
-    }
+    /* Nav chatbar — hidden site-wide (the early-stage preview chatbot
+       it linked to has been retired). Kept the markup intact so the
+       grid layout doesn't shift, just visually removed. */
+    .nav-chatbar { display: none !important; }
+    .nav-spacer  { display: none !important; }
 
     /* === Chip-style section labels (the "● Business Impact" pattern) === */
     .section-label, .page-label, .chat-label, .hero-label,
