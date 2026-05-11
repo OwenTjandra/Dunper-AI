@@ -145,6 +145,90 @@
     .hero-orb.orb2, .bg-orb.bg2 { animation-delay: 1.8s !important; }
     .hero-orb.orb3 { animation-delay: 3.4s !important; }
 
+    /* Body sub text — bump up to normal weight so it reads on the soft-blue bg */
+    .page-sub, .hero-sub, .compare-subtitle, .toggle-label,
+    .demo-text p, .cta-box p, .chatbot-text p, .info-card p,
+    .ty-step-text, .terms-note {
+      font-weight: 400 !important;
+    }
+
+    /* ===== Bold dark hero (home & about) =====
+       Wherever <section class="hero"> exists, give it a deep blue
+       gradient so it pops against the soft-blue body, then invert
+       text colours inside the hero to white. */
+    section.hero {
+      background:
+        radial-gradient(ellipse 75% 65% at 50% 30%, rgba(46,120,212,.55) 0%, transparent 65%),
+        radial-gradient(ellipse 45% 35% at 18% 78%, rgba(15,112,240,.32) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 85% 70%, rgba(91,209,255,.20) 0%, transparent 60%),
+        linear-gradient(180deg, #0E2C5A 0%, #1E4585 100%);
+      color: #F0F6FF;
+      position: relative;
+      overflow: hidden;
+      border-radius: 0 0 36px 36px;
+      margin-bottom: 60px;
+      isolation: isolate;
+    }
+    section.hero::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: -1px;
+      height: 80px;
+      background: linear-gradient(180deg, transparent 0%, var(--navy, #D9E8F8) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    section.hero > * { position: relative; z-index: 1; }
+    section.hero h1,
+    section.hero .hero-title {
+      color: #F0F6FF !important;
+    }
+    section.hero .hero-title em,
+    section.hero h1 em,
+    section.hero h1 .line-two {
+      color: #5BD1FF !important;
+    }
+    section.hero p,
+    section.hero .hero-sub {
+      color: rgba(240,246,255,.82) !important;
+    }
+    section.hero .hero-label {
+      color: #5BD1FF !important;
+    }
+    section.hero .hero-badge {
+      background: rgba(255,255,255,.10) !important;
+      border-color: rgba(255,255,255,.20) !important;
+      color: #F0F6FF !important;
+      backdrop-filter: blur(10px);
+    }
+    section.hero .scroll-cue {
+      color: rgba(240,246,255,.72) !important;
+    }
+    section.hero .btn-outline {
+      color: #F0F6FF !important;
+      border-color: rgba(240,246,255,.4) !important;
+    }
+    section.hero .btn-outline:hover {
+      border-color: #5BD1FF !important;
+      color: #5BD1FF !important;
+    }
+    /* nav over the dark hero — frosted glass instead of solid light blue */
+    body:has(section.hero) nav {
+      background: rgba(14, 44, 90, 0.55) !important;
+      backdrop-filter: blur(18px) saturate(140%);
+      border-bottom-color: rgba(255,255,255,0.12) !important;
+    }
+    body:has(section.hero) nav .logo-text { color: #F0F6FF !important; }
+    body:has(section.hero) nav .nav-links a { color: rgba(240,246,255,0.78) !important; }
+    body:has(section.hero) nav .nav-links a:hover,
+    body:has(section.hero) nav .nav-links a.active { color: #5BD1FF !important; }
+    body:has(section.hero) nav .nav-chatbar {
+      background: rgba(255,255,255,0.08) !important;
+      border-color: rgba(255,255,255,0.18) !important;
+    }
+    body:has(section.hero) nav .nav-chatbar input { color: #F0F6FF !important; }
+    body:has(section.hero) nav .nav-chatbar input::placeholder { color: rgba(240,246,255,0.55) !important; }
+
     /* Honour reduced-motion */
     @media (prefers-reduced-motion: reduce) {
       .scroll-anim-ready :is(.section, .feature-card, .step, .team-card,
