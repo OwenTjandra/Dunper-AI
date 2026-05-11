@@ -300,14 +300,15 @@
       <div class="tab-panel active" id="signinPanel">
         <div class="field">
           <label>Username or Email</label>
-          <input type="text" placeholder="you@company.com"/>
+          <input type="text" id="login-username" autocomplete="username" placeholder="you@company.com"/>
         </div>
         <div class="field">
           <label>Password</label>
-          <input type="password" placeholder="••••••••"/>
+          <input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••"/>
         </div>
         <div class="forgot"><a href="#">Forgot password?</a></div>
-        <button class="submit-btn" onclick="window.location.href='dunper_home.html'">Log In →</button>
+        <div id="login-error" class="field-error-msg" style="display:none;color:#B91C1C;background:#FEF2F2;border:1px solid rgba(220,38,38,.2);padding:9px 12px;border-radius:10px;font-size:12.5px;margin-bottom:12px;"></div>
+        <button class="submit-btn" id="loginBtn" type="button">Log In →</button>
         <div class="divider">or</div>
         <button class="social-btn"><span class="social-icon">G</span> Continue with Google</button>
         <div class="join-link">No account yet? <a href="dunper_join.html">Sign up free</a></div>
@@ -849,9 +850,64 @@ document.addEventListener('change', function(e){
   }
 });
 
+// Wire the Log-In button on the marketing sign-in page to the real
+// Express auth endpoint. On success the backend sets the session cookie
+// and tells us the role; we redirect to the matching dashboard.
+function wireLoginButton(){
+  const btn = document.getElementById('loginBtn');
+  if(!btn) return;
+  const userEl = document.getElementById('login-username');
+  const passEl = document.getElementById('login-password');
+  const errEl  = document.getElementById('login-error');
+  function showErr(msg){ if(errEl){ errEl.textContent = msg; errEl.style.display = 'block'; } }
+  function clearErr(){ if(errEl){ errEl.style.display = 'none'; errEl.textContent = ''; } }
+
+  async function attemptLogin(){
+    clearErr();
+    const username = (userEl.value || '').trim();
+    const password = passEl.value || '';
+    if(!username || !password){
+      showErr('Please enter both username and password.');
+      [userEl, passEl].forEach(el => { if(!el.value.trim()) el.classList.add('field-error'); });
+      return;
+    }
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = 'Signing in…';
+    try {
+      const r = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if(!r.ok){
+        showErr(data.error || 'Sign-in failed. Check your username and password.');
+        return;
+      }
+      const role = data && data.user && data.user.role;
+      window.location.href = role === 'founder' ? '/operator.html' : '/admin.html';
+    } catch (e) {
+      showErr('Network error: ' + (e.message || 'could not reach the server.'));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  }
+
+  btn.addEventListener('click', attemptLogin);
+  // Enter on either input also submits
+  [userEl, passEl].forEach(el => {
+    if(!el) return;
+    el.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); attemptLogin(); } });
+  });
+}
+
 // If user landed from a plan button on the subscription page, skip auth
 // and drop them at the terms step with their plan pre-filled.
 (function bootstrap(){
+  wireLoginButton();
   const params = new URLSearchParams(window.location.search);
   if(params.get('plan')){
     goToPage('page-terms');

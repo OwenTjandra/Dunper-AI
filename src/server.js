@@ -119,6 +119,16 @@ app.use((req, res, next) => {
   if (req.path === '/operator.html') return requireFounder(req, res, next);
   next();
 });
+
+// Marketing site (website/) — served alongside the app at the same
+// origin so login cookies work across both, and so dunper.com can serve
+// marketing + app from one process. {index:false} keeps
+// website/index.html (the marketing redirect) from shadowing
+// public/index.html (the customer chat) at the root, which is
+// referenced by the WhatsApp webhook, the dashboards' preview links,
+// and the widget embed.
+app.use(express.static(path.join(__dirname, '../website'), { index: false }));
+
 app.use(express.static(path.join(__dirname, '../public')));
 
 app.get('/health', (req, res) => {
