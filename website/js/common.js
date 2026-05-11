@@ -760,6 +760,104 @@
         border-radius: 24px !important;
       }
     }
+
+    /* ===========================================================
+       MOBILE HAMBURGER NAV
+       Hides desktop nav links/chatbar on phones and shows a
+       three-bar button that toggles a dropdown panel below the nav.
+       =========================================================== */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      width: 38px; height: 38px;
+      padding: 9px 8px;
+      background: #FFFFFF;
+      border: 1px solid rgba(15,23,42,0.12);
+      border-radius: 11px;
+      cursor: pointer;
+      margin-left: auto;
+      flex-shrink: 0;
+      transition: border-color .2s ease, background .2s ease;
+    }
+    .nav-hamburger:hover { border-color: rgba(15,23,42,0.28); background: #F8FAFC; }
+    .nav-hamburger span {
+      display: block;
+      width: 100%; height: 2px;
+      background: #0A1430;
+      border-radius: 2px;
+      transform-origin: center;
+      transition: transform .25s ease, opacity .2s ease;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    @media (max-width: 720px) {
+      nav {
+        flex-wrap: nowrap !important;
+        gap: 10px !important;
+        padding: 10px 16px !important;
+        position: fixed !important;
+      }
+      .nav-hamburger { display: flex; }
+      .nav-left { flex: 1; min-width: 0; gap: 10px !important; margin-right: 0 !important; order: 0 !important; flex-basis: auto !important; }
+      .nav-logo { flex-shrink: 0 !important; margin-right: 0 !important; }
+
+      /* Drop-down panel */
+      .nav-links {
+        position: absolute !important;
+        top: 100% !important;
+        left: 0 !important;
+        right: 0 !important;
+        background: rgba(235,240,250,0.98) !important;
+        backdrop-filter: blur(22px) saturate(140%) !important;
+        border-bottom: 1px solid rgba(15,23,42,0.08) !important;
+        box-shadow: 0 14px 32px rgba(15,23,42,0.10) !important;
+        padding: 14px 16px !important;
+        margin: 0 !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        gap: 2px !important;
+        list-style: none !important;
+        flex-basis: auto !important;
+        order: 0 !important;
+        transform: translateY(-12px) !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: transform .28s cubic-bezier(.16,1,.3,1), opacity .25s ease !important;
+        z-index: 99 !important;
+      }
+      nav.nav-open .nav-links {
+        transform: translateY(0) !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+      .nav-links li { list-style: none !important; width: 100% !important; }
+      .nav-links a {
+        display: flex !important;
+        align-items: center;
+        gap: 10px;
+        padding: 13px 14px !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        text-transform: none !important;
+        letter-spacing: 0 !important;
+        border-radius: 10px !important;
+        color: #0A1430 !important;
+      }
+      .nav-links a::after { display: none !important; }
+      .nav-links a:hover { background: rgba(15,23,42,0.05) !important; }
+      .nav-links a.active { background: rgba(30,58,138,0.08) !important; color: #1E3A8A !important; }
+
+      /* Hide the inline desktop chatbar / spacer on phones */
+      .nav-chatbar { display: none !important; }
+      .nav-spacer { display: none !important; }
+
+      .nav-cta { margin-left: 0 !important; padding: 9px 18px !important; font-size: 12px !important; }
+    }
   `;
 
   function injectStyles() {
@@ -797,11 +895,83 @@
     if (m && m[1]) document.body.classList.add('page-' + m[1]);
   }
 
+  // ===== Hamburger / mobile nav =====
+  function wireHamburger() {
+    document.querySelectorAll('nav').forEach(nav => {
+      // Only build a hamburger if this nav actually has a primary link list
+      if (nav.querySelector('.nav-hamburger')) return;
+      if (!nav.querySelector('.nav-links')) return;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'nav-hamburger';
+      btn.setAttribute('aria-label', 'Toggle menu');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.innerHTML = '<span></span><span></span><span></span>';
+
+      // Place it just before the Sign In CTA so the visual order is
+      // [logo] … [hamburger] [Sign In] on every page layout.
+      let insertBefore = nav.querySelector('.nav-cta');
+      if (insertBefore && insertBefore.parentElement !== nav) {
+        // Sign In is wrapped in an <a> (services/contact/join) — climb up.
+        let parent = insertBefore.parentElement;
+        while (parent && parent.parentElement !== nav) parent = parent.parentElement;
+        insertBefore = parent || insertBefore;
+      }
+      if (insertBefore) nav.insertBefore(btn, insertBefore);
+      else nav.appendChild(btn);
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const opened = nav.classList.toggle('nav-open');
+        btn.classList.toggle('open', opened);
+        btn.setAttribute('aria-expanded', opened ? 'true' : 'false');
+      });
+
+      // Close the panel when any link inside the dropdown is tapped
+      nav.querySelectorAll('.nav-links a').forEach(a => {
+        a.addEventListener('click', () => {
+          nav.classList.remove('nav-open');
+          btn.classList.remove('open');
+          btn.setAttribute('aria-expanded', 'false');
+        });
+      });
+    });
+
+    // Close any open dropdown when clicking outside the nav
+    document.addEventListener('click', (e) => {
+      document.querySelectorAll('nav.nav-open').forEach(nav => {
+        if (!nav.contains(e.target)) {
+          nav.classList.remove('nav-open');
+          const btn = nav.querySelector('.nav-hamburger');
+          if (btn) {
+            btn.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+          }
+        }
+      });
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      document.querySelectorAll('nav.nav-open').forEach(nav => {
+        nav.classList.remove('nav-open');
+        const btn = nav.querySelector('.nav-hamburger');
+        if (btn) {
+          btn.classList.remove('open');
+          btn.setAttribute('aria-expanded', 'false');
+        }
+      });
+    });
+  }
+
   function init() {
     tagPage();
     injectStyles();
     wireChatbar();
     wireScrollAnim();
+    wireHamburger();
   }
 
   if (document.readyState === 'loading') {
