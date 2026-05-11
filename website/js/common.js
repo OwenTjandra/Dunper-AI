@@ -145,6 +145,74 @@
     .hero-orb.orb2, .bg-orb.bg2 { animation-delay: 1.8s !important; }
     .hero-orb.orb3 { animation-delay: 3.4s !important; }
 
+    /* ===== Animated blue ambient background =====
+       Applied to pages that don't already have a dark <section class="hero">.
+       Three drifting, blurred blue orbs sit on a fixed layer behind the page
+       content so the body gets a subtle, alive feel without distracting from
+       the cards/forms. */
+    body.animated-bg {
+      position: relative;
+      background:
+        radial-gradient(ellipse 60% 40% at 8% 12%, rgba(46,120,212,.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 35% at 92% 88%, rgba(15,112,240,.07) 0%, transparent 60%),
+        var(--navy, #D9E8F8);
+    }
+    body.animated-bg::before,
+    body.animated-bg::after,
+    body.animated-bg > .ambient-orb {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(110px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: .85;
+      will-change: transform;
+    }
+    body.animated-bg::before {
+      width: 520px; height: 520px;
+      top: -120px; left: -140px;
+      background: radial-gradient(circle, rgba(15,112,240,.35) 0%, transparent 65%);
+      animation: ambientDriftA 24s ease-in-out infinite;
+    }
+    body.animated-bg::after {
+      width: 600px; height: 600px;
+      bottom: -180px; right: -160px;
+      background: radial-gradient(circle, rgba(46,120,212,.30) 0%, transparent 65%);
+      animation: ambientDriftB 28s ease-in-out infinite;
+    }
+    body.animated-bg > .ambient-orb {
+      width: 420px; height: 420px;
+      top: 45%; left: 45%;
+      background: radial-gradient(circle, rgba(91,209,255,.20) 0%, transparent 65%);
+      animation: ambientDriftC 32s ease-in-out infinite;
+    }
+    @keyframes ambientDriftA {
+      0%,100% { transform: translate3d(0,0,0) scale(1); }
+      33%     { transform: translate3d(34vw, 28vh, 0) scale(1.15); }
+      66%     { transform: translate3d(62vw, 58vh, 0) scale(.95); }
+    }
+    @keyframes ambientDriftB {
+      0%,100% { transform: translate3d(0,0,0) scale(1); }
+      33%     { transform: translate3d(-30vw, -24vh, 0) scale(1.1); }
+      66%     { transform: translate3d(-54vw, -8vh, 0) scale(.92); }
+    }
+    @keyframes ambientDriftC {
+      0%,100% { transform: translate3d(0,0,0) scale(1); }
+      25%     { transform: translate3d(-22vw, 18vh, 0) scale(.9); }
+      50%     { transform: translate3d(20vw, 28vh, 0) scale(1.18); }
+      75%     { transform: translate3d(28vw, -22vh, 0) scale(1.04); }
+    }
+    /* keep page content above the ambient orbs */
+    body.animated-bg > *:not(.ambient-orb) { position: relative; z-index: 1; }
+    @media (prefers-reduced-motion: reduce) {
+      body.animated-bg::before,
+      body.animated-bg::after,
+      body.animated-bg > .ambient-orb {
+        animation: none !important;
+      }
+    }
+
     /* Body sub text — bump up to normal weight so it reads on the soft-blue bg */
     .page-sub, .hero-sub, .compare-subtitle, .toggle-label,
     .demo-text p, .cta-box p, .chatbot-text p, .info-card p,
@@ -273,10 +341,24 @@
     targets.forEach(el => obs.observe(el));
   }
 
+  function wireAmbientBg() {
+    // Only apply the animated blue background to pages that DON'T already
+    // have a dark hero (home / about have their own dark gradient hero).
+    if (document.querySelector('section.hero')) return;
+    document.body.classList.add('animated-bg');
+    // Insert a third floating orb (CSS pseudo-elements only give us two).
+    if (!document.querySelector('.ambient-orb')) {
+      const orb = document.createElement('div');
+      orb.className = 'ambient-orb';
+      document.body.appendChild(orb);
+    }
+  }
+
   function init() {
     injectStyles();
     wireChatbar();
     wireScrollAnim();
+    wireAmbientBg();
   }
 
   if (document.readyState === 'loading') {
