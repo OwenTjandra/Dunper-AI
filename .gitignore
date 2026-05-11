@@ -25,3 +25,9 @@ backups/
 
 # Website draft / pre-redesign backups (not part of source)
 website/_original_backup_*/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
