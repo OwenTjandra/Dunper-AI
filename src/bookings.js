@@ -8,6 +8,17 @@ const MIN_LEAD_HOURS = 24;
 const MAX_DAYS_AHEAD = 30;
 
 function dayHours(business, dayOfWeek) {
+  const weekly = business.weekly_hours;
+  if (weekly && typeof weekly === 'object') {
+    const keys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    const cfg = weekly[keys[dayOfWeek]];
+    if (!cfg || cfg.closed) return null;
+    const openMin = hmToMin(cfg.open);
+    const closeMin = hmToMin(cfg.close);
+    if (!Number.isFinite(openMin) || !Number.isFinite(closeMin) || openMin >= closeMin) return null;
+    return { openMin, closeMin };
+  }
+
   const structured = business.hours_structured;
   if (structured) {
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -58,6 +69,10 @@ function parseLocalDate(dateStr) {
   return d;
 }
 
+function isBlockedDate(business, dateStr) {
+  return Array.isArray(business.blocked_dates) && business.blocked_dates.includes(dateStr);
+}
+
 function isoForDateAndMinute(dateStr, minutes) {
   const d = parseLocalDate(dateStr);
   if (!d) return null;
@@ -72,6 +87,7 @@ function getAvailableSlots(dateStr, serviceName) {
 
   const target = parseLocalDate(dateStr);
   if (!target) return { error: 'Invalid date.' };
+  if (isBlockedDate(business, dateStr)) return { slots: [], reason: 'Closed on this date.' };
   if (!Number.isFinite(service.duration_minutes) || service.duration_minutes <= 0) {
     return { error: 'Invalid service duration.' };
   }
@@ -117,6 +133,7 @@ function bookSlot({ profileId, customerName, customerPhone, customerEmail, servi
   }
 
   if (!parseLocalDate(dateStr)) return { error: 'Invalid date format.', status: 400 };
+  if (isBlockedDate(business, dateStr)) return { error: 'We are closed on this date.', status: 400 };
 
   const startMin = hmToMin(time);
   if (!Number.isFinite(startMin)) return { error: 'Invalid time format.', status: 400 };

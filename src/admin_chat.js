@@ -5,12 +5,34 @@ const { estimateCost } = require('./config/claude');
 const aiSettings = require('./ai_settings');
 
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-sonnet-4-6';
 const MAX_ITERATIONS = 10;
 
 const TOP_LEVEL_FIELDS = ['name', 'type', 'hours', 'address', 'phone', 'tone', 'fallback_contact'];
+
+function hmToMin(hm) {
+  if (!TIME_RE.test(String(hm))) return NaN;
+  const [h, m] = hm.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function isValidLocalDate(dateStr) {
+  if (!DATE_RE.test(String(dateStr))) return false;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day;
+}
+
+function cloneMessages(messages) {
+  return messages.map(m => ({
+    role: m.role,
+    content: typeof m.content === 'string' ? m.content : JSON.parse(JSON.stringify(m.content)),
+  }));
+}
 
 const tools = [
   {
@@ -281,7 +303,6 @@ function executeTool(toolName, input, user) {
       return { error: 'days must be a non-empty array.' };
     }
     next.weekly_hours = next.weekly_hours || {};
-    const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
     const changed = [];
     for (const d of input.days) {
       if (!d || !DAY_KEYS.includes(d.day)) return { error: `Invalid day "${d?.day}". Use mon..sun.` };
@@ -290,8 +311,11 @@ function executeTool(toolName, input, user) {
       const close = d.close ?? existing.close;
       const closed = typeof d.closed === 'boolean' ? d.closed : !!existing.closed;
       if (!closed) {
-        if (!timeRe.test(open) || !timeRe.test(close)) {
+        if (!TIME_RE.test(open) || !TIME_RE.test(close)) {
           return { error: `${d.day}: open/close must be HH:MM 24h.` };
+        }
+        if (hmToMin(open) >= hmToMin(close)) {
+          return { error: `${d.day}: open must be before close.` };
         }
       }
       next.weekly_hours[d.day] = { open, close, closed };
@@ -299,16 +323,14 @@ function executeTool(toolName, input, user) {
     }
     note = `Set hours: ${changed.join(', ')}`;
   } else if (toolName === 'add_blocked_date') {
-    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-    if (typeof input.date !== 'string' || !dateRe.test(input.date)) return { error: 'date must be YYYY-MM-DD.' };
+    if (typeof input.date !== 'string' || !isValidLocalDate(input.date)) return { error: 'date must be a valid YYYY-MM-DD date.' };
     next.blocked_dates = Array.isArray(next.blocked_dates) ? next.blocked_dates.slice() : [];
     if (next.blocked_dates.includes(input.date)) return { error: `${input.date} is already blocked.` };
     next.blocked_dates.push(input.date);
     next.blocked_dates.sort();
     note = `Added closed date ${input.date}`;
   } else if (toolName === 'remove_blocked_date') {
-    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-    if (typeof input.date !== 'string' || !dateRe.test(input.date)) return { error: 'date must be YYYY-MM-DD.' };
+    if (typeof input.date !== 'string' || !isValidLocalDate(input.date)) return { error: 'date must be a valid YYYY-MM-DD date.' };
     next.blocked_dates = Array.isArray(next.blocked_dates) ? next.blocked_dates.slice() : [];
     const idx = next.blocked_dates.indexOf(input.date);
     if (idx === -1) return { error: `${input.date} is not in the blocked-dates list.` };
@@ -400,7 +422,7 @@ function markLastUserCacheBreakpoint(messages) {
 }
 
 async function runAdminChat(userMessages, user) {
-  const messages = [...userMessages];
+  const messages = cloneMessages(userMessages);
   const toolCalls = [];
   let mutated = false;
   const systemPrompt = buildAdminSystemPrompt(getBusiness());

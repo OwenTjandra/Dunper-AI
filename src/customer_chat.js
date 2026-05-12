@@ -54,6 +54,13 @@ const TOOLS = [
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function cloneMessages(messages) {
+  return messages.map(m => ({
+    role: m.role,
+    content: typeof m.content === 'string' ? m.content : JSON.parse(JSON.stringify(m.content)),
+  }));
+}
+
 function bookingsInLast24h(profileId) {
   if (!profileId) return 0;
   const row = db.prepare(
@@ -209,7 +216,7 @@ function markLastUserCacheBreakpoint(messages) {
 
 async function runCustomerChat(initialMessages, systemPrompt, opts = {}) {
   const model = opts.model || 'claude-sonnet-4-6';
-  const messages = [...initialMessages];
+  const messages = cloneMessages(initialMessages);
   const system = buildSystemWithToday(systemPrompt);
   const usageTotals = {
     model,

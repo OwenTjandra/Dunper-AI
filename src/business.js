@@ -15,6 +15,21 @@ function loadBusiness() {
 
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const DAY_LABELS = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function hmToMin(hm) {
+  if (!TIME_RE.test(String(hm))) return NaN;
+  const [h, m] = hm.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function isValidLocalDate(dateStr) {
+  if (!DATE_RE.test(String(dateStr))) return false;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day;
+}
 
 function formatWeeklyHours(weekly) {
   if (!weekly || typeof weekly !== 'object') return null;
@@ -103,23 +118,22 @@ function validateBusiness(b) {
   // weekly_hours is optional. Shape: { mon: { open: "09:00", close: "17:00", closed?: bool }, ... }
   if (b.weekly_hours !== undefined) {
     if (!b.weekly_hours || typeof b.weekly_hours !== 'object') return 'weekly_hours must be an object.';
-    const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
     for (const k of DAY_KEYS) {
       const d = b.weekly_hours[k];
       if (d === undefined) continue;
       if (!d || typeof d !== 'object') return `weekly_hours.${k} must be an object.`;
       if (d.closed) continue;
-      if (!d.open || !d.close) continue;
-      if (!timeRe.test(d.open) || !timeRe.test(d.close)) return `weekly_hours.${k}: open/close must be HH:MM`;
+      if (!d.open || !d.close) return `weekly_hours.${k}: open/close are required unless closed is true`;
+      if (!TIME_RE.test(d.open) || !TIME_RE.test(d.close)) return `weekly_hours.${k}: open/close must be HH:MM`;
+      if (hmToMin(d.open) >= hmToMin(d.close)) return `weekly_hours.${k}: open must be before close`;
     }
   }
 
   // blocked_dates is optional. Shape: array of "YYYY-MM-DD" strings.
   if (b.blocked_dates !== undefined) {
     if (!Array.isArray(b.blocked_dates)) return 'blocked_dates must be an array.';
-    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
     for (const d of b.blocked_dates) {
-      if (typeof d !== 'string' || !dateRe.test(d)) return 'blocked_dates must contain YYYY-MM-DD strings.';
+      if (typeof d !== 'string' || !isValidLocalDate(d)) return 'blocked_dates must contain valid YYYY-MM-DD dates.';
     }
   }
 

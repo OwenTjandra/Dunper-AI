@@ -92,6 +92,9 @@ function getSettings() {
 
 function validate(input) {
   const out = {};
+  for (const key of Object.keys(input || {})) {
+    if (!SETTING_KEYS.includes(key)) return { error: `Unknown AI setting: ${key}` };
+  }
   if (input.model != null) {
     if (!ALLOWED_MODELS.has(input.model)) return { error: `model must be one of: ${[...ALLOWED_MODELS].join(', ')}` };
     out.model = input.model;

@@ -391,7 +391,12 @@ const THANKS_SET = new Set([
   'makasih','terimakasih','terima kasih','mksh','suwun','matur nuwun',
 ]);
 function detectTrivialMessage(text, isFirstUserMessage) {
-  const t = text.trim().toLowerCase().replace(/[!.?]+$/, '').replace(/\s+/g, ' ');
+  const t = String(text || '')
+    .normalize('NFKC')
+    .trim()
+    .toLowerCase()
+    .replace(/^[\p{P}\p{S}\s]+|[\p{P}\p{S}\s]+$/gu, '')
+    .replace(/\s+/g, ' ');
   if (!t || t.length > 25) return null;
   if (isFirstUserMessage && GREETING_SET.has(t)) return 'greeting';
   if (THANKS_SET.has(t)) return 'thanks';
