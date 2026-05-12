@@ -199,7 +199,7 @@ async function runCustomerChat(initialMessages, systemPrompt, opts = {}) {
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     const params = {
       model,
-      max_tokens: opts.max_tokens || 1024,
+      max_tokens: opts.max_tokens || 512,
       system,
       tools: TOOLS,
       messages,

@@ -380,6 +380,24 @@ app.get('/api/customer/messages', attachCustomerProfile, (req, res) => {
   res.json({ messages: getCustomerMessages(req.customerProfile.id).map(serializeMessage) });
 });
 
+// Pure greetings / thanks → canned reply, no Claude call. Trims ~10–15% of
+// chat volume on busy days. Mid-conversation "ok"/"got it" are intentionally
+// NOT intercepted because they often need contextual follow-up.
+const GREETING_SET = new Set([
+  'hi','hii','hello','hey','heya','halo','hai','helo','hola','yo','sup','helu',
+]);
+const THANKS_SET = new Set([
+  'thanks','thank you','thankyou','thx','ty','tysm','thnks','tks',
+  'makasih','terimakasih','terima kasih','mksh','suwun','matur nuwun',
+]);
+function detectTrivialMessage(text, isFirstUserMessage) {
+  const t = text.trim().toLowerCase().replace(/[!.?]+$/, '').replace(/\s+/g, ' ');
+  if (!t || t.length > 25) return null;
+  if (isFirstUserMessage && GREETING_SET.has(t)) return 'greeting';
+  if (THANKS_SET.has(t)) return 'thanks';
+  return null;
+}
+
 app.post('/chat', chatLimiter, attachCustomerProfile, (req, res) => {
   documents.customerUpload.array('files', 10)(req, res, async (uploadErr) => {
     try {
@@ -390,6 +408,24 @@ app.post('/chat', chatLimiter, attachCustomerProfile, (req, res) => {
       if (!text && files.length === 0) return res.status(400).json({ error: 'message or file required' });
 
       const messageId = recordCustomerMessage(req.customerProfile.id, 'user', text);
+
+      // Short-circuit pure greetings / thanks BEFORE the LLM call. Saves
+      // a Claude turn on each. Still records the canned reply so the
+      // conversation history stays continuous for the next real turn.
+      if (files.length === 0) {
+        const priorUserCount = getCustomerMessages(req.customerProfile.id)
+          .filter(m => m.role === 'user' && m.id !== messageId).length;
+        const kind = detectTrivialMessage(text, priorUserCount === 0);
+        if (kind) {
+          const aiSet = aiSettings.getSettings();
+          const reply = kind === 'greeting'
+            ? (aiSet.starter_message || 'Hi! How can I help you today?')
+            : "You're welcome! Anything else?";
+          recordCustomerMessage(req.customerProfile.id, 'assistant', reply);
+          return res.json({ reply, bypassed: true });
+        }
+      }
+
       for (const file of files) {
         addCustomerAttachment({
           messageId,

@@ -7,8 +7,8 @@ const {
 } = require('./db');
 const { askClaude } = require('./config/claude');
 
-const COMPACTION_TRIGGER_MESSAGES = 30;
-const VERBATIM_WINDOW = 10;
+const COMPACTION_TRIGGER_MESSAGES = 20;
+const VERBATIM_WINDOW = 6;
 
 const SUMMARIZE_SYSTEM_PROMPT = `You are summarizing a customer's chat with a business frontdesk assistant. Output a single concise paragraph (max 150 words) that preserves what matters for continuing the conversation:
 - What the customer asked about or wanted
