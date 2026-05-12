@@ -191,70 +191,71 @@
     if(t) t.remove();
   }
 
-  function botReplyFor(q){
-    const lc = q.toLowerCase();
-    if(/price|cost|plan|pack|how much|cheap|expensive|fee/.test(lc)){
-      return 'We have three plans: <strong>Starter</strong> (free, 100 conversations and 1 language), <strong>Pro</strong> ($20/mo, 500 conversations and 5 languages) and <strong>Max</strong> ($50/mo, 2,000 conversations and 40+ languages). Every plan includes unlimited data, a custom agent and all chatbot features. <a href="dunper_join.html">Compare on the join page →</a>';
-    }
-    if(/language|bahasa|spanish|chinese|mandarin|tagalog|arab|multilingu/.test(lc)){
-      return 'Dunper speaks 60+ languages including Bahasa Indonesia, English, Mandarin, Spanish, Tagalog and Arabic. We switch naturally mid-conversation so a customer can write in one language and you get the message in another. <a href="dunper_services.html">See full capabilities →</a>';
-    }
-    if(/book|calendar|appointment|schedule|reschedul/.test(lc)){
-      return 'Customers just tell the chatbot when they want to come in — Dunper checks the calendar, suggests open slots, and books it on the spot. They only need to share their name plus a phone or email; the AI handles everything else and sends a confirmation. Google Calendar sync is one click on your end. <a href="dunper_services.html#booking">More on booking →</a>';
-    }
-    if(/whatsapp|wa |telegram|sms|line|facebook|messenger/.test(lc)){
-      return 'Dunper plugs straight into <strong>WhatsApp Business</strong>, your website, or a custom widget — so your customers reach you on the platform they already use. Same brain, same memory, every conversation in one place. <a href="dunper_services.html">More on integrations →</a>';
-    }
-    if(/integrat|connect|api|google sheet|sheet|crm|hubspot|salesforce/.test(lc)){
-      return 'Dunper connects to <strong>Google Calendar</strong> (real bookings), <strong>Google Sheets</strong> (customer rows auto-updated), and via webhook to anything else. WhatsApp Business is built-in; CRMs come next. <a href="dunper_services.html#integrations">All integrations →</a>';
-    }
-    if(/secur|privacy|gdpr|safe|data|protect|encrypt/.test(lc)){
-      return 'Your data lives in your own database, end-to-end encrypted in transit, never shared with other businesses. You can wipe a customer\'s history with one click. We follow GDPR-style data-deletion rules even though Indonesia doesn\'t require it yet. <a href="dunper_contact.html">Ask us anything →</a>';
-    }
-    if(/support|help|service|response|reply|how fast/.test(lc)){
-      return 'We answer support requests within 24 hours — usually within an hour during Jakarta business hours. Pro and Max plans get priority email + WhatsApp support. <a href="dunper_contact.html">Reach the team →</a>';
-    }
-    if(/sign up|signup|start|begin|onboard|get started|create.*account/.test(lc)){
-      return 'Sign up takes 60 seconds. Pick the free Starter plan, paste in your business hours and services, upload a knowledge doc if you have one, and you\'re live. No credit card. <a href="dunper_join.html?plan=starter">Start free →</a>';
-    }
-    if(/who.*use|business|customer|industry|salon|restaurant|dental|clinic|store|shop|retail|hotel|spa/.test(lc)){
-      return 'Dunper is built for small businesses with real customers: salons, dental clinics, restaurants, hotels, retail shops, spas, tutoring centers, repair shops. Any business that answers the same questions and books appointments. <a href="dunper_services.html">See use-cases →</a>';
-    }
-    if(/who|about|team|founder|jakarta|indonesia|company/.test(lc)){
-      return 'Dunper is built by five co-founders out of Jakarta — two front-end developers, two back-end developers, and one running marketing and support. We\'re building for Indonesian SMEs first, the rest of Southeast Asia next. <a href="dunper_about.html">Meet the team →</a>';
-    }
-    if(/demo|trial|try|test|see/.test(lc)){
-      return 'You can start on the free Starter plan in under a minute — no card required. Or watch a live demo at our next office hours. <a href="dunper_join.html?plan=starter">Start free →</a>';
-    }
-    if(/how.*work|what.*do|explain|tell me about|what is/.test(lc)){
-      return 'Dunper is an AI receptionist for your business. Your customers chat with it 24/7 — it answers their questions, books appointments, qualifies leads, hands off to you when needed. You teach it about your business in plain English. <a href="dunper_services.html">See it in action →</a>';
-    }
-    if(/replace|employ|hire|staff|human/.test(lc)){
-      return 'Dunper doesn\'t replace your team — it covers the front desk so your team can focus on customers who need real human attention. Think of it as a 24/7 receptionist that hands off the hard stuff. <a href="dunper_about.html">Our philosophy →</a>';
-    }
-    if(/competitor|vs |compare|difference|better than|alternative|intercom|drift|chatgpt|gpt/.test(lc)){
-      return 'Most chatbots are built for tech companies with English-speaking customers and developer teams. Dunper is built for a 10-person warung in Surabaya whose owner has never heard the word "API." Same underlying tech, totally different product. <a href="dunper_about.html">Why we exist →</a>';
-    }
-    if(/contact|email|phone|whatsapp.*team|reach/.test(lc)){
-      return 'You can reach us at <strong>dunperai@gmail.com</strong> or on Instagram <strong>@dunper.ai</strong>. <a href="dunper_contact.html">Or drop a note →</a>';
-    }
-    return 'Good question! I can answer about: <strong>pricing</strong>, <strong>languages</strong>, <strong>booking</strong>, <strong>WhatsApp</strong>, <strong>integrations</strong>, <strong>security</strong>, <strong>signing up</strong>, <strong>who uses Dunper</strong>, <strong>our team</strong>, or <strong>how it compares to other chatbots</strong>. What would you like to know? Or just <a href="dunper_contact.html">book a real call →</a>.';
+  // -- escape user content before injecting into DOM --
+  function escapeHtml(s){
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
   }
 
-  function handleQuery(q){
+  // Render a small "✅ Booked" confirmation card when the AI books in chat.
+  function appendBookingCard(booking){
+    let dateStr = '', timeStr = '';
+    try {
+      const start = new Date(booking.starts_at);
+      dateStr = start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      timeStr = start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    } catch(_) {}
+    const html =
+      '<div style="background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.4);border-radius:12px;padding:12px 14px;line-height:1.5;">' +
+        '<div style="font-weight:600;color:#047857;margin-bottom:4px;">✅ Booked</div>' +
+        '<div style="font-size:13px;">' + escapeHtml(booking.service_name || 'Appointment') + ' — ' + escapeHtml(dateStr) + ' at ' + escapeHtml(timeStr) + '</div>' +
+        (booking.confirmation_sent_to
+          ? '<div style="font-size:12px;color:#475569;margin-top:4px;">Confirmation sent to ' + escapeHtml(booking.confirmation_sent_to) + '</div>'
+          : '') +
+      '</div>';
+    appendBotMsg(html);
+  }
+
+  // -- TALKS TO THE REAL DUNPER AI BACKEND --
+  // This used to be a fake regex-matched canned chatbot. Now it hits the
+  // same /chat endpoint customers use, with tool use (list_services,
+  // check_availability, book_appointment) and a persistent customer cookie
+  // so the AI remembers the conversation. Says "I want to book" and you get
+  // booked for real (against the demo business config in business.json).
+  async function handleQuery(q){
     if(!q) return;
     appendUserMsg(q);
     appendTyping();
-    setTimeout(() => {
+    try {
+      const fd = new FormData();
+      fd.append('message', q);
+      const res = await fetch('/chat', {
+        method: 'POST',
+        body: fd,
+        credentials: 'include',  // carries the frontdesk_customer cookie across turns
+      });
       removeTyping();
-      appendBotMsg(botReplyFor(q));
-    }, 700 + Math.random() * 500);
+      let data = {};
+      try { data = await res.json(); } catch(_) {}
+      if(!res.ok || data.error){
+        appendBotMsg('Sorry, I hit an error: ' + escapeHtml(data.error || ('HTTP ' + res.status)));
+        return;
+      }
+      appendBotMsg(escapeHtml(data.reply || '(no reply)'));
+      if(Array.isArray(data.bookings)){
+        data.bookings.forEach(appendBookingCard);
+      }
+    } catch (err) {
+      removeTyping();
+      appendBotMsg('Network error — ' + escapeHtml(err.message || 'could not reach the AI.'));
+    }
   }
 
   // Greet, then handle ?q= param if present
   const params = new URLSearchParams(window.location.search);
   const initialQuery = (params.get('q') || '').trim();
-  appendBotMsg("Hi! I'm Dunper, the AI receptionist for small businesses. Ask me anything — pricing, languages, what we do, how it works.");
+  appendBotMsg("Hi! I'm Dunper, the AI receptionist. Try asking me anything — about the business, or just say <strong>\"I want to book\"</strong> and I'll handle it for you.");
   if(initialQuery){
     setTimeout(() => handleQuery(initialQuery), 350);
   }
