@@ -56,6 +56,7 @@ const conversation = require('./conversation');
 const emailService = require('./email');
 const { router: authRouter, attachUser, requireFounder, requireBusinessOwner } = require('./auth');
 const { getBusiness, getSystemPrompt, applyBusinessUpdate } = require('./business');
+const aiSettings = require('./ai_settings');
 const { runAdminChat } = require('./admin_chat');
 const documents = require('./documents');
 
@@ -245,6 +246,16 @@ app.post('/api/business', requireBusinessOwner,(req, res) => {
   res.json({ ok: true, business: getBusiness() });
 });
 
+app.get('/api/ai-settings', requireBusinessOwner, (req, res) => {
+  res.json({ settings: aiSettings.getSettings() });
+});
+
+app.post('/api/ai-settings', requireBusinessOwner, (req, res) => {
+  const result = aiSettings.saveSettings(req.body || {}, req.user?.id || null);
+  if (result.error) return res.status(result.status || 400).json({ error: result.error });
+  res.json({ ok: true, settings: result.settings });
+});
+
 app.get('/api/business/versions', requireBusinessOwner,(req, res) => {
   const versions = listBusinessVersions().map(v => ({
     id: v.id,
@@ -398,13 +409,23 @@ app.post('/chat', chatLimiter, attachCustomerProfile, (req, res) => {
         messages[0] = { role: 'user', content: [...docBlocks, ...firstContent] };
       }
 
-      const { text: reply, usage } = await askClaude(messages, getSystemPrompt());
+      const resolved = aiSettings.resolveModel();
+      if (resolved.blocked) {
+        const s = aiSettings.getSettings();
+        recordCustomerMessage(req.customerProfile.id, 'assistant', s.fallback_message);
+        return res.json({ reply: s.fallback_message, downgraded: false, blocked: true });
+      }
+      const { text: reply, usage } = await askClaude(messages, getSystemPrompt(), {
+        model: resolved.model,
+        max_tokens: resolved.max_tokens,
+        temperature: resolved.temperature,
+      });
       logUsage('chat', req.customerProfile.id, usage);
       recordCustomerMessage(req.customerProfile.id, 'assistant', reply);
       conversation.maybeCompactInBackground(req.customerProfile.id);
       maybeFlagUnanswered({ profileId: req.customerProfile.id, messageId, questionText: text, replyText: reply });
 
-      res.json({ reply });
+      res.json({ reply, downgraded: resolved.downgraded || false });
     } catch (err) {
       console.error('Chat error:', err);
       res.status(502).json({ error: 'The assistant is unavailable right now. Please try again in a moment.' });
@@ -716,6 +737,28 @@ app.get('/api/metrics', requireBusinessOwner,(req, res) => {
 
 app.get('/api/usage', requireBusinessOwner,(req, res) => {
   res.json(getUsageSnapshot());
+});
+
+app.get('/api/usage/summary', requireBusinessOwner, (req, res) => {
+  const range = String(req.query.range || 'month');
+  let since;
+  if (range === 'month') since = "datetime('now', 'start of month')";
+  else if (range === 'day') since = "datetime('now', 'start of day')";
+  else if (range === 'week') since = "datetime('now', '-7 days')";
+  else since = "datetime('now', 'start of month')";
+  try {
+    const row = db
+      .prepare(`SELECT COALESCE(SUM(cost_usd), 0) AS total_cost_usd,
+                       COALESCE(SUM(input_tokens), 0) AS input_tokens,
+                       COALESCE(SUM(output_tokens), 0) AS output_tokens,
+                       COUNT(*) AS calls
+                FROM anthropic_usage_log WHERE created_at >= ${since}`)
+      .get();
+    res.json(row);
+  } catch (err) {
+    console.error('[usage/summary] failed:', err.message);
+    res.status(500).json({ error: 'Usage summary unavailable' });
+  }
 });
 
 app.get('/api/operator/overview', requireFounder, (req, res) => {

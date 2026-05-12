@@ -37,12 +37,14 @@ function estimateCost(model, usage) {
 
 async function askClaude(messages, systemPrompt, opts = {}) {
   const model = opts.model || 'claude-sonnet-4-6';
-  const response = await client.messages.create({
+  const params = {
     model,
     max_tokens: opts.max_tokens || 1024,
     system: buildSystem(systemPrompt),
     messages: messages,
-  });
+  };
+  if (Number.isFinite(opts.temperature)) params.temperature = opts.temperature;
+  const response = await client.messages.create(params);
   // Robust against responses where content[0] is a thinking/tool_use block
   // or where content is empty (e.g. a degenerate streaming error).
   const text = (response.content || [])
