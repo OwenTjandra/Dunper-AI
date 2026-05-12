@@ -8,6 +8,7 @@ const {
   createSession,
   findSession,
   deleteSession,
+  touchSession,
   setUserEmail,
   createLoginCode,
   consumeLoginCode,
@@ -83,11 +84,20 @@ function safeEqual(a, b) {
   return left.length === right.length && crypto.timingSafeEqual(left, right);
 }
 
-function attachUser(req, _res, next) {
+function attachUser(req, res, next) {
   const sid = req.cookies?.[SESSION_COOKIE];
   if (sid) {
     const session = findSession(sid);
-    if (session) req.user = { id: session.user_id, username: session.username, role: session.role };
+    if (session) {
+      req.user = { id: session.user_id, username: session.username, role: session.role };
+      // Sliding expiry — push the cookie + DB expiry out to "now + 7 days"
+      // every time the user makes an authenticated request. touchSession
+      // throttles itself to once per ~24h so we're not writing to SQLite
+      // on every API call. If it actually wrote, refresh the cookie too so
+      // the browser-side expiry matches.
+      const refreshed = touchSession(sid, SESSION_TTL_MS);
+      if (refreshed) setSessionCookie(res, sid);
+    }
   }
   next();
 }

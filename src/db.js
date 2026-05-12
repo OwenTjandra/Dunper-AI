@@ -257,6 +257,23 @@ function deleteSession(sessionId) {
   db.prepare('DELETE FROM sessions WHERE id = ?').run(sessionId);
 }
 
+// Sliding-expiry helper. Call on every authenticated request to reset the
+// session's expires_at to "now + ttlMs". Returns true iff the row was
+// actually updated — we only update when the current expires_at is more
+// than ~24h short of the fresh target, to avoid hammering SQLite with one
+// write per request. Net effect: a user stays signed in as long as they
+// hit the server within any given ttlMs window; full N days of silence
+// times them out.
+function touchSession(sessionId, ttlMs) {
+  const refreshIfShorterThanMs = ttlMs - 24 * 60 * 60 * 1000;  // only refresh once/day
+  const newExpiresAt = new Date(Date.now() + ttlMs).toISOString().replace('T', ' ').replace('Z', '');
+  const cutoff       = new Date(Date.now() + refreshIfShorterThanMs).toISOString().replace('T', ' ').replace('Z', '');
+  const info = db.prepare(
+    'UPDATE sessions SET expires_at = ? WHERE id = ? AND expires_at < ?'
+  ).run(newExpiresAt, sessionId, cutoff);
+  return info.changes > 0;
+}
+
 function purgeExpiredSessions() {
   db.prepare('DELETE FROM sessions WHERE expires_at <= CURRENT_TIMESTAMP').run();
 }
@@ -915,6 +932,7 @@ module.exports = {
   createSession,
   findSession,
   deleteSession,
+  touchSession,
   purgeExpiredSessions,
   recordBusinessVersion,
   listBusinessVersions,
