@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS ai_settings (
   id INTEGER PRIMARY KEY CHECK (id = 1),
 
   -- Model & generation
-  model TEXT NOT NULL DEFAULT 'claude-sonnet-4-6',
+  model TEXT NOT NULL DEFAULT 'claude-haiku-4-5-20251001',
   max_tokens INTEGER NOT NULL DEFAULT 1024,
   temperature REAL NOT NULL DEFAULT 0.7,
 

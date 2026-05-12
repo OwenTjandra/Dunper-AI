@@ -5,16 +5,28 @@ const client = new Anthropic({
 });
 
 const SYSTEM_PROMPT_CACHE_THRESHOLD = 1024;
+const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
 
-// Pricing for Claude Sonnet 4.6 (USD per million tokens). Update if Anthropic
-// changes pricing or when we move to a different model. Cache write is 1.25x
-// of base input; cache read is 0.10x of base input.
+// Anthropic pricing (USD per million tokens). Cache write = 1.25x base input,
+// cache read = 0.10x base input. Update when Anthropic changes pricing.
 const PRICING = {
   'claude-sonnet-4-6': {
     input:        3.00,
     output:       15.00,
     cacheCreate:  3.75,
     cacheRead:    0.30,
+  },
+  'claude-haiku-4-5-20251001': {
+    input:        1.00,
+    output:       5.00,
+    cacheCreate:  1.25,
+    cacheRead:    0.10,
+  },
+  'claude-opus-4-7': {
+    input:        15.00,
+    output:       75.00,
+    cacheCreate:  18.75,
+    cacheRead:    1.50,
   },
 };
 
@@ -25,7 +37,7 @@ function buildSystem(systemPrompt) {
 }
 
 function estimateCost(model, usage) {
-  const p = PRICING[model] || PRICING['claude-sonnet-4-6'];
+  const p = PRICING[model] || PRICING[DEFAULT_MODEL];
   const inputBase    = (usage.input_tokens || 0) - (usage.cache_creation_input_tokens || 0) - (usage.cache_read_input_tokens || 0);
   const cost =
     (Math.max(inputBase, 0) / 1_000_000) * p.input +
@@ -36,7 +48,7 @@ function estimateCost(model, usage) {
 }
 
 async function askClaude(messages, systemPrompt, opts = {}) {
-  const model = opts.model || 'claude-sonnet-4-6';
+  const model = opts.model || DEFAULT_MODEL;
   const params = {
     model,
     max_tokens: opts.max_tokens || 1024,

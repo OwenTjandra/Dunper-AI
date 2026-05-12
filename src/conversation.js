@@ -88,7 +88,7 @@ async function compactConversation(profileId) {
   const { text: summary, usage } = await askClaude(
     [{ role: 'user', content: prompt }],
     SUMMARIZE_SYSTEM_PROMPT,
-    { max_tokens: 400 }
+    { max_tokens: 400, model: 'claude-haiku-4-5-20251001' }
   );
 
   try {

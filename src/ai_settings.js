@@ -58,7 +58,7 @@ function rowToSettings(row) {
 
 function defaults() {
   return {
-    model: 'claude-sonnet-4-6',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1024,
     temperature: 0.7,
     monthly_budget_usd: 50.0,
