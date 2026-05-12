@@ -174,6 +174,13 @@ async function sendMessage(text, files) {
       addMessage('error', `${t('error')}: ${data.error || `HTTP ${res.status}`}`);
     } else {
       addMessage('assistant', data.reply);
+      // If the AI booked something via tool use, render a confirmation card
+      // right under the reply — gives the customer a clear "yes this happened".
+      if (Array.isArray(data.bookings)) {
+        data.bookings.forEach(b => {
+          if (window.appendBookingConfirmation) window.appendBookingConfirmation(b);
+        });
+      }
     }
   } catch (err) {
     hideTyping();

@@ -58,6 +58,7 @@ const { router: authRouter, attachUser, requireFounder, requireBusinessOwner } =
 const { getBusiness, getSystemPrompt, applyBusinessUpdate } = require('./business');
 const aiSettings = require('./ai_settings');
 const { runAdminChat } = require('./admin_chat');
+const { runCustomerChat } = require('./customer_chat');
 const documents = require('./documents');
 
 const { db } = require('./db');
@@ -415,17 +416,36 @@ app.post('/chat', chatLimiter, attachCustomerProfile, (req, res) => {
         recordCustomerMessage(req.customerProfile.id, 'assistant', s.fallback_message);
         return res.json({ reply: s.fallback_message, downgraded: false, blocked: true });
       }
-      const { text: reply, usage } = await askClaude(messages, getSystemPrompt(), {
+      // Use the tool-use loop so the AI can actually book appointments.
+      // runCustomerChat handles list_services / check_availability / book_appointment.
+      const { text: reply, usage, bookingsCreated } = await runCustomerChat(messages, getSystemPrompt(), {
         model: resolved.model,
         max_tokens: resolved.max_tokens,
         temperature: resolved.temperature,
+        profileId: req.customerProfile.id,
       });
       logUsage('chat', req.customerProfile.id, usage);
       recordCustomerMessage(req.customerProfile.id, 'assistant', reply);
       conversation.maybeCompactInBackground(req.customerProfile.id);
       maybeFlagUnanswered({ profileId: req.customerProfile.id, messageId, questionText: text, replyText: reply });
 
-      res.json({ reply, downgraded: resolved.downgraded || false });
+      // If a booking was created during the loop, fire Google + email side-effects
+      // (matches the modal path's syncBookingToGoogle + sendBookingConfirmation).
+      for (const b of bookingsCreated) {
+        const fullBooking = getBookingById(b.id);
+        if (fullBooking) {
+          syncBookingToGoogle(fullBooking, req.customerProfile.id);
+          setImmediate(() => emailService.sendBookingConfirmation(fullBooking).catch(err =>
+            console.error('[Email] booking confirmation failed:', err.message)
+          ));
+        }
+      }
+
+      res.json({
+        reply,
+        downgraded: resolved.downgraded || false,
+        bookings: bookingsCreated,
+      });
     } catch (err) {
       console.error('Chat error:', err);
       res.status(502).json({ error: 'The assistant is unavailable right now. Please try again in a moment.' });
@@ -521,19 +541,39 @@ app.get('/api/customer/availability', attachCustomerProfile, (req, res) => {
   res.json(result);
 });
 
+// Hard cap on bookings per customer cookie per 24h — applied to both this
+// modal-driven endpoint and the AI tool-use path. Stops a hostile visitor
+// from spamming dozens of fake bookings.
+const MAX_CUSTOMER_BOOKINGS_PER_DAY = 3;
+function customerBookingsInLast24h(profileId) {
+  if (!profileId) return 0;
+  return db.prepare(
+    `SELECT COUNT(*) AS n FROM bookings WHERE profile_id = ? AND created_at > datetime('now', '-1 day')`
+  ).get(profileId).n;
+}
+
 app.post('/api/customer/bookings', attachCustomerProfile, (req, res) => {
   const { service, date, time, name, phone, email, notes } = req.body || {};
-  if (!service || !date || !time || !name || !phone || !email) {
-    return res.status(400).json({ error: 'service, date, time, name, phone, email are required' });
+  // Email is optional now — require name + at least one contact method.
+  if (!service || !date || !time || !name || (!phone && !email)) {
+    return res.status(400).json({
+      error: 'Need service, date, time, name, and at least one of phone or email.',
+    });
   }
-  const trimmedEmail = String(email).trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+  const trimmedEmail = email ? String(email).trim() : null;
+  const trimmedPhone = phone ? String(phone).trim() : null;
+  if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
     return res.status(400).json({ error: 'Please enter a valid email address.' });
+  }
+  if (customerBookingsInLast24h(req.customerProfile.id) >= MAX_CUSTOMER_BOOKINGS_PER_DAY) {
+    return res.status(429).json({
+      error: `You've already made ${MAX_CUSTOMER_BOOKINGS_PER_DAY} bookings recently. Please contact us directly if you need more.`,
+    });
   }
   const result = bookSlot({
     profileId: req.customerProfile.id,
     customerName: String(name),
-    customerPhone: String(phone),
+    customerPhone: trimmedPhone || '',
     customerEmail: trimmedEmail,
     serviceName: String(service),
     dateStr: String(date),
@@ -543,11 +583,12 @@ app.post('/api/customer/bookings', attachCustomerProfile, (req, res) => {
   });
   if (result.error) return res.status(result.status || 400).json({ error: result.error });
 
+  // Backfill the profile from whatever the customer typed (only fill blanks).
   if (!req.customerProfile.name || !req.customerProfile.phone || !req.customerProfile.email) {
     updateCustomerProfile(req.customerProfile.id, {
       name: req.customerProfile.name || String(name),
-      phone: req.customerProfile.phone || String(phone),
-      email: req.customerProfile.email || trimmedEmail,
+      phone: req.customerProfile.phone || trimmedPhone || req.customerProfile.phone,
+      email: req.customerProfile.email || trimmedEmail || req.customerProfile.email,
     });
   }
 
