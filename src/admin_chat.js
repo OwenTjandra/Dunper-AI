@@ -2,6 +2,9 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { getBusiness, applyBusinessUpdate } = require('./business');
 const { recordAnthropicUsage } = require('./db');
 const { estimateCost } = require('./config/claude');
+const aiSettings = require('./ai_settings');
+
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-sonnet-4-6';
@@ -85,6 +88,79 @@ const tools = [
       required: ['rule'],
     },
   },
+  {
+    name: 'set_weekly_hours',
+    description: 'Set the open/close times for one or more days of the week. Use 24h "HH:MM" format. Pass closed=true to mark a day as closed (open/close still required but ignored). Days you omit are left unchanged.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        days: {
+          type: 'array',
+          description: 'List of per-day entries to set.',
+          items: {
+            type: 'object',
+            properties: {
+              day: { type: 'string', enum: DAY_KEYS },
+              open: { type: 'string', description: 'HH:MM 24h' },
+              close: { type: 'string', description: 'HH:MM 24h' },
+              closed: { type: 'boolean', description: 'true = business is closed this day' },
+            },
+            required: ['day'],
+          },
+        },
+      },
+      required: ['days'],
+    },
+  },
+  {
+    name: 'add_blocked_date',
+    description: 'Add a specific date the business is closed (holiday, owner day off). Format: YYYY-MM-DD.',
+    input_schema: {
+      type: 'object',
+      properties: { date: { type: 'string', description: 'YYYY-MM-DD' } },
+      required: ['date'],
+    },
+  },
+  {
+    name: 'remove_blocked_date',
+    description: 'Remove a previously-blocked date. Format: YYYY-MM-DD.',
+    input_schema: {
+      type: 'object',
+      properties: { date: { type: 'string', description: 'YYYY-MM-DD' } },
+      required: ['date'],
+    },
+  },
+  {
+    name: 'set_about',
+    description: 'Replace the free-text "about" knowledge block with new content. Use for facts the AI should know that don\'t fit a service row (e.g. languages spoken, parking, payment methods).',
+    input_schema: {
+      type: 'object',
+      properties: { text: { type: 'string', description: 'Plain text. Pass empty string to clear.' } },
+      required: ['text'],
+    },
+  },
+  {
+    name: 'update_ai_setting',
+    description: 'Update one AI parameter for the customer chatbot. Allowed keys: model, max_tokens, temperature, monthly_budget_usd, budget_action, tone, starter_message, fallback_message, auto_handoff_after_unresolved.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        key: {
+          type: 'string',
+          enum: ['model', 'max_tokens', 'temperature', 'monthly_budget_usd', 'budget_action', 'tone', 'starter_message', 'fallback_message', 'auto_handoff_after_unresolved'],
+        },
+        value: {
+          description: 'New value. Strings, numbers, or booleans depending on the key.',
+        },
+      },
+      required: ['key', 'value'],
+    },
+  },
+  {
+    name: 'get_ai_settings',
+    description: 'Read the current AI settings (model, budget, tone, etc.). Use this if you need to know the current state before changing it.',
+    input_schema: { type: 'object', properties: {} },
+  },
 ];
 
 function findServiceIndex(business, name) {
@@ -99,6 +175,18 @@ function executeTool(toolName, input, user) {
 
   if (toolName === 'get_business') {
     return { ok: true, business: current };
+  }
+
+  if (toolName === 'get_ai_settings') {
+    return { ok: true, ai_settings: aiSettings.getSettings() };
+  }
+
+  if (toolName === 'update_ai_setting') {
+    if (typeof input.key !== 'string') return { error: 'key is required.' };
+    const payload = { [input.key]: input.value };
+    const r = aiSettings.saveSettings(payload, user?.id || null);
+    if (r.error) return { error: r.error };
+    return { ok: true, applied: `AI setting ${input.key} set to ${JSON.stringify(input.value)}` };
   }
 
   const next = JSON.parse(JSON.stringify(current));
@@ -188,6 +276,50 @@ function executeTool(toolName, input, user) {
     if (idx === -1) return { error: `No rule matching "${input.rule}". Match must be exact.` };
     next.booking_rules.splice(idx, 1);
     note = `Removed booking rule: "${input.rule}"`;
+  } else if (toolName === 'set_weekly_hours') {
+    if (!Array.isArray(input.days) || input.days.length === 0) {
+      return { error: 'days must be a non-empty array.' };
+    }
+    next.weekly_hours = next.weekly_hours || {};
+    const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
+    const changed = [];
+    for (const d of input.days) {
+      if (!d || !DAY_KEYS.includes(d.day)) return { error: `Invalid day "${d?.day}". Use mon..sun.` };
+      const existing = next.weekly_hours[d.day] || { open: '09:00', close: '17:00', closed: false };
+      const open = d.open ?? existing.open;
+      const close = d.close ?? existing.close;
+      const closed = typeof d.closed === 'boolean' ? d.closed : !!existing.closed;
+      if (!closed) {
+        if (!timeRe.test(open) || !timeRe.test(close)) {
+          return { error: `${d.day}: open/close must be HH:MM 24h.` };
+        }
+      }
+      next.weekly_hours[d.day] = { open, close, closed };
+      changed.push(closed ? `${d.day}=closed` : `${d.day}=${open}–${close}`);
+    }
+    note = `Set hours: ${changed.join(', ')}`;
+  } else if (toolName === 'add_blocked_date') {
+    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+    if (typeof input.date !== 'string' || !dateRe.test(input.date)) return { error: 'date must be YYYY-MM-DD.' };
+    next.blocked_dates = Array.isArray(next.blocked_dates) ? next.blocked_dates.slice() : [];
+    if (next.blocked_dates.includes(input.date)) return { error: `${input.date} is already blocked.` };
+    next.blocked_dates.push(input.date);
+    next.blocked_dates.sort();
+    note = `Added closed date ${input.date}`;
+  } else if (toolName === 'remove_blocked_date') {
+    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+    if (typeof input.date !== 'string' || !dateRe.test(input.date)) return { error: 'date must be YYYY-MM-DD.' };
+    next.blocked_dates = Array.isArray(next.blocked_dates) ? next.blocked_dates.slice() : [];
+    const idx = next.blocked_dates.indexOf(input.date);
+    if (idx === -1) return { error: `${input.date} is not in the blocked-dates list.` };
+    next.blocked_dates.splice(idx, 1);
+    note = `Removed closed date ${input.date}`;
+  } else if (toolName === 'set_about') {
+    if (typeof input.text !== 'string') return { error: 'text must be a string.' };
+    const trimmed = input.text.trim();
+    if (trimmed.length > 4000) return { error: 'about text is too long (max 4000 chars).' };
+    if (trimmed) next.about = trimmed; else delete next.about;
+    note = trimmed ? 'Updated the about/knowledge text' : 'Cleared the about/knowledge text';
   } else {
     return { error: `Unknown tool: ${toolName}` };
   }
@@ -198,16 +330,29 @@ function executeTool(toolName, input, user) {
 }
 
 function buildAdminSystemPrompt(currentBusiness) {
-  return `You are an assistant helping a business owner edit the configuration for their AI receptionist ("frontdesk"). The owner's config controls what the customer-facing AI tells callers.
+  const currentAi = aiSettings.getSettings();
+  return `You are the Dunper Setup Assistant. You help business owners configure their AI receptionist ("frontdesk") — the bot that answers their customers. The owner is a small-business operator, not a developer; speak plainly.
 
 When the owner asks for a change, USE THE TOOLS to apply it — don't just describe what you would do.
 
-Rules:
+WHAT YOU CAN CHANGE
+- Business identity: name, type, address, phone, tone, fallback_contact (use update_business_field)
+- Services / products: add/update/remove with name + duration + price
+- Booking rules: short policy sentences
+- Weekly hours: per-day open/close + closed toggle (use set_weekly_hours)
+- Closed dates: specific YYYY-MM-DD entries (use add_blocked_date / remove_blocked_date)
+- About / knowledge: free-text facts the AI should know (use set_about)
+- AI settings: model, max_tokens, temperature, monthly_budget_usd, budget_action,
+  tone (professional|friendly|casual), starter_message, fallback_message,
+  auto_handoff_after_unresolved (use update_ai_setting)
+
+CONVERSATION STYLE
 - Be concise. After each action, briefly confirm what you changed in plain language.
 - If a request is ambiguous (e.g. "raise prices" — by how much?), ask before acting.
 - If the owner asks something unrelated to editing the config (e.g. small talk, general advice), answer briefly without tools.
 - Never invent service or rule names; if a target doesn't exist, say so.
 - Match service names case-insensitively when finding what to update or remove. The exact stored capitalization stays unless the owner specifies a rename.
+- For "what model should I use?" type cost questions: Sonnet 4.6 is highest-quality but ~3x more expensive than Haiku 4.5; Haiku 4.5 is plenty for most frontdesk Q&A. Default is Haiku.
 - After your tool calls succeed, end your turn with a short confirmation. Don't repeat the full new config back unless asked.
 
 How tool results work:
@@ -215,7 +360,10 @@ How tool results work:
 - An error result is shaped \`{ "error": "..." }\`. Read it carefully — common causes are name mismatches or duplicates.
 
 CURRENT BUSINESS CONFIG (JSON, as of the start of this turn — your tool calls may have changed it since):
-${JSON.stringify(currentBusiness, null, 2)}`;
+${JSON.stringify(currentBusiness, null, 2)}
+
+CURRENT AI SETTINGS (as of the start of this turn — call get_ai_settings if you need fresher state):
+${JSON.stringify(currentAi, null, 2)}`;
 }
 
 function extractText(content) {

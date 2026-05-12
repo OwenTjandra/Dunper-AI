@@ -235,6 +235,7 @@
       <div class="nav-item" data-page="products" onclick="navigate(this)"><i class="ti ti-package"></i> Products &amp; Services</div>
       <div class="nav-item" data-page="calendar" onclick="navigate(this)"><i class="ti ti-calendar"></i> Calendar</div>
       <div class="nav-section-label">System</div>
+      <div class="nav-item" data-page="setup-assistant" onclick="navigate(this)"><i class="ti ti-sparkles"></i> Setup Assistant</div>
       <div class="nav-item" data-page="ai-settings" onclick="navigate(this)"><i class="ti ti-settings-2"></i> AI Settings</div>
       <div class="nav-item" data-page="alerts" onclick="navigate(this)"><i class="ti ti-bell"></i> Alerts <span class="nav-badge" id="alerts-badge" style="display:none;">0</span></div>
       <div class="nav-item" data-page="profile" onclick="navigate(this)"><i class="ti ti-user-circle"></i> Profile</div>
@@ -523,6 +524,49 @@
         </div>
       </div>
 
+      <div class="page" id="page-setup-assistant">
+        <div class="section-head">
+          <div class="section-title">Setup Assistant</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span id="setup-chat-status" style="font-size:12px;color:var(--text-tertiary);"></span>
+            <button class="btn-ghost" id="setup-chat-clear">Clear chat</button>
+          </div>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div id="setup-chat-log" style="padding:20px;height:480px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;background:var(--neutral-50,#fafafa);">
+            <div id="setup-chat-welcome" style="font-size:13px;color:var(--text-tertiary);line-height:1.6;">
+              <div style="font-size:14px;color:var(--text-primary);font-weight:500;margin-bottom:8px;">Hi — I'm your Dunper setup assistant.</div>
+              Tell me about your business and I'll configure the AI for you. Try:
+              <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+                <button class="setup-chip" data-prompt="Help me set up my business from scratch.">Help me set up my business from scratch</button>
+                <button class="setup-chip" data-prompt="Add a service called 'Haircut' for 45 minutes at Rp 150,000.">Add a haircut service</button>
+                <button class="setup-chip" data-prompt="Change my hours so I'm open Mon–Fri 9am–6pm and closed weekends.">Change my weekly hours</button>
+                <button class="setup-chip" data-prompt="Make the AI more friendly and casual in tone.">Make the AI tone friendlier</button>
+                <button class="setup-chip" data-prompt="What's the cheapest model I can use for the chatbot?">Help me lower my AI bill</button>
+              </div>
+            </div>
+          </div>
+          <div style="border-top:0.5px solid var(--neutral-200);padding:12px 16px;display:flex;gap:8px;align-items:flex-end;background:#fff;">
+            <textarea id="setup-chat-input" placeholder="Ask the assistant to change anything about your AI…" rows="2" maxlength="4000" style="flex:1;border:0.5px solid var(--neutral-200);border-radius:8px;padding:10px 12px;resize:none;font-family:inherit;font-size:14px;line-height:1.4;outline:none;"></textarea>
+            <button class="btn-primary" id="setup-chat-send" style="padding:10px 18px;"><i class="ti ti-send"></i> Send</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;font-size:12px;color:var(--text-tertiary);line-height:1.5;">
+          The assistant edits your business config and AI settings on your behalf — services, hours, tone, model, budget. Every change is saved immediately and visible in the Products &amp; Services, Calendar, and AI Settings pages.
+        </div>
+
+        <style>
+          .setup-chip { display:inline-block;background:#fff;border:0.5px solid var(--neutral-200);color:var(--accent);padding:6px 12px;border-radius:14px;font-size:12px;cursor:pointer;text-align:left;width:fit-content;font-family:inherit; }
+          .setup-chip:hover { background:var(--accent);color:#fff;border-color:var(--accent); }
+          .setup-bubble { max-width:78%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word; }
+          .setup-bubble-user { background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px; }
+          .setup-bubble-ai { background:#fff;color:var(--text-primary);align-self:flex-start;border:0.5px solid var(--neutral-200);border-bottom-left-radius:4px; }
+          .setup-toolnote { font-size:11px;color:var(--text-tertiary);align-self:flex-start;padding:2px 10px;font-style:italic; }
+        </style>
+      </div>
+
       <div class="page" id="page-ai-settings">
         <div class="section-head">
           <div class="section-title">AI Settings</div>
@@ -741,12 +785,13 @@
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     el.classList.add('active');
     document.getElementById('page-' + page).classList.add('active');
-    const titles = { dashboard: 'Dashboard', metrics: 'Customer Metrics', products: 'Products & Services', calendar: 'Calendar & Availability', 'ai-settings': 'AI Settings', alerts: 'Alerts', profile: 'Profile' };
+    const titles = { dashboard: 'Dashboard', metrics: 'Customer Metrics', products: 'Products & Services', calendar: 'Calendar & Availability', 'setup-assistant': 'Setup Assistant', 'ai-settings': 'AI Settings', alerts: 'Alerts', profile: 'Profile' };
     document.getElementById('page-title').textContent = titles[page] || page;
     setTimeout(initCharts, 80);
     if (page === 'ai-settings') loadAiSettings();
     if (page === 'products') loadProducts();
     if (page === 'calendar') loadAvailability();
+    if (page === 'setup-assistant') focusSetupChat();
   }
 
   /* ---------- AI Settings ---------- */
@@ -1075,6 +1120,135 @@
     } catch (e) {
       setStatus('availability-status', 'Save failed: ' + e.message, true);
     }
+  }
+
+  /* ---------- Setup Assistant (owner-facing AI that edits your config) ---------- */
+
+  const SETUP_HISTORY_KEY = 'dunper_setup_chat_history';
+  let setupHistory = [];          // [{role, content}]
+  let setupSending = false;
+
+  function loadSetupHistory() {
+    try {
+      const raw = localStorage.getItem(SETUP_HISTORY_KEY);
+      setupHistory = raw ? JSON.parse(raw) : [];
+    } catch { setupHistory = []; }
+  }
+
+  function persistSetupHistory() {
+    try { localStorage.setItem(SETUP_HISTORY_KEY, JSON.stringify(setupHistory.slice(-40))); } catch {}
+  }
+
+  function appendSetupBubble(role, text, toolNote) {
+    const log = document.getElementById('setup-chat-log');
+    document.getElementById('setup-chat-welcome')?.remove();
+    const bubble = document.createElement('div');
+    bubble.className = 'setup-bubble ' + (role === 'user' ? 'setup-bubble-user' : 'setup-bubble-ai');
+    bubble.textContent = text;
+    log.appendChild(bubble);
+    if (toolNote) {
+      const note = document.createElement('div');
+      note.className = 'setup-toolnote';
+      note.textContent = toolNote;
+      log.appendChild(note);
+    }
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function renderSetupHistory() {
+    const log = document.getElementById('setup-chat-log');
+    log.innerHTML = '';
+    if (!setupHistory.length) {
+      // Re-mount the welcome card.
+      log.innerHTML = `
+        <div id="setup-chat-welcome" style="font-size:13px;color:var(--text-tertiary);line-height:1.6;">
+          <div style="font-size:14px;color:var(--text-primary);font-weight:500;margin-bottom:8px;">Hi — I'm your Dunper setup assistant.</div>
+          Tell me about your business and I'll configure the AI for you. Try:
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+            <button class="setup-chip" data-prompt="Help me set up my business from scratch.">Help me set up my business from scratch</button>
+            <button class="setup-chip" data-prompt="Add a service called 'Haircut' for 45 minutes at Rp 150,000.">Add a haircut service</button>
+            <button class="setup-chip" data-prompt="Change my hours so I'm open Mon–Fri 9am–6pm and closed weekends.">Change my weekly hours</button>
+            <button class="setup-chip" data-prompt="Make the AI more friendly and casual in tone.">Make the AI tone friendlier</button>
+            <button class="setup-chip" data-prompt="What's the cheapest model I can use for the chatbot?">Help me lower my AI bill</button>
+          </div>
+        </div>`;
+      bindChips();
+      return;
+    }
+    for (const m of setupHistory) appendSetupBubble(m.role, m.content, m.toolNote);
+  }
+
+  function bindChips() {
+    document.querySelectorAll('.setup-chip').forEach(b => {
+      b.addEventListener('click', () => {
+        const inp = document.getElementById('setup-chat-input');
+        inp.value = b.dataset.prompt || '';
+        inp.focus();
+      });
+    });
+  }
+
+  function focusSetupChat() {
+    renderSetupHistory();
+    setTimeout(() => document.getElementById('setup-chat-input')?.focus(), 50);
+  }
+
+  function summarizeToolCalls(toolCalls) {
+    if (!Array.isArray(toolCalls) || toolCalls.length === 0) return '';
+    const ok = toolCalls.filter(t => t.ok).map(t => t.name);
+    if (ok.length === 0) return '';
+    const unique = [...new Set(ok)];
+    return 'Applied: ' + unique.join(', ');
+  }
+
+  async function sendSetupMessage() {
+    if (setupSending) return;
+    const inp = document.getElementById('setup-chat-input');
+    const text = inp.value.trim();
+    if (!text) return;
+
+    setupSending = true;
+    inp.value = '';
+    setupHistory.push({ role: 'user', content: text });
+    appendSetupBubble('user', text);
+    persistSetupHistory();
+    setStatus('setup-chat-status', 'Thinking…', false);
+
+    const apiMessages = setupHistory
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => ({ role: m.role, content: m.content }));
+
+    try {
+      const r = await fetch('/api/admin/chat', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: apiMessages }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
+      const reply = data.reply || '(no reply)';
+      const note = summarizeToolCalls(data.toolCalls);
+      setupHistory.push({ role: 'assistant', content: reply, toolNote: note || undefined });
+      appendSetupBubble('assistant', reply, note);
+      persistSetupHistory();
+      setStatus('setup-chat-status', '', false);
+    } catch (e) {
+      setStatus('setup-chat-status', 'Error: ' + e.message, true);
+      setupHistory.push({ role: 'assistant', content: 'Sorry — something went wrong. Try again in a moment.' });
+      appendSetupBubble('assistant', 'Sorry — something went wrong. Try again in a moment.');
+      persistSetupHistory();
+    } finally {
+      setupSending = false;
+    }
+  }
+
+  function clearSetupChat() {
+    setupHistory = [];
+    persistSetupHistory();
+    renderSetupHistory();
+    setStatus('setup-chat-status', 'Cleared.', false);
+    setTimeout(() => setStatus('setup-chat-status', '', false), 1500);
   }
 
   function switchMetricTab(btn, tabId) {
@@ -1574,6 +1748,17 @@
     document.getElementById('availability-empty')?.remove();
     list.appendChild(renderBlockedRow(new Date().toISOString().slice(0,10)));
   });
+
+  document.getElementById('setup-chat-send')?.addEventListener('click', sendSetupMessage);
+  document.getElementById('setup-chat-clear')?.addEventListener('click', clearSetupChat);
+  document.getElementById('setup-chat-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendSetupMessage();
+    }
+  });
+  loadSetupHistory();
+  bindChips();
 
   window.addEventListener('load', () => {
     setTodayDate();
