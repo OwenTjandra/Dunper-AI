@@ -85,6 +85,47 @@
   .composer button:hover{transform:scale(1.06);}
   .composer button svg{width:16px;height:16px;fill:#fff;}
 
+  /* COMPOSER ROW + "PICK A TIME" CTA */
+  .composer-row{margin-top:20px;display:flex;flex-direction:column;gap:10px;}
+  .composer-actions{display:flex;justify-content:center;gap:10px;}
+  .pick-time-btn{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(15,112,240,0.08);border:1px solid rgba(15,112,240,0.25);
+    color:var(--accent);padding:7px 14px;border-radius:50px;
+    font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
+    cursor:pointer;transition:background .2s,border-color .2s,transform .15s;
+  }
+  .pick-time-btn:hover{background:rgba(15,112,240,0.14);border-color:var(--accent);transform:translateY(-1px);}
+
+  /* BOOKING MODAL */
+  .dchat-modal{position:fixed;inset:0;z-index:200;background:rgba(15,46,92,0.55);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;}
+  .dchat-modal.open{display:flex;}
+  .dchat-modal-card{background:#fff;border-radius:20px;width:100%;max-width:520px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(15,23,42,0.32);animation:dchatModalIn .25s cubic-bezier(.16,1,.3,1);}
+  @keyframes dchatModalIn{from{opacity:0;transform:translateY(12px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+  .dchat-modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid rgba(15,23,42,0.08);}
+  .dchat-modal-head h2{font-family:'Outfit',sans-serif;font-weight:600;font-size:18px;color:#0A1430;margin:0;}
+  .dchat-modal-close{background:none;border:none;cursor:pointer;font-size:24px;color:#475569;width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
+  .dchat-modal-close:hover{background:rgba(15,23,42,0.06);color:#0A1430;}
+  .dchat-modal-body{padding:18px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;}
+  .dchat-field{display:flex;flex-direction:column;gap:6px;}
+  .dchat-field label{font-size:12px;font-weight:600;color:#475569;letter-spacing:.02em;}
+  .dchat-field input, .dchat-field select{font-family:'DM Sans',sans-serif;font-size:14px;color:#0A1430;background:#fff;border:1px solid rgba(15,23,42,0.15);border-radius:10px;padding:10px 12px;outline:none;transition:border-color .15s,box-shadow .15s;}
+  .dchat-field input:focus, .dchat-field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(15,112,240,0.12);}
+  .dchat-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:480px){ .dchat-row-2{grid-template-columns:1fr;} }
+  .dchat-slots{display:flex;flex-wrap:wrap;gap:8px;min-height:40px;}
+  .dchat-slot{background:#fff;border:1px solid rgba(15,23,42,0.15);color:#0A1430;padding:8px 14px;border-radius:10px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;}
+  .dchat-slot:hover{border-color:var(--accent);color:var(--accent);}
+  .dchat-slot.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .dchat-hint{color:#94A3B8;font-size:13px;margin:0;}
+  .dchat-modal-foot{padding:16px 22px;border-top:1px solid rgba(15,23,42,0.08);display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .dchat-submit{background:linear-gradient(135deg,var(--blue-mid),var(--accent));color:#fff;border:none;padding:10px 22px;border-radius:50px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:opacity .2s,transform .15s;}
+  .dchat-submit:hover:not(:disabled){transform:translateY(-1px);}
+  .dchat-submit:disabled{opacity:.5;cursor:not-allowed;}
+  .dchat-status{font-size:12px;color:#475569;flex:1;}
+  .dchat-status.err{color:#B91C1C;}
+  .dchat-status.ok{color:#047857;}
+
   /* CTA STRIP */
   .chat-cta{margin-top:24px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
   .chat-cta a{display:inline-block;background:#fff;border:1px solid rgba(31,76,143,0.2);color:var(--blue-pale);padding:9px 18px;border-radius:50px;font-size:13px;text-decoration:none;transition:border-color .2s,color .2s,transform .15s;}
@@ -137,15 +178,64 @@
     <!-- messages injected by JS -->
   </div>
 
-  <form class="composer" id="composer" autocomplete="off">
-    <textarea id="composer-input" placeholder="Ask another question… (Shift+Enter for new line)" autofocus rows="1"></textarea>
-    <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
-  </form>
+  <div class="composer-row">
+    <form class="composer" id="composer" autocomplete="off">
+      <textarea id="composer-input" placeholder="Ask another question… (Shift+Enter for new line)" autofocus rows="1"></textarea>
+      <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
+    </form>
+    <div class="composer-actions">
+      <button type="button" class="pick-time-btn" id="open-booking-modal">📅 Or pick a time from the calendar</button>
+    </div>
+  </div>
 
   <div class="chat-cta">
     <a href="dunper_join.html">Pick a plan →</a>
     <a href="dunper_services.html">See what we can do</a>
-    <a href="dunper_contact.html">Book a demo</a>
+    <a href="#" id="cta-book-demo">Book a demo</a>
+  </div>
+</div>
+
+<!-- BOOKING MODAL — calendar-style date picker + time slot grid -->
+<div class="dchat-modal" id="dchat-modal" aria-hidden="true" role="dialog" aria-labelledby="dchat-modal-title">
+  <div class="dchat-modal-card">
+    <div class="dchat-modal-head">
+      <h2 id="dchat-modal-title">Book a time with Dunper</h2>
+      <button type="button" class="dchat-modal-close" id="dchat-modal-close" aria-label="Close">×</button>
+    </div>
+    <form class="dchat-modal-body" id="dchat-form">
+      <div class="dchat-field">
+        <label for="dchat-service">Service</label>
+        <select id="dchat-service" required></select>
+      </div>
+      <div class="dchat-row-2">
+        <div class="dchat-field">
+          <label for="dchat-date">Date</label>
+          <input type="date" id="dchat-date" required>
+        </div>
+        <div class="dchat-field">
+          <label>Available times</label>
+          <div class="dchat-slots" id="dchat-slots"><p class="dchat-hint">Pick a date first.</p></div>
+        </div>
+      </div>
+      <div class="dchat-row-2">
+        <div class="dchat-field">
+          <label for="dchat-name">Your name</label>
+          <input type="text" id="dchat-name" required placeholder="Alex Rivera">
+        </div>
+        <div class="dchat-field">
+          <label for="dchat-phone">Phone <span style="font-weight:400;color:#94A3B8;">(or email below)</span></label>
+          <input type="tel" id="dchat-phone" placeholder="+62 81 234 5678">
+        </div>
+      </div>
+      <div class="dchat-field">
+        <label for="dchat-email">Email <span style="font-weight:400;color:#94A3B8;">(or phone above) — used to send confirmation</span></label>
+        <input type="email" id="dchat-email" placeholder="you@company.com">
+      </div>
+    </form>
+    <div class="dchat-modal-foot">
+      <span class="dchat-status" id="dchat-status"></span>
+      <button type="button" class="dchat-submit" id="dchat-submit" disabled>Confirm booking</button>
+    </div>
   </div>
 </div>
 
@@ -311,6 +401,171 @@
     autoSize();
     handleQuery(q);
   });
+
+  // ============================================================
+  // BOOKING MODAL — calendar picker + time slot grid + form
+  // Wires to the same /api/customer/bookings endpoint the AI uses.
+  // ============================================================
+  (function bookingModal(){
+    const modal = document.getElementById('dchat-modal');
+    const openBtn = document.getElementById('open-booking-modal');
+    const closeBtn = document.getElementById('dchat-modal-close');
+    const ctaBookDemo = document.getElementById('cta-book-demo');
+    const formEl = document.getElementById('dchat-form');
+    const serviceEl = document.getElementById('dchat-service');
+    const dateEl = document.getElementById('dchat-date');
+    const slotsEl = document.getElementById('dchat-slots');
+    const nameEl = document.getElementById('dchat-name');
+    const phoneEl = document.getElementById('dchat-phone');
+    const emailEl = document.getElementById('dchat-email');
+    const submitBtn = document.getElementById('dchat-submit');
+    const statusEl = document.getElementById('dchat-status');
+
+    let servicesLoaded = false;
+    let selectedSlot = null;
+
+    function setStatus(msg, kind){
+      statusEl.textContent = msg || '';
+      statusEl.className = 'dchat-status' + (kind ? ' ' + kind : '');
+    }
+    function tomorrowStr(){
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      return d.toISOString().slice(0,10);
+    }
+    function maxStr(){
+      const d = new Date();
+      d.setDate(d.getDate() + 30);
+      return d.toISOString().slice(0,10);
+    }
+
+    async function loadServices(){
+      if (servicesLoaded) return;
+      try {
+        const res = await fetch('/api/customer/business', { credentials: 'include' });
+        const data = await res.json();
+        const services = data.services || [];
+        serviceEl.innerHTML = '';
+        services.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.name;
+          opt.textContent = s.name + ' — ' + s.duration_minutes + ' min, ' + s.price;
+          serviceEl.appendChild(opt);
+        });
+        servicesLoaded = true;
+      } catch (err) {
+        setStatus('Could not load services: ' + (err.message || err), 'err');
+      }
+    }
+
+    async function loadSlots(){
+      selectedSlot = null;
+      submitBtn.disabled = true;
+      if (!dateEl.value || !serviceEl.value) {
+        slotsEl.innerHTML = '<p class="dchat-hint">Pick a date.</p>';
+        return;
+      }
+      slotsEl.innerHTML = '<p class="dchat-hint">Loading times…</p>';
+      try {
+        const url = '/api/customer/availability?date=' + encodeURIComponent(dateEl.value) +
+                    '&service=' + encodeURIComponent(serviceEl.value);
+        const res = await fetch(url, { credentials: 'include' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+        if (data.reason || !(data.slots && data.slots.length)) {
+          slotsEl.innerHTML = '<p class="dchat-hint">' + escapeHtml(data.reason || 'No open times that day.') + '</p>';
+          return;
+        }
+        slotsEl.innerHTML = '';
+        data.slots.forEach(time => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'dchat-slot';
+          btn.textContent = time;
+          btn.addEventListener('click', () => {
+            slotsEl.querySelectorAll('.dchat-slot').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedSlot = time;
+            submitBtn.disabled = false;
+          });
+          slotsEl.appendChild(btn);
+        });
+      } catch (err) {
+        slotsEl.innerHTML = '<p class="dchat-hint" style="color:#B91C1C;">' + escapeHtml(err.message) + '</p>';
+      }
+    }
+
+    async function openModal(){
+      setStatus('');
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      await loadServices();
+      if (!dateEl.value) {
+        dateEl.min = tomorrowStr();
+        dateEl.max = maxStr();
+        dateEl.value = tomorrowStr();
+      }
+      loadSlots();
+    }
+    function closeModal(){
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+    });
+    if (ctaBookDemo) {
+      ctaBookDemo.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
+    }
+    serviceEl.addEventListener('change', loadSlots);
+    dateEl.addEventListener('change', loadSlots);
+
+    submitBtn.addEventListener('click', async () => {
+      const name = nameEl.value.trim();
+      const phone = phoneEl.value.trim();
+      const email = emailEl.value.trim();
+      if (!name) { setStatus('Name is required.', 'err'); return; }
+      if (!phone && !email) { setStatus('Please add a phone OR an email so we can confirm.', 'err'); return; }
+      if (!selectedSlot) { setStatus('Pick a time first.', 'err'); return; }
+
+      submitBtn.disabled = true;
+      setStatus('Booking…');
+      try {
+        const res = await fetch('/api/customer/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            service: serviceEl.value,
+            date: dateEl.value,
+            time: selectedSlot,
+            name, phone, email,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+        setStatus('✓ Booked — see you then.', 'ok');
+        // Render the confirmation card in the chat window too, so the
+        // booking is visible alongside any chat messages already there.
+        appendBookingCard({
+          service_name: data.booking.service_name,
+          starts_at: data.booking.starts_at,
+          confirmation_sent_to: email || null,
+        });
+        setTimeout(closeModal, 700);
+      } catch (err) {
+        setStatus(err.message, 'err');
+        submitBtn.disabled = false;
+        loadSlots(); // refresh — the slot may have been taken
+      }
+    });
+  })();
 </script>
 <script src="/js/common.js"></script>
 </body>
