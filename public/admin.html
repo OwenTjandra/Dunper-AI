@@ -445,35 +445,110 @@
       <div class="page" id="page-ai-settings">
         <div class="section-head">
           <div class="section-title">AI Settings</div>
-          <div style="display:flex;gap:8px;">
-            <button class="btn-ghost">Reset</button>
-            <button class="btn-primary"><i class="ti ti-device-floppy"></i> Save changes</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span id="ai-settings-status" style="font-size:12px;color:var(--text-tertiary);"></span>
+            <button class="btn-ghost" id="ai-settings-reload">Reload</button>
+            <button class="btn-primary" id="ai-settings-save"><i class="ti ti-device-floppy"></i> Save changes</button>
           </div>
         </div>
         <div class="settings-layout">
           <div class="card">
+
+            <div class="setting-group">
+              <div class="setting-group-label">Model &amp; Generation</div>
+              <div class="setting-row">
+                <div><div class="setting-name">Primary model</div><div class="setting-desc">Sonnet = best quality. Haiku = ~5x cheaper.</div></div>
+                <select id="ais-model" class="select-field">
+                  <option value="claude-sonnet-4-6">Sonnet 4.6 ($3 / $15 per M)</option>
+                  <option value="claude-haiku-4-5-20251001">Haiku 4.5 ($1 / $5 per M)</option>
+                  <option value="claude-opus-4-7">Opus 4.7 ($15 / $75 per M)</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <div><div class="setting-name">Max tokens / reply</div><div class="setting-desc">64–4096. Lower caps stop runaway answers.</div></div>
+                <input id="ais-max-tokens" class="field-input" type="number" min="64" max="4096" step="64" style="width:120px;">
+              </div>
+              <div class="setting-row">
+                <div><div class="setting-name">Temperature</div><div class="setting-desc">0 = deterministic. 1 = creative. Recommend 0.5–0.7.</div></div>
+                <input id="ais-temperature" class="field-input" type="number" min="0" max="1" step="0.05" style="width:120px;">
+              </div>
+            </div>
+
+            <div class="setting-group">
+              <div class="setting-group-label">Cost guardrails</div>
+              <div class="setting-row">
+                <div><div class="setting-name">Monthly budget (USD)</div><div class="setting-desc">Action triggers when this month's Anthropic spend reaches this amount.</div></div>
+                <input id="ais-budget" class="field-input" type="number" min="0" max="100000" step="1" style="width:120px;">
+              </div>
+              <div class="setting-row">
+                <div><div class="setting-name">When over budget</div><div class="setting-desc">downgrade = switch to cheaper model. block = serve fallback message. warn_only = log only.</div></div>
+                <select id="ais-budget-action" class="select-field">
+                  <option value="downgrade">Downgrade to cheaper model</option>
+                  <option value="block">Block (send fallback)</option>
+                  <option value="warn_only">Warn only</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <div><div class="setting-name">Downgrade model</div><div class="setting-desc">Used when budget is exceeded and action = downgrade.</div></div>
+                <select id="ais-downgrade-model" class="select-field">
+                  <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
+                  <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="setting-group">
+              <div class="setting-group-label">Rate limits</div>
+              <div class="setting-row">
+                <div><div class="setting-name">Daily messages per customer</div><div class="setting-desc">Same visitor can't send more than this per day.</div></div>
+                <input id="ais-rl-per-customer" class="field-input" type="number" min="1" max="10000" step="1" style="width:120px;">
+              </div>
+              <div class="setting-row">
+                <div><div class="setting-name">Daily total conversations</div><div class="setting-desc">Global cap across all customers per day.</div></div>
+                <input id="ais-rl-total" class="field-input" type="number" min="1" max="1000000" step="50" style="width:120px;">
+              </div>
+              <div class="setting-row">
+                <div><div class="setting-name">Auto-handoff after</div><div class="setting-desc">Hand off to a human after this many unresolved replies.</div></div>
+                <input id="ais-handoff-after" class="field-input" type="number" min="1" max="50" step="1" style="width:120px;">
+              </div>
+            </div>
+
             <div class="setting-group">
               <div class="setting-group-label">Conversation</div>
               <div class="setting-row">
-                <div><div class="setting-name">Fallout Message</div><div class="setting-desc">Shown when AI can't answer</div></div>
-                <input class="field-input" value="Sorry, let me connect you to our team!" style="width:220px;">
+                <div><div class="setting-name">Starter message</div><div class="setting-desc">Opening line on chat load.</div></div>
+                <input id="ais-starter" class="field-input" maxlength="500" style="width:260px;">
               </div>
               <div class="setting-row">
-                <div><div class="setting-name">Starter Message</div><div class="setting-desc">Opening line on chat load</div></div>
-                <input class="field-input" value="Hi! How can I help you today?" style="width:220px;">
+                <div><div class="setting-name">Fallback message</div><div class="setting-desc">Shown when AI can't answer or budget blocks.</div></div>
+                <input id="ais-fallback" class="field-input" maxlength="500" style="width:260px;">
               </div>
               <div class="setting-row">
-                <div><div class="setting-name">Tone</div><div class="setting-desc">Overall personality style</div></div>
-                <select class="select-field"><option>Professional</option><option>Friendly</option><option>Casual</option></select>
+                <div><div class="setting-name">Tone</div><div class="setting-desc">Overall personality style.</div></div>
+                <select id="ais-tone" class="select-field">
+                  <option value="professional">Professional</option>
+                  <option value="friendly">Friendly</option>
+                  <option value="casual">Casual</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <div><div class="setting-name">Quiet hours start</div><div class="setting-desc">HH:MM 24h. Leave blank for off.</div></div>
+                <input id="ais-quiet-start" class="field-input" type="time" style="width:140px;">
+              </div>
+              <div class="setting-row">
+                <div><div class="setting-name">Quiet hours end</div><div class="setting-desc">HH:MM 24h. Leave blank for off.</div></div>
+                <input id="ais-quiet-end" class="field-input" type="time" style="width:140px;">
               </div>
             </div>
+
             <div class="setting-group">
               <div class="setting-group-label">Behaviour</div>
-              <div class="setting-row"><div><div class="setting-name">Human Handoff</div><div class="setting-desc">Escalate to agent when needed</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-              <div class="setting-row"><div><div class="setting-name">Business Policy Enforcement</div><div class="setting-desc">Apply business rules to responses</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-              <div class="setting-row"><div><div class="setting-name">Language Detection</div><div class="setting-desc">Auto-respond in customer's language</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
-              <div class="setting-row"><div><div class="setting-name">AI Boundaries</div><div class="setting-desc">Restrict off-topic conversations</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="setting-row"><div><div class="setting-name">Human handoff</div><div class="setting-desc">Escalate to agent when needed.</div></div><div id="ais-toggle-handoff" class="toggle" data-key="human_handoff_enabled" onclick="aisToggleHandler(this)"></div></div>
+              <div class="setting-row"><div><div class="setting-name">Business policy enforcement</div><div class="setting-desc">Apply business rules to responses.</div></div><div id="ais-toggle-policy" class="toggle" data-key="policy_enforcement_enabled" onclick="aisToggleHandler(this)"></div></div>
+              <div class="setting-row"><div><div class="setting-name">Language detection</div><div class="setting-desc">Auto-respond in customer's language.</div></div><div id="ais-toggle-lang" class="toggle" data-key="language_detection_enabled" onclick="aisToggleHandler(this)"></div></div>
+              <div class="setting-row"><div><div class="setting-name">Topic boundaries</div><div class="setting-desc">Restrict off-topic conversations.</div></div><div id="ais-toggle-bounds" class="toggle" data-key="topic_boundaries_enabled" onclick="aisToggleHandler(this)"></div></div>
             </div>
+
           </div>
           <div>
             <div class="preview-frame">
@@ -487,9 +562,11 @@
               </div>
             </div>
             <div style="margin-top:16px;" class="card">
-              <div class="card-title" style="margin-bottom:12px;">Landing page reload</div>
-              <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">Preview refreshes automatically after each setting change.</div>
-              <div style="margin-top:12px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-tertiary);"><i class="ti ti-refresh"></i> Last synced 2 min ago</div>
+              <div class="card-title" style="margin-bottom:12px;">Current spend</div>
+              <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">This month: <span id="ais-spend-mtd" style="color:var(--text-primary);font-weight:500;">—</span></div>
+              <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">Budget: <span id="ais-spend-budget" style="color:var(--text-primary);font-weight:500;">—</span></div>
+              <div id="ais-budget-bar" style="margin-top:10px;height:6px;border-radius:3px;background:var(--neutral-200);overflow:hidden;"><div id="ais-budget-fill" style="height:100%;width:0%;background:var(--accent);transition:width .3s;"></div></div>
+              <div style="margin-top:12px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-tertiary);"><i class="ti ti-refresh"></i> Last saved <span id="ais-last-saved">—</span></div>
             </div>
           </div>
         </div>
@@ -586,6 +663,115 @@
     const titles = { dashboard: 'Dashboard', metrics: 'Customer Metrics', calendar: 'Calendar', 'ai-settings': 'AI Settings', alerts: 'Alerts', profile: 'Profile' };
     document.getElementById('page-title').textContent = titles[page] || page;
     setTimeout(initCharts, 80);
+    if (page === 'ai-settings') loadAiSettings();
+  }
+
+  /* ---------- AI Settings ---------- */
+
+  const AIS_FIELDS = {
+    model: 'ais-model',
+    max_tokens: 'ais-max-tokens',
+    temperature: 'ais-temperature',
+    monthly_budget_usd: 'ais-budget',
+    budget_action: 'ais-budget-action',
+    downgrade_model: 'ais-downgrade-model',
+    daily_msgs_per_customer: 'ais-rl-per-customer',
+    daily_convos_total: 'ais-rl-total',
+    auto_handoff_after_unresolved: 'ais-handoff-after',
+    starter_message: 'ais-starter',
+    fallback_message: 'ais-fallback',
+    tone: 'ais-tone',
+    quiet_hours_start: 'ais-quiet-start',
+    quiet_hours_end: 'ais-quiet-end',
+  };
+  const AIS_TOGGLES = {
+    human_handoff_enabled: 'ais-toggle-handoff',
+    policy_enforcement_enabled: 'ais-toggle-policy',
+    language_detection_enabled: 'ais-toggle-lang',
+    topic_boundaries_enabled: 'ais-toggle-bounds',
+  };
+
+  function aisToggleHandler(el) { el.classList.toggle('on'); }
+
+  function aisSetStatus(text, isError) {
+    const el = document.getElementById('ai-settings-status');
+    if (!el) return;
+    el.textContent = text || '';
+    el.style.color = isError ? '#e25555' : 'var(--text-tertiary)';
+  }
+
+  async function loadAiSettings() {
+    aisSetStatus('Loading…', false);
+    try {
+      const r = await fetch('/api/ai-settings', { credentials: 'include' });
+      if (!r.ok) throw new Error('Load failed (' + r.status + ')');
+      const { settings } = await r.json();
+      for (const [k, id] of Object.entries(AIS_FIELDS)) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.value = settings[k] == null ? '' : settings[k];
+      }
+      for (const [k, id] of Object.entries(AIS_TOGGLES)) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.classList.toggle('on', !!settings[k]);
+      }
+      // Static preview was replaced with a live iframe (2f4cb92), so this
+      // node may not exist anymore — guard the access.
+      const previewStarterEl = document.getElementById('ais-preview-starter');
+      if (previewStarterEl) previewStarterEl.textContent = settings.starter_message || '';
+      document.getElementById('ais-spend-budget').textContent = '$' + Number(settings.monthly_budget_usd || 0).toFixed(2);
+      document.getElementById('ais-last-saved').textContent = settings.updated_at ? new Date(settings.updated_at + 'Z').toLocaleString() : '—';
+      await loadAiSpend(settings.monthly_budget_usd);
+      aisSetStatus('', false);
+    } catch (e) {
+      aisSetStatus('Failed to load: ' + e.message, true);
+    }
+  }
+
+  async function loadAiSpend(budget) {
+    try {
+      const r = await fetch('/api/usage/summary?range=month', { credentials: 'include' });
+      if (!r.ok) return;
+      const { total_cost_usd } = await r.json();
+      const cost = Number(total_cost_usd || 0);
+      document.getElementById('ais-spend-mtd').textContent = '$' + cost.toFixed(4);
+      const pct = budget > 0 ? Math.min(100, (cost / budget) * 100) : 0;
+      const fill = document.getElementById('ais-budget-fill');
+      fill.style.width = pct + '%';
+      fill.style.background = pct >= 100 ? '#e25555' : pct >= 80 ? '#e7a23a' : 'var(--accent)';
+    } catch (_e) {}
+  }
+
+  async function saveAiSettings() {
+    aisSetStatus('Saving…', false);
+    const payload = {};
+    for (const [k, id] of Object.entries(AIS_FIELDS)) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      let val = el.value;
+      if (el.type === 'number') val = val === '' ? null : Number(val);
+      payload[k] = val;
+    }
+    for (const [k, id] of Object.entries(AIS_TOGGLES)) {
+      const el = document.getElementById(id);
+      payload[k] = el && el.classList.contains('on');
+    }
+    try {
+      const r = await fetch('/api/ai-settings', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
+      aisSetStatus('Saved.', false);
+      await loadAiSettings();
+      setTimeout(() => aisSetStatus('', false), 2000);
+    } catch (e) {
+      aisSetStatus('Save failed: ' + e.message, true);
+    }
   }
 
   function switchMetricTab(btn, tabId) {
@@ -1068,6 +1254,9 @@
     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch {}
     window.location.href = '/dunper_signin.html';
   });
+
+  document.getElementById('ai-settings-save')?.addEventListener('click', saveAiSettings);
+  document.getElementById('ai-settings-reload')?.addEventListener('click', loadAiSettings);
 
   window.addEventListener('load', () => {
     setTodayDate();

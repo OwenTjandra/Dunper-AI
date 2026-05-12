@@ -119,6 +119,13 @@ window.addEventListener('languagechange', () => {
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!selectedSlot) return;
+  // Email is optional — but we need at least one contact method.
+  const phoneVal = phoneEl.value.trim();
+  const emailVal = emailEl.value.trim();
+  if (!phoneVal && !emailVal) {
+    setStatus(tt('needPhoneOrEmail') || 'Please provide a phone number or email so we can confirm.', 'err');
+    return;
+  }
   submitBtn.disabled = true;
   setStatus(tt('booking'), '');
   try {
@@ -130,8 +137,8 @@ form.addEventListener('submit', async (e) => {
         date: dateEl.value,
         time: selectedSlot,
         name: nameEl.value.trim(),
-        phone: phoneEl.value.trim(),
-        email: emailEl.value.trim(),
+        phone: phoneVal,
+        email: emailVal,
       }),
     });
     const data = await res.json();
