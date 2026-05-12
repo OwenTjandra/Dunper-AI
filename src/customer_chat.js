@@ -182,6 +182,31 @@ function buildSystemWithToday(systemPrompt) {
  * @param {string|Array} systemPrompt - System prompt (string or pre-cached blocks).
  * @param {object} opts - { model, max_tokens, temperature, profileId }.
  */
+// Marks the LAST content block of the LAST user message with cache_control.
+// Anthropic caches everything up to (and including) the last cache_control
+// marker — so this turns subsequent identical prefixes into 10x-cheaper
+// cache reads. Mutates in-place. Safe to call multiple times.
+function markLastUserCacheBreakpoint(messages) {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== 'user') continue;
+    // Normalize string content to a single text block so we can attach
+    // cache_control. Anthropic accepts both shapes.
+    if (typeof m.content === 'string') {
+      m.content = [{ type: 'text', text: m.content }];
+    }
+    if (!Array.isArray(m.content) || m.content.length === 0) return;
+    // Strip any pre-existing cache_control on earlier blocks (we only want
+    // one breakpoint per call, on the very last block).
+    for (const block of m.content) {
+      if (block && block.cache_control) delete block.cache_control;
+    }
+    const last = m.content[m.content.length - 1];
+    if (last && typeof last === 'object') last.cache_control = { type: 'ephemeral' };
+    return;
+  }
+}
+
 async function runCustomerChat(initialMessages, systemPrompt, opts = {}) {
   const model = opts.model || 'claude-sonnet-4-6';
   const messages = [...initialMessages];
@@ -197,6 +222,7 @@ async function runCustomerChat(initialMessages, systemPrompt, opts = {}) {
   const bookingsCreated = [];
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
+    markLastUserCacheBreakpoint(messages);
     const params = {
       model,
       max_tokens: opts.max_tokens || 512,

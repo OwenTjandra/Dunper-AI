@@ -359,11 +359,18 @@ How tool results work:
 - A successful tool result is shaped \`{ "ok": true, "applied": "<summary of what just changed>" }\`. The "applied" line describes a change YOU just made — phrase your reply as a confirmation of that change ("Done — I've added X"), NOT as a description of pre-existing state.
 - An error result is shaped \`{ "error": "..." }\`. Read it carefully — common causes are name mismatches or duplicates.
 
-CURRENT BUSINESS CONFIG (JSON, as of the start of this turn — your tool calls may have changed it since):
-${JSON.stringify(currentBusiness, null, 2)}
+BUSINESS SNAPSHOT (high-level — call get_business for the full config when you need details):
+- Name: ${currentBusiness.name} (${currentBusiness.type})
+- Tone: ${currentBusiness.tone}
+- Services: ${(currentBusiness.services || []).length} configured${currentBusiness.services?.length ? ` — e.g. ${currentBusiness.services.slice(0,3).map(s => s.name).join(', ')}` : ''}
+- Booking rules: ${(currentBusiness.booking_rules || []).length} configured
+- Weekly hours: ${currentBusiness.weekly_hours ? 'set' : 'not set (using free-text hours field)'}
+- Blocked dates: ${(currentBusiness.blocked_dates || []).length}
 
-CURRENT AI SETTINGS (as of the start of this turn — call get_ai_settings if you need fresher state):
-${JSON.stringify(currentAi, null, 2)}`;
+AI SETTINGS SNAPSHOT (call get_ai_settings for full state):
+- Model: ${currentAi.model} (max_tokens=${currentAi.max_tokens}, temperature=${currentAi.temperature})
+- Monthly budget: $${currentAi.monthly_budget_usd} — action=${currentAi.budget_action}
+- Tone: ${currentAi.tone}`;
 }
 
 function extractText(content) {
@@ -372,6 +379,24 @@ function extractText(content) {
     .map(block => block.text)
     .join('\n')
     .trim();
+}
+
+// Mark the last user message with cache_control so Anthropic caches the
+// system+tools+history prefix and reuses it on the next tool-loop iteration
+// (or next turn). See customer_chat.js for the same trick.
+function markLastUserCacheBreakpoint(messages) {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== 'user') continue;
+    if (typeof m.content === 'string') m.content = [{ type: 'text', text: m.content }];
+    if (!Array.isArray(m.content) || m.content.length === 0) return;
+    for (const block of m.content) {
+      if (block && block.cache_control) delete block.cache_control;
+    }
+    const last = m.content[m.content.length - 1];
+    if (last && typeof last === 'object') last.cache_control = { type: 'ephemeral' };
+    return;
+  }
 }
 
 async function runAdminChat(userMessages, user) {
@@ -387,6 +412,7 @@ async function runAdminChat(userMessages, user) {
   const systemBlocks = [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }];
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
+    markLastUserCacheBreakpoint(messages);
     const response = await client.messages.create({
       model: MODEL,
       max_tokens: 2048,
