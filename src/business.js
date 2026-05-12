@@ -13,6 +13,19 @@ function loadBusiness() {
   }
 }
 
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const DAY_LABELS = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
+
+function formatWeeklyHours(weekly) {
+  if (!weekly || typeof weekly !== 'object') return null;
+  const lines = DAY_KEYS.map(k => {
+    const d = weekly[k];
+    if (!d || !d.open || !d.close || d.closed) return `${DAY_LABELS[k]}: Closed`;
+    return `${DAY_LABELS[k]}: ${d.open}–${d.close}`;
+  });
+  return lines.join('\n');
+}
+
 function buildSystemPrompt(b) {
   const services = (b.services || [])
     .map(s => `- ${s.name} (${s.duration_minutes} min, ${s.price})`)
@@ -25,11 +38,19 @@ function buildSystemPrompt(b) {
     ? `\n\nABOUT\n${b.about.trim()}`
     : '';
 
+  // Prefer structured weekly_hours if present; falls back to free-text b.hours
+  // for back-compat with deployments that haven't filled in the schedule yet.
+  const weeklyFormatted = formatWeeklyHours(b.weekly_hours);
+  const hoursBlock = weeklyFormatted ? `\nHours:\n${weeklyFormatted}` : `\nHours: ${b.hours}`;
+
+  // Optional blocked dates (holidays, owner days off). Skipped if empty.
+  const blockedDates = Array.isArray(b.blocked_dates) ? b.blocked_dates.filter(d => typeof d === 'string' && d) : [];
+  const blockedBlock = blockedDates.length ? `\n\nCLOSED DATES (do NOT book on these days)\n${blockedDates.map(d => `- ${d}`).join('\n')}` : '';
+
   return `You are the AI frontdesk assistant for ${b.name}, a ${b.type}.
 
 BUSINESS INFO
-Name: ${b.name}
-Hours: ${b.hours}
+Name: ${b.name}${hoursBlock}
 Address: ${b.address}
 Phone: ${b.phone}
 
@@ -37,7 +58,7 @@ SERVICES
 ${services}
 
 BOOKING RULES
-${rules}${aboutBlock}
+${rules}${blockedBlock}${aboutBlock}
 
 TONE
 ${b.tone}
@@ -83,6 +104,30 @@ function validateBusiness(b) {
   if (!b.booking_rules.every(r => typeof r === 'string')) return 'booking_rules must contain only strings.';
   // about is optional — when present it must be a string.
   if (b.about !== undefined && typeof b.about !== 'string') return 'about must be a string if provided.';
+
+  // weekly_hours is optional. Shape: { mon: { open: "09:00", close: "17:00", closed?: bool }, ... }
+  if (b.weekly_hours !== undefined) {
+    if (!b.weekly_hours || typeof b.weekly_hours !== 'object') return 'weekly_hours must be an object.';
+    const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
+    for (const k of DAY_KEYS) {
+      const d = b.weekly_hours[k];
+      if (d === undefined) continue;
+      if (!d || typeof d !== 'object') return `weekly_hours.${k} must be an object.`;
+      if (d.closed) continue;
+      if (!d.open || !d.close) continue;
+      if (!timeRe.test(d.open) || !timeRe.test(d.close)) return `weekly_hours.${k}: open/close must be HH:MM`;
+    }
+  }
+
+  // blocked_dates is optional. Shape: array of "YYYY-MM-DD" strings.
+  if (b.blocked_dates !== undefined) {
+    if (!Array.isArray(b.blocked_dates)) return 'blocked_dates must be an array.';
+    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+    for (const d of b.blocked_dates) {
+      if (typeof d !== 'string' || !dateRe.test(d)) return 'blocked_dates must contain YYYY-MM-DD strings.';
+    }
+  }
+
   return null;
 }
 

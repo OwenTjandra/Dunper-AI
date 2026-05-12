@@ -232,6 +232,7 @@
       <div class="nav-section-label">Main</div>
       <div class="nav-item active" data-page="dashboard" onclick="navigate(this)"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
       <div class="nav-item" data-page="metrics" onclick="navigate(this)"><i class="ti ti-chart-bar"></i> Customer Metrics</div>
+      <div class="nav-item" data-page="products" onclick="navigate(this)"><i class="ti ti-package"></i> Products &amp; Services</div>
       <div class="nav-item" data-page="calendar" onclick="navigate(this)"><i class="ti ti-calendar"></i> Calendar</div>
       <div class="nav-section-label">System</div>
       <div class="nav-item" data-page="ai-settings" onclick="navigate(this)"><i class="ti ti-settings-2"></i> AI Settings</div>
@@ -399,10 +400,71 @@
         </div>
       </div>
 
+      <div class="page" id="page-products">
+        <div class="section-head">
+          <div class="section-title">Products &amp; Services</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span id="products-status" style="font-size:12px;color:var(--text-tertiary);"></span>
+            <button class="btn-ghost" id="products-reload">Reload</button>
+            <button class="btn-primary" id="products-save"><i class="ti ti-device-floppy"></i> Save changes</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" style="margin-bottom:12px;">
+            <div class="card-title">What you sell</div>
+            <button class="btn-ghost" id="products-add-row" style="padding:6px 12px;font-size:12px;"><i class="ti ti-plus"></i> Add service</button>
+          </div>
+          <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">
+            Each row is one bookable service or product. The AI quotes from this list and uses durations to find open slots.
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;" id="products-table">
+              <thead>
+                <tr style="text-align:left;color:var(--text-tertiary);">
+                  <th style="padding:8px 6px;border-bottom:0.5px solid var(--neutral-200);width:34%;">Name</th>
+                  <th style="padding:8px 6px;border-bottom:0.5px solid var(--neutral-200);width:18%;">Duration (min)</th>
+                  <th style="padding:8px 6px;border-bottom:0.5px solid var(--neutral-200);width:36%;">Price</th>
+                  <th style="padding:8px 6px;border-bottom:0.5px solid var(--neutral-200);width:12%;"></th>
+                </tr>
+              </thead>
+              <tbody id="products-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+          <div class="card-title" style="margin-bottom:12px;">Booking rules</div>
+          <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">
+            One rule per line — the AI will enforce these when booking. e.g. "Appointments require at least 24 hours advance notice."
+          </div>
+          <textarea id="products-rules" class="field-input" rows="5" style="width:100%;font-family:inherit;resize:vertical;"></textarea>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+          <div class="card-title" style="margin-bottom:12px;">Extra context (optional)</div>
+          <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">
+            FAQ-style facts the AI should know but that don't fit a service row. E.g. languages spoken, parking, payment methods, brand story.
+          </div>
+          <textarea id="products-about" class="field-input" rows="5" style="width:100%;font-family:inherit;resize:vertical;" maxlength="4000" placeholder="Optional…"></textarea>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+          <div class="card-title" style="margin-bottom:12px;">Fallback contact</div>
+          <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">
+            What the AI says when it can't answer something. e.g. "Please call us at +62 21 1234 5678 during business hours."
+          </div>
+          <input id="products-fallback" class="field-input" style="width:100%;">
+        </div>
+      </div>
+
       <div class="page" id="page-calendar">
         <div class="section-head">
-          <div class="section-title">Calendar</div>
+          <div class="section-title">Calendar &amp; Availability</div>
           <div style="display:flex;gap:8px;align-items:center;">
+            <span id="availability-status" style="font-size:12px;color:var(--text-tertiary);"></span>
+            <button class="btn-ghost" id="availability-reload">Reload</button>
+            <button class="btn-primary" id="availability-save"><i class="ti ti-device-floppy"></i> Save availability</button>
             <button class="btn-ghost">Sync Google Calendar <i class="ti ti-brand-google"></i></button>
             <button class="btn-primary"><i class="ti ti-plus"></i> New event</button>
           </div>
@@ -439,6 +501,25 @@
               <div style="font-size:13px;color:var(--text-tertiary);padding:8px 4px;">Loading…</div>
             </div>
           </div>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+          <div class="card-title" style="margin-bottom:6px;">Weekly hours</div>
+          <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">
+            When the AI is allowed to book appointments. Toggle a day off to make it closed.
+          </div>
+          <div id="availability-weekly" style="display:grid;grid-template-columns:80px 1fr 1fr 80px;gap:8px 12px;align-items:center;font-size:13px;"></div>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+          <div class="card-header" style="margin-bottom:12px;">
+            <div class="card-title">Closed dates</div>
+            <button class="btn-ghost" id="availability-add-blocked" style="padding:6px 12px;font-size:12px;"><i class="ti ti-plus"></i> Add date</button>
+          </div>
+          <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">
+            Specific dates the AI must refuse bookings (holidays, owner days off). Format: YYYY-MM-DD.
+          </div>
+          <div id="availability-blocked-list" style="display:flex;flex-direction:column;gap:6px;"></div>
         </div>
       </div>
 
@@ -660,10 +741,12 @@
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     el.classList.add('active');
     document.getElementById('page-' + page).classList.add('active');
-    const titles = { dashboard: 'Dashboard', metrics: 'Customer Metrics', calendar: 'Calendar', 'ai-settings': 'AI Settings', alerts: 'Alerts', profile: 'Profile' };
+    const titles = { dashboard: 'Dashboard', metrics: 'Customer Metrics', products: 'Products & Services', calendar: 'Calendar & Availability', 'ai-settings': 'AI Settings', alerts: 'Alerts', profile: 'Profile' };
     document.getElementById('page-title').textContent = titles[page] || page;
     setTimeout(initCharts, 80);
     if (page === 'ai-settings') loadAiSettings();
+    if (page === 'products') loadProducts();
+    if (page === 'calendar') loadAvailability();
   }
 
   /* ---------- AI Settings ---------- */
@@ -771,6 +854,226 @@
       setTimeout(() => aisSetStatus('', false), 2000);
     } catch (e) {
       aisSetStatus('Save failed: ' + e.message, true);
+    }
+  }
+
+  /* ---------- Products & Services ---------- */
+
+  let businessCache = null;
+  const DAY_KEYS = ['mon','tue','wed','thu','fri','sat','sun'];
+  const DAY_LABELS = { mon:'Mon', tue:'Tue', wed:'Wed', thu:'Thu', fri:'Fri', sat:'Sat', sun:'Sun' };
+
+  function setStatus(id, text, isError) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text || '';
+    el.style.color = isError ? '#e25555' : 'var(--text-tertiary)';
+  }
+
+  async function fetchBusiness() {
+    const r = await fetch('/api/business', { credentials: 'include' });
+    if (!r.ok) throw new Error('Load failed (' + r.status + ')');
+    businessCache = await r.json();
+    return businessCache;
+  }
+
+  function renderProductsRow(s) {
+    const tr = document.createElement('tr');
+    tr.className = 'products-row';
+    tr.innerHTML = `
+      <td style="padding:6px;"><input class="field-input p-name" value="" style="width:100%;"></td>
+      <td style="padding:6px;"><input class="field-input p-duration" type="number" min="1" max="600" step="5" style="width:100%;"></td>
+      <td style="padding:6px;"><input class="field-input p-price" value="" style="width:100%;" placeholder="e.g. Rp 350,000 or Free"></td>
+      <td style="padding:6px;text-align:right;"><button class="btn-ghost p-remove" style="padding:4px 8px;font-size:12px;color:#e25555;">Remove</button></td>
+    `;
+    tr.querySelector('.p-name').value = s?.name || '';
+    tr.querySelector('.p-duration').value = s?.duration_minutes ?? '';
+    tr.querySelector('.p-price').value = s?.price || '';
+    tr.querySelector('.p-remove').addEventListener('click', () => tr.remove());
+    return tr;
+  }
+
+  async function loadProducts() {
+    setStatus('products-status', 'Loading…', false);
+    try {
+      const b = await fetchBusiness();
+      const tbody = document.getElementById('products-tbody');
+      tbody.innerHTML = '';
+      (b.services || []).forEach(s => tbody.appendChild(renderProductsRow(s)));
+      if (!b.services || b.services.length === 0) tbody.appendChild(renderProductsRow({}));
+      document.getElementById('products-rules').value = (b.booking_rules || []).join('\n');
+      document.getElementById('products-about').value = b.about || '';
+      document.getElementById('products-fallback').value = b.fallback_contact || '';
+      setStatus('products-status', '', false);
+    } catch (e) {
+      setStatus('products-status', 'Failed to load: ' + e.message, true);
+    }
+  }
+
+  function collectProducts() {
+    const services = [];
+    document.querySelectorAll('#products-tbody .products-row').forEach(tr => {
+      const name = tr.querySelector('.p-name').value.trim();
+      const duration = Number(tr.querySelector('.p-duration').value);
+      const price = tr.querySelector('.p-price').value.trim();
+      if (!name && !price && !duration) return; // skip empty row
+      services.push({ name, duration_minutes: duration, price });
+    });
+    const booking_rules = document.getElementById('products-rules').value
+      .split('\n').map(s => s.trim()).filter(Boolean);
+    const about = document.getElementById('products-about').value.trim();
+    const fallback_contact = document.getElementById('products-fallback').value.trim();
+    return { services, booking_rules, about, fallback_contact };
+  }
+
+  async function saveProducts() {
+    setStatus('products-status', 'Saving…', false);
+    try {
+      const current = businessCache || await fetchBusiness();
+      const patch = collectProducts();
+      const next = { ...current, ...patch };
+      // Drop "about" field entirely if empty — keeps business.json tidy.
+      if (!next.about) delete next.about;
+      const r = await fetch('/api/business', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(next),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
+      businessCache = data.business || next;
+      setStatus('products-status', 'Saved.', false);
+      setTimeout(() => setStatus('products-status', '', false), 2000);
+    } catch (e) {
+      setStatus('products-status', 'Save failed: ' + e.message, true);
+    }
+  }
+
+  /* ---------- Availability (weekly hours + blocked dates) ---------- */
+
+  function defaultWeeklyHours() {
+    return {
+      mon: { open: '09:00', close: '17:00', closed: false },
+      tue: { open: '09:00', close: '17:00', closed: false },
+      wed: { open: '09:00', close: '17:00', closed: false },
+      thu: { open: '09:00', close: '17:00', closed: false },
+      fri: { open: '09:00', close: '17:00', closed: false },
+      sat: { open: '09:00', close: '13:00', closed: true },
+      sun: { open: '09:00', close: '13:00', closed: true },
+    };
+  }
+
+  function renderWeeklyHours(weekly) {
+    const grid = document.getElementById('availability-weekly');
+    grid.innerHTML = '';
+    grid.style.gridTemplateColumns = '80px 1fr 1fr 90px';
+    DAY_KEYS.forEach(k => {
+      const d = (weekly && weekly[k]) || { open: '09:00', close: '17:00', closed: false };
+      const label = document.createElement('div');
+      label.textContent = DAY_LABELS[k];
+      label.style.fontWeight = '500';
+
+      const open = document.createElement('input');
+      open.type = 'time'; open.className = 'field-input wh-open'; open.dataset.day = k; open.value = d.open || '09:00';
+
+      const close = document.createElement('input');
+      close.type = 'time'; close.className = 'field-input wh-close'; close.dataset.day = k; close.value = d.close || '17:00';
+
+      const toggleWrap = document.createElement('div');
+      toggleWrap.style.display = 'flex'; toggleWrap.style.alignItems = 'center'; toggleWrap.style.gap = '8px';
+      const toggle = document.createElement('div');
+      toggle.className = 'toggle' + (d.closed ? '' : ' on');
+      toggle.dataset.day = k;
+      toggle.onclick = () => toggle.classList.toggle('on');
+      const lbl = document.createElement('span');
+      lbl.style.fontSize = '12px'; lbl.style.color = 'var(--text-tertiary)';
+      lbl.textContent = 'Open';
+      toggleWrap.appendChild(toggle); toggleWrap.appendChild(lbl);
+
+      grid.appendChild(label);
+      grid.appendChild(open);
+      grid.appendChild(close);
+      grid.appendChild(toggleWrap);
+    });
+  }
+
+  function renderBlockedDates(dates) {
+    const list = document.getElementById('availability-blocked-list');
+    list.innerHTML = '';
+    (dates || []).forEach(d => list.appendChild(renderBlockedRow(d)));
+    if (!dates || dates.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.fontSize = '13px'; empty.style.color = 'var(--text-tertiary)';
+      empty.textContent = 'No closed dates yet.';
+      empty.id = 'availability-empty';
+      list.appendChild(empty);
+    }
+  }
+
+  function renderBlockedRow(dateStr) {
+    const row = document.createElement('div');
+    row.className = 'availability-blocked-row';
+    row.style.display = 'flex'; row.style.gap = '8px'; row.style.alignItems = 'center';
+    row.innerHTML = `
+      <input type="date" class="field-input ab-date" value="${escapeHtml(dateStr || '')}" style="width:180px;">
+      <button class="btn-ghost ab-remove" style="padding:4px 10px;font-size:12px;color:#e25555;">Remove</button>
+    `;
+    row.querySelector('.ab-remove').addEventListener('click', () => {
+      row.remove();
+      const list = document.getElementById('availability-blocked-list');
+      if (list.querySelectorAll('.availability-blocked-row').length === 0) renderBlockedDates([]);
+    });
+    return row;
+  }
+
+  async function loadAvailability() {
+    setStatus('availability-status', 'Loading…', false);
+    try {
+      const b = await fetchBusiness();
+      renderWeeklyHours(b.weekly_hours || defaultWeeklyHours());
+      renderBlockedDates(b.blocked_dates || []);
+      setStatus('availability-status', '', false);
+    } catch (e) {
+      setStatus('availability-status', 'Failed to load: ' + e.message, true);
+    }
+  }
+
+  function collectAvailability() {
+    const weekly = {};
+    DAY_KEYS.forEach(k => {
+      const open = document.querySelector('.wh-open[data-day="' + k + '"]').value;
+      const close = document.querySelector('.wh-close[data-day="' + k + '"]').value;
+      const isOpen = document.querySelector('.toggle[data-day="' + k + '"]').classList.contains('on');
+      weekly[k] = { open, close, closed: !isOpen };
+    });
+    const blocked = [];
+    document.querySelectorAll('#availability-blocked-list .ab-date').forEach(inp => {
+      const v = inp.value.trim();
+      if (v) blocked.push(v);
+    });
+    return { weekly_hours: weekly, blocked_dates: blocked };
+  }
+
+  async function saveAvailability() {
+    setStatus('availability-status', 'Saving…', false);
+    try {
+      const current = businessCache || await fetchBusiness();
+      const patch = collectAvailability();
+      const next = { ...current, ...patch };
+      const r = await fetch('/api/business', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(next),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
+      businessCache = data.business || next;
+      setStatus('availability-status', 'Saved.', false);
+      setTimeout(() => setStatus('availability-status', '', false), 2000);
+    } catch (e) {
+      setStatus('availability-status', 'Save failed: ' + e.message, true);
     }
   }
 
@@ -1257,6 +1560,20 @@
 
   document.getElementById('ai-settings-save')?.addEventListener('click', saveAiSettings);
   document.getElementById('ai-settings-reload')?.addEventListener('click', loadAiSettings);
+
+  document.getElementById('products-save')?.addEventListener('click', saveProducts);
+  document.getElementById('products-reload')?.addEventListener('click', loadProducts);
+  document.getElementById('products-add-row')?.addEventListener('click', () => {
+    document.getElementById('products-tbody').appendChild(renderProductsRow({}));
+  });
+
+  document.getElementById('availability-save')?.addEventListener('click', saveAvailability);
+  document.getElementById('availability-reload')?.addEventListener('click', loadAvailability);
+  document.getElementById('availability-add-blocked')?.addEventListener('click', () => {
+    const list = document.getElementById('availability-blocked-list');
+    document.getElementById('availability-empty')?.remove();
+    list.appendChild(renderBlockedRow(new Date().toISOString().slice(0,10)));
+  });
 
   window.addEventListener('load', () => {
     setTodayDate();
