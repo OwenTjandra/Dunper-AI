@@ -173,11 +173,18 @@
   .toggle.on::after { transform: translateX(16px); }
   .select-field { font-family: var(--font-body); font-size: 13px; border: 0.5px solid var(--neutral-200); border-radius: var(--r-sm); padding: 6px 10px; background: #fff; color: var(--text-primary); outline: none; cursor: pointer; }
 
-  .preview-frame { background: var(--brand); border-radius: var(--r-lg); padding: 20px; color: rgba(255,255,255,0.9); }
-  .preview-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.4); margin-bottom: 12px; }
-  .chat-bubble-bot { background: rgba(255,255,255,0.1); border-radius: 0 12px 12px 12px; padding: 10px 14px; font-size: 13px; margin-bottom: 8px; line-height: 1.5; max-width: 85%; }
-  .chat-bubble-user { background: var(--accent); border-radius: 12px 0 12px 12px; padding: 10px 14px; font-size: 13px; margin-left: auto; margin-bottom: 8px; line-height: 1.5; max-width: 85%; }
-  .chat-input-mock { background: rgba(255,255,255,0.08); border: 0.5px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 8px 14px; font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .preview-frame { background: var(--brand); border-radius: var(--r-lg); padding: 18px; color: rgba(255,255,255,0.9); display: flex; flex-direction: column; gap: 12px; }
+  .preview-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.55); display: flex; align-items: center; justify-content: space-between; }
+  .preview-label .live-dot { display: inline-flex; align-items: center; gap: 6px; }
+  .preview-label .live-dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #34D399; box-shadow: 0 0 0 3px rgba(52,211,153,0.2); }
+  .preview-label a { color: rgba(255,255,255,0.55); text-decoration: none; font-weight: 500; }
+  .preview-label a:hover { color: #fff; }
+  .preview-iframe-wrap { position: relative; background: #fff; border-radius: 14px; overflow: hidden; height: 460px; box-shadow: 0 6px 20px rgba(10,20,48,0.18); }
+  .preview-iframe-wrap iframe { width: 100%; height: 100%; border: none; display: block; }
+  .preview-refresh-btn { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 50%; background: rgba(10,20,48,0.55); color: #fff; border: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); transition: background .15s ease, transform .25s ease; }
+  .preview-refresh-btn:hover { background: rgba(10,20,48,0.8); }
+  .preview-refresh-btn.spinning { transform: rotate(360deg); }
+  .preview-refresh-btn i { font-size: 14px; }
 
   .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
   .cal-month { font-family: var(--font-display); font-size: 22px; color: var(--text-primary); }
@@ -470,11 +477,14 @@
           </div>
           <div>
             <div class="preview-frame">
-              <div class="preview-label">Live preview</div>
-              <div class="chat-bubble-bot">Hi! How can I help you today? 👋</div>
-              <div class="chat-bubble-user">I'd like to book a facial for next week.</div>
-              <div class="chat-bubble-bot">Of course! I have availability on Tuesday Jun 17 at 2pm and Thursday Jun 19 at 11am. Which works for you?</div>
-              <div class="chat-input-mock"><span>Type a message…</span><i class="ti ti-send" style="font-size:15px;color:rgba(255,255,255,0.4);"></i></div>
+              <div class="preview-label">
+                <span class="live-dot">Live preview</span>
+                <a href="/preview-chat" target="_blank" rel="noopener" title="Open in a new tab">Open ↗</a>
+              </div>
+              <div class="preview-iframe-wrap">
+                <iframe id="preview-iframe" src="/preview-chat" title="Live chatbot preview"></iframe>
+                <button type="button" class="preview-refresh-btn" id="preview-refresh" title="Reload preview"><i class="ti ti-refresh"></i></button>
+              </div>
             </div>
             <div style="margin-top:16px;" class="card">
               <div class="card-title" style="margin-bottom:12px;">Landing page reload</div>
@@ -1064,6 +1074,22 @@
     hydrateUser();
     loadDashboard();
   });
+</script>
+<script>
+  // Reload the live-preview iframe on demand so saved settings show up
+  // without forcing a full dashboard refresh.
+  (function(){
+    const btn = document.getElementById('preview-refresh');
+    const frame = document.getElementById('preview-iframe');
+    if (!btn || !frame) return;
+    btn.addEventListener('click', () => {
+      btn.classList.add('spinning');
+      // Cache-bust so the iframe definitely re-fetches the chat UI
+      const base = '/preview-chat';
+      frame.src = base + '?t=' + Date.now();
+      setTimeout(() => btn.classList.remove('spinning'), 600);
+    });
+  })();
 </script>
 </body>
 </html>

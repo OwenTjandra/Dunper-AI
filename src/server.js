@@ -190,6 +190,14 @@ app.get('/health', (req, res) => {
   res.json({ status: 'Server is running', business: getBusiness().name });
 });
 
+// Stable URL for the live customer-chat preview embedded in the
+// business dashboard ("Live preview" panel in admin.html). Serves the
+// real public chat UI (public/index.html). Public — no auth — because
+// the chat itself is what visitors hit unauthenticated.
+app.get('/preview-chat', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
 // Public — dunper.com marketing contact form. Each submission is dropped
 // into sales_clients as a lead so it surfaces in the Founder Dashboard.
 app.post('/api/contact', contactLimiter, (req, res) => {
