@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dunper AI</title>
+<style>
+    @page {
+      size: A4;
+      margin: 22mm 20mm 22mm 20mm;
+      @top-left { content: "Dunper AI"; font-family: 'Georgia', serif; font-size: 9pt; color: #94a3b8; }
+      @top-right { content: "Whitepaper · v1.0"; font-family: 'Georgia', serif; font-size: 9pt; color: #94a3b8; }
+      @bottom-center { content: counter(page) " / " counter(pages); font-family: 'Georgia', serif; font-size: 9pt; color: #94a3b8; }
+    }
+    @page :first {
+      margin: 0;
+      @top-left { content: ""; }
+      @top-right { content: ""; }
+      @bottom-center { content: ""; }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: "Georgia", "Times New Roman", serif;
+      font-size: 10.5pt;
+      line-height: 1.55;
+      color: #0a1430;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cover {
+      page: first;
+      width: 100%;
+      height: 297mm; /* A4 height */
+      padding: 0 24mm;
+      background:
+        radial-gradient(ellipse 80% 50% at 100% 0%, rgba(30,58,138,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 60% at 0% 100%, rgba(46,120,212,0.08) 0%, transparent 60%),
+        #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+    }
+    .cover-top { padding-top: 28mm; }
+    .cover-eyebrow {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 10pt;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #1e3a8a;
+      font-weight: 600;
+    }
+    .cover-eyebrow::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #3b82f6;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    .cover h1 {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-weight: 800;
+      font-size: 56pt;
+      line-height: 1.02;
+      letter-spacing: -0.02em;
+      color: #0a1430;
+      margin: 18mm 0 6mm;
+    }
+    .cover h1 em {
+      font-style: normal;
+      color: #1e3a8a;
+    }
+    .cover-sub {
+      font-family: "Georgia", serif;
+      font-style: italic;
+      font-size: 18pt;
+      color: #475569;
+      max-width: 140mm;
+      line-height: 1.35;
+      margin-bottom: 10mm;
+    }
+    .cover-meta {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 10pt;
+      color: #475569;
+      margin-top: 30mm;
+    }
+    .cover-meta strong { color: #0a1430; }
+    .cover-footer {
+      padding: 0 0 24mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 9pt;
+      color: #475569;
+      border-top: 1px solid rgba(15,23,42,0.10);
+      padding-top: 6mm;
+    }
+    .cover-footer .lhs strong { color: #0a1430; font-size: 11pt; }
+    .cover-footer .rhs { text-align: right; }
+
+    /* Body content */
+    .body { padding: 0; }
+    .body h1 {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-weight: 800;
+      font-size: 22pt;
+      color: #0a1430;
+      letter-spacing: -0.01em;
+      margin: 0 0 6mm;
+      padding-top: 4mm;
+      border-bottom: 0.5pt solid rgba(15,23,42,0.10);
+      padding-bottom: 2mm;
+    }
+    .body h2 {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-weight: 700;
+      font-size: 16pt;
+      color: #0a1430;
+      margin: 9mm 0 3mm;
+      page-break-after: avoid;
+    }
+    .body h3 {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-weight: 600;
+      font-size: 12.5pt;
+      color: #1e3a8a;
+      margin: 6mm 0 2mm;
+      page-break-after: avoid;
+    }
+    .body p { margin: 0 0 3.2mm; text-align: justify; hyphens: auto; }
+    .body strong { color: #0a1430; }
+    .body em { color: #1e3a8a; }
+    .body a { color: #1e3a8a; text-decoration: none; border-bottom: 0.5pt solid rgba(30,58,138,0.4); }
+    .body ul, .body ol { margin: 0 0 4mm 6mm; padding: 0; }
+    .body li { margin-bottom: 1.5mm; }
+    .body li::marker { color: #1e3a8a; }
+
+    .body code {
+      font-family: "Menlo", "Courier New", monospace;
+      font-size: 9pt;
+      background: #f1f5f9;
+      color: #1e3a8a;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+    .body pre {
+      font-family: "Menlo", "Courier New", monospace;
+      font-size: 8.5pt;
+      line-height: 1.45;
+      background: #f8fafc;
+      border: 0.5pt solid rgba(15,23,42,0.10);
+      border-radius: 4px;
+      padding: 4mm;
+      overflow-x: auto;
+      page-break-inside: avoid;
+      color: #0a1430;
+    }
+    .body pre code { background: none; padding: 0; font-size: 8.5pt; color: #0a1430; }
+    .body blockquote {
+      margin: 0 0 4mm;
+      padding: 2mm 6mm;
+      border-left: 2pt solid #1e3a8a;
+      color: #475569;
+      font-style: italic;
+      background: #f8fafc;
+    }
+    .body hr {
+      border: 0;
+      border-top: 0.5pt solid rgba(15,23,42,0.15);
+      margin: 6mm 0;
+    }
+
+    /* Tables */
+    .body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 5mm;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+    .body table th {
+      background: #0a1430;
+      color: #ffffff;
+      text-align: left;
+      padding: 2.2mm 3mm;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-weight: 600;
+      font-size: 9pt;
+      letter-spacing: 0.04em;
+    }
+    .body table td {
+      padding: 2mm 3mm;
+      border-bottom: 0.5pt solid rgba(15,23,42,0.08);
+      vertical-align: top;
+    }
+    .body table tr:nth-child(even) td { background: #f8fafc; }
+
+    /* Italic-only paragraphs at the very end (the doc footer line) */
+    .body em + em, .body p > em:only-child { color: #94a3b8; font-size: 9pt; }
+    </style>
+</head>
+<body>
+
+    <div class="cover">
+      <div class="cover-top">
+        <div class="cover-eyebrow">Whitepaper · v1.0 · May 2026</div>
+        <h1>Dunper <em>AI</em></h1>
+        <div class="cover-sub">An always-on AI receptionist for small businesses</div>
+        <div class="cover-meta">
+          Prepared by the Dunper AI team · Jakarta, Indonesia<br/>
+          <strong>dunper.com</strong> · dunperai@gmail.com · @dunper.ai
+        </div>
+      </div>
+      <div class="cover-footer">
+        <div class="lhs">
+          <strong>Dunper AI</strong><br/>
+          Always-on AI receptionist for small businesses.
+        </div>
+        <div class="rhs">
+          © 2026 Dunper AI<br/>
+          All rights reserved.
+        </div>
+      </div>
+    </div>
+    
+<div class="body">
+<h2>An always-on AI receptionist for small businesses</h2>
+<p><strong>Whitepaper · May 2026 · Version 1.0</strong></p>
+<p>Dunper AI Pte. Ltd. · Jakarta, Indonesia · dunper.com · dunperai@gmail.com</p>
+<hr>
+<h2>Executive summary</h2>
+<p>Small service businesses lose customers every day because they cannot answer fast enough. A salon misses a booking inquiry on Instagram while the owner is mid-haircut. A dental clinic returns a voicemail four hours late and the patient has already gone elsewhere. A restaurant in Jakarta receives WhatsApp messages in Bahasa, English, and Mandarin all hour — with one person trying to answer them all.</p>
+<p>Dunper AI is an always-on AI receptionist built specifically for these businesses. It answers customer questions, books appointments, qualifies leads, and escalates to a human when needed — in 60+ languages, 24 hours a day, across web chat and WhatsApp.</p>
+<p>This whitepaper explains the problem we solve, how our system works, what makes it different from generic chatbots, the technical architecture behind it, our approach to data privacy, and the roadmap from a single working deployment today to a multi-tenant SaaS serving thousands of small businesses in Southeast Asia and beyond.</p>
+<p>Dunper is currently live at <strong>https://dunper.com</strong> with one production deployment serving Dr. Smith Dental Clinic. The system has handled real customer conversations, booked real appointments via Google Calendar, and is approaching its first paid pilot customers.</p>
+<hr>
+<h2>1. The problem</h2>
+<h3>1.1 Small businesses live or die on response time</h3>
+<p>Industry research consistently shows that 40–60% of inbound inquiries to small service businesses go un-answered or are answered late enough that the customer has already chosen a competitor. The reasons are mundane and unfixable through hiring more people:</p>
+<ul>
+<li>The owner is the only "customer service" person and is also actively serving customers.</li>
+<li>Messages arrive across at least three channels (phone, WhatsApp, Instagram, website chat) at unpredictable hours.</li>
+<li>A single owner cannot speak every language a multilingual market like Jakarta or Surabaya requires.</li>
+<li>The first hour after closing is the highest-volume hour for booking inquiries — and there's nobody there.</li>
+</ul>
+<p>The cost is not abstract. For a salon that converts 80% of replied-to inquiries to actual bookings, every 100 unanswered DMs is 80 lost bookings. At an average revenue per visit of Rp 250,000, that is Rp 20,000,000 of lost revenue per month — for a business whose owner cannot afford to hire a full-time receptionist.</p>
+<h3>1.2 Generic chatbots are not the answer</h3>
+<p>For ten years, "chatbot" has meant either a rigid scripted FAQ widget bolted onto a website, or a generic LLM that hallucinates business details it does not actually know. Both fail the same way: the customer asks something specific — "do you have anything open Thursday?" — and the bot either says "I don't understand, please call us" or invents an answer that the business cannot honor.</p>
+<p>A useful AI receptionist needs three things that off-the-shelf chatbots do not have:</p>
+<ol>
+<li><strong>Real, structured knowledge of the specific business.</strong> Hours, services, prices, booking rules, escalation paths — not scraped from a website but explicitly curated.</li>
+<li><strong>Real action capability.</strong> It must be able to book, not just describe how to book. It must read and write the same calendar the owner uses.</li>
+<li><strong>Honest escalation.</strong> When it does not know something, it must say so and route to a human. Not pretend.</li>
+</ol>
+<h3>1.3 The language problem</h3>
+<p>Indonesia alone has 700+ living languages. The practical reality in any urban service business is at least Bahasa Indonesia, English, Mandarin, and increasingly Spanish and Tagalog for remote-work clientele. A receptionist that only speaks one language is unusable in this market. Most existing chatbot products are English-first and treat other languages as a translation afterthought.</p>
+<hr>
+<h2>2. The Dunper AI solution</h2>
+<h3>2.1 Product overview</h3>
+<p>Dunper AI is a fully-managed AI receptionist that:</p>
+<ul>
+<li><strong>Answers</strong> customer questions about the business 24/7, in 60+ languages, with switching mid-conversation.</li>
+<li><strong>Books</strong> appointments directly into the owner's Google Calendar, with real-time availability checks.</li>
+<li><strong>Qualifies</strong> leads by asking the right follow-up questions and capturing contact info.</li>
+<li><strong>Escalates</strong> clearly and immediately when it doesn't know — never hallucinating.</li>
+<li><strong>Lives</strong> inside the channels customers already use: web widget on the business's own site, WhatsApp Business, and a hosted chat URL the business can share.</li>
+</ul>
+<h3>2.2 What makes Dunper different</h3>
+<p>Unlike generic chatbots:</p>
+<table>
+<thead>
+<tr>
+<th>Generic chatbot</th>
+<th>Dunper AI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scripted FAQ tree</td>
+<td>LLM with explicit, owner-curated business knowledge</td>
+</tr>
+<tr>
+<td>"Please call us" when stuck</td>
+<td>Escalates to a real teammate with full context</td>
+</tr>
+<tr>
+<td>English-first, others bolted on</td>
+<td>Multilingual by design, language switches mid-conversation</td>
+</tr>
+<tr>
+<td>No calendar integration</td>
+<td>First-class Google Calendar booking with conflict detection</td>
+</tr>
+<tr>
+<td>Generic interface</td>
+<td>Branded with the business's logo, colors, greeting</td>
+</tr>
+<tr>
+<td>Closed-source data pooling</td>
+<td>Each customer's data is isolated; never pooled or sold</td>
+</tr>
+</tbody>
+</table>
+<h3>2.3 Channels</h3>
+<p>A single Dunper agent can speak to customers across:</p>
+<ul>
+<li><strong>Web chat widget</strong> — embedded on the business's existing website with three lines of code.</li>
+<li><strong>WhatsApp Business</strong> — via the Meta WhatsApp Cloud API. Customer messages the business's WhatsApp number; Dunper replies inside WhatsApp.</li>
+<li><strong>Hosted chat page</strong> — for businesses that don't have their own website. Their customers can visit <code>https://dunper.com/&lt;business-slug&gt;</code> or a custom subdomain.</li>
+<li><strong>Phone (planned)</strong> — voice answering via Twilio + speech-to-text, on the post-pilot roadmap.</li>
+</ul>
+<p>All channels share one conversation memory per customer, so a person who started a question on WhatsApp can finish booking on the web widget.</p>
+<hr>
+<h2>3. How it works</h2>
+<h3>3.1 Conversation flow</h3>
+<pre><code>   ┌─────────────────────────────┐
+   │    Customer sends message   │
+   │   (WhatsApp / web widget)   │
+   └──────────────┬──────────────┘
+                  │
+   ┌──────────────▼──────────────┐
+   │   Dunper webhook receives   │
+   │     message + history       │
+   └──────────────┬──────────────┘
+                  │
+   ┌──────────────▼──────────────┐
+   │  System prompt assembled    │
+   │  (business config + hours   │
+   │   + services + tone)        │
+   └──────────────┬──────────────┘
+                  │
+   ┌──────────────▼──────────────┐
+   │      Claude (Anthropic)     │
+   │      reasons &amp; responds     │
+   └──────────────┬──────────────┘
+                  │
+       ┌──────────┴───────────┐
+       │                      │
+   ┌───▼──────┐         ┌─────▼────────┐
+   │ Answer   │         │ Action call  │
+   │ inline   │         │ (book, lead, │
+   │          │         │  escalate)   │
+   └───┬──────┘         └─────┬────────┘
+       │                      │
+       │                ┌─────▼──────────┐
+       │                │ Google         │
+       │                │ Calendar /     │
+       │                │ DB / SMTP      │
+       │                └─────┬──────────┘
+       │                      │
+   ┌───▼──────────────────────▼─────────┐
+   │  Reply sent back via same channel  │
+   └────────────────────────────────────┘
+</code></pre>
+<p>Every conversation is logged to the business's private SQLite database with full text, timestamps, and any actions taken. The owner sees these in real time in their dashboard.</p>
+<h3>3.2 The business knowledge model</h3>
+<p>Each Dunper deployment is configured with a structured <code>business.json</code> capturing:</p>
+<ul>
+<li><strong>Identity</strong>: name, type (dental clinic, salon, etc.), location, phone, email.</li>
+<li><strong>Hours</strong>: structured weekly schedule + per-date overrides for holidays and special closures. Edited via a calendar UI in the business owner's dashboard.</li>
+<li><strong>Services</strong>: list of services with duration and price.</li>
+<li><strong>Booking rules</strong>: free-text rules the AI must respect (e.g. "Appointments require at least 24 hours notice").</li>
+<li><strong>Tone</strong>: free-text description of how the AI should sound ("Warm, professional, reassuring — many patients are nervous about dental visits").</li>
+<li><strong>Fallback contact</strong>: what to say and who to escalate to when stuck.</li>
+</ul>
+<p>This is compiled into a system prompt sent to Claude on every conversation. The business owner can edit any field and the change applies on the next message — no retraining, no redeployment.</p>
+<h3>3.3 Booking</h3>
+<p>Booking is the single hardest thing for chatbots to get right, because it requires both natural-language understanding and real-world calendar arithmetic. Dunper handles it by:</p>
+<ol>
+<li>Parsing the customer's intent ("I'd like a teeth cleaning next Tuesday afternoon").</li>
+<li>Querying the business's Google Calendar for actual availability in that window, filtered against the configured services' duration.</li>
+<li>Proposing one or two specific times back to the customer.</li>
+<li>On confirmation, writing the event directly to Google Calendar with the customer's name + phone + service.</li>
+<li>Sending a confirmation email through the business's configured SMTP, and (optionally) a WhatsApp confirmation.</li>
+</ol>
+<p>When the calendar API is unavailable (token expired, etc.), Dunper does not invent times — it tells the customer it can't check right now and offers a callback.</p>
+<h3>3.4 Escalation and honesty</h3>
+<p>Dunper is built around one strong principle: <strong>when the AI doesn't know, it must say so</strong>, not invent.</p>
+<p>Three signals trigger escalation:</p>
+<ul>
+<li>The customer explicitly asks for a human.</li>
+<li>The AI's confidence in its answer is low (detected via a self-check pattern).</li>
+<li>The question requires real-time information the AI doesn't have (e.g. "is Dr. Smith in today?" when no presence integration exists).</li>
+</ul>
+<p>On escalation, the AI sends one of the configured fallback messages, the conversation is flagged in the dashboard with a red marker, and (when configured) an email is sent to the business owner with the full conversation context.</p>
+<hr>
+<h2>4. Architecture</h2>
+<h3>4.1 Stack at a glance</h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Choice</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Runtime</td>
+<td>Node.js 22 + Express</td>
+<td>Mature, fast iteration, low ops overhead</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>SQLite (single-tenant) → Postgres (multi-tenant)</td>
+<td>SQLite is sufficient to ~10 businesses; Postgres becomes necessary past that</td>
+</tr>
+<tr>
+<td>AI</td>
+<td>Anthropic Claude (Opus / Sonnet)</td>
+<td>Best-in-class instruction following, multilingual quality, safety reflexes</td>
+</tr>
+<tr>
+<td>Edge / TLS</td>
+<td>Cloudflare (Workers + Tunnels)</td>
+<td>Free TLS, global edge, no ports opened on origin</td>
+</tr>
+<tr>
+<td>Calendar</td>
+<td>Google Calendar API</td>
+<td>Already where customers' actual schedules live</td>
+</tr>
+<tr>
+<td>Messaging</td>
+<td>Meta WhatsApp Cloud API</td>
+<td>Direct channel to Indonesian SMB customers</td>
+</tr>
+<tr>
+<td>Email</td>
+<td>SMTP via Gmail / Resend / Postmark</td>
+<td>Pluggable; for 2FA codes, confirmations, escalations</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>Vanilla HTML/CSS/JS + small JS in dashboards</td>
+<td>Zero build step, fast load, low complexity</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>bcrypt + email 2FA today → Clerk/WorkOS at scale</td>
+<td>Cost-efficient now, planned swap at 20+ customers</td>
+</tr>
+</tbody>
+</table>
+<h3>4.2 Three surfaces, one origin</h3>
+<p>Dunper is deliberately served from a single Express process per business deployment. This is unusual — most SaaS products separate marketing site, application, and API. Dunper does not, because cookie-based authentication is dramatically simpler when there is only one origin:</p>
+<pre><code>                       dunper.com
+                            │
+            ┌───────────────┼───────────────┐
+            │               │               │
+   ┌────────▼────┐  ┌───────▼──────┐  ┌────▼────────┐
+   │ Marketing   │  │ Business     │  │ Founder     │
+   │ /website/*  │  │ dashboard    │  │ dashboard   │
+   │             │  │ /admin.html  │  │ /operator   │
+   └─────────────┘  └──────────────┘  └─────────────┘
+            │               │               │
+            └───────────────┼───────────────┘
+                            │
+                  ┌─────────▼─────────┐
+                  │ Customer chat at  │
+                  │ /preview-chat     │
+                  │ (embed iframe)    │
+                  └───────────────────┘
+                            │
+                  ┌─────────▼─────────┐
+                  │   API (/api/*)    │
+                  │   Webhooks        │
+                  │   Integrations    │
+                  └───────────────────┘
+</code></pre>
+<p>Each deployment also exposes a <code>/webhooks/whatsapp</code> endpoint that the Meta API delivers messages to, and a <code>/webhooks/google-oauth</code> endpoint that completes Google Calendar authorization.</p>
+<h3>4.3 Per-deployment isolation</h3>
+<p>At the current single-tenant stage, each customer business runs as its own Node process with its own SQLite database file, its own <code>business.json</code>, and its own credentials for Google and WhatsApp. There is no shared database, no shared application logic, and no path by which one business's data can be read by another. This is the simplest possible privacy posture and is appropriate up to roughly 10–20 customers.</p>
+<p>As the customer base grows, Dunper will migrate to a multi-tenant Postgres model with explicit <code>workspace_id</code> keys on every row. The roadmap for that migration is documented internally in <a href="scaling-roadmap.md">docs/scaling-roadmap.md</a>.</p>
+<h3>4.4 Reliability and observability</h3>
+<ul>
+<li><strong>Daily automated backups</strong> of each business's database to local disk and (configurable) to Cloudflare R2.</li>
+<li><strong>Health endpoints</strong> at <code>/health</code> for external uptime monitoring (UptimeRobot).</li>
+<li><strong>Anthropic usage logging</strong> — every AI call is logged with token counts and cost in cents, giving per-customer unit economics.</li>
+<li><strong>Conversation history</strong> is retained in full per business so the owner can audit any interaction.</li>
+</ul>
+<hr>
+<h2>5. Data privacy and security</h2>
+<p>Dunper's privacy posture follows three rules:</p>
+<ol>
+<li>
+<p><strong>No data pooling.</strong> Each business's customer data lives only inside that business's deployment. No data flows between customers. No data is sold.</p>
+</li>
+<li>
+<p><strong>Customer data belongs to the business.</strong> Conversation logs, booking records, and customer profiles are owned by the business. Export-on-request and full-deletion-on-request are supported. Indonesia has no comprehensive data protection law yet; Dunper voluntarily applies GDPR-equivalent rules ahead of regulation.</p>
+</li>
+<li>
+<p><strong>AI providers see only what's needed.</strong> Each Claude API call sends only the conversation history and the business's curated configuration — no customer database rows except the active conversation. Anthropic has a no-training contractual commitment for API calls.</p>
+</li>
+</ol>
+<h3>5.1 Technical safeguards</h3>
+<ul>
+<li><strong>TLS everywhere</strong> (via Cloudflare).</li>
+<li><strong>HTTPS-only cookies</strong> with <code>SameSite=Lax</code> for session management.</li>
+<li><strong>CSRF protection</strong> on all state-changing endpoints via <code>Sec-Fetch-Site</code> + Origin checks.</li>
+<li><strong>Rate limiting</strong> on auth endpoints (20 attempts / 15 min / IP), webhook endpoints (200 / min), and the public contact form (5 / 15 min / IP).</li>
+<li><strong>2FA via email</strong> for all owner accounts.</li>
+<li><strong>Bcrypt-hashed passwords</strong> with cost factor 10, plus dummy-hash comparison on lookup misses to prevent username-enumeration via timing.</li>
+<li><strong>HMAC-signed webhooks</strong> verifying that incoming WhatsApp events actually came from Meta.</li>
+<li><strong>App secrets</strong> stored in <code>.env</code> files outside the git tree.</li>
+</ul>
+<h3>5.2 Compliance posture</h3>
+<p>Dunper does not yet have SOC 2, ISO 27001, or any formal compliance certification. These will be pursued in the order our customers ask for them; the first SOC 2 audit is planned at roughly the 30-customer mark. Until then, the practical security model is "small surface area, well-understood components, modern defaults."</p>
+<hr>
+<h2>6. Use cases</h2>
+<p>Dunper is built specifically for small service businesses with the following common shape:</p>
+<ul>
+<li>1–20 employees</li>
+<li>Customer interactions involve scheduling, pricing inquiries, and booking</li>
+<li>Multilingual customer base</li>
+<li>The owner answers most messages personally today</li>
+</ul>
+<p>The verticals it serves best are:</p>
+<h3>6.1 Dental clinics</h3>
+<p>Common questions: opening hours, pricing for specific procedures, insurance acceptance, first-visit paperwork. Dunper books cleanings and consultations directly into Google Calendar. Patients appreciate getting an immediate response at 11pm Saturday when their tooth starts hurting.</p>
+<h3>6.2 Salons and spas</h3>
+<p>Common questions: available stylists, pricing for services, walk-in availability. Dunper handles language switching (a single salon in Jakarta serves expats, locals, and Mandarin-speaking visitors). Heavy DM volume on Instagram is the typical pain point — Dunper plugs into WhatsApp Business which most salons already use.</p>
+<h3>6.3 Independent dentists, therapists, tutors, consultants</h3>
+<p>Single-practitioner businesses where the owner cannot answer the phone while working with a client. Dunper qualifies leads ("are you a new patient?", "is this a routine cleaning or something more urgent?") and books accordingly.</p>
+<h3>6.4 Restaurants</h3>
+<p>Common questions: hours, takeout availability, reservations, allergens. Dunper handles reservations into Google Calendar (or, planned, into restaurant-specific systems like SevenRooms / OpenTable).</p>
+<h3>6.5 Where Dunper is NOT a fit (yet)</h3>
+<ul>
+<li>Enterprises with custom CRM integration requirements (planned: public API).</li>
+<li>Industries with strict regulatory chatbot rules (e.g., direct medical advice). Dunper actively refuses to give medical, legal, or financial advice and routes to a human.</li>
+<li>High-volume e-commerce with order tracking needs (different product class).</li>
+</ul>
+<hr>
+<h2>7. Pricing</h2>
+<p>Four tiers are offered today on https://dunper.com/dunper_join.html:</p>
+<table>
+<thead>
+<tr>
+<th>Plan</th>
+<th>Price</th>
+<th>Conversations / month</th>
+<th>Languages</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Starter</td>
+<td>Free</td>
+<td>100</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Pro</td>
+<td>$20 / month</td>
+<td>500</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Max</td>
+<td>$50 / month</td>
+<td>2,000</td>
+<td>40+</td>
+</tr>
+<tr>
+<td>Custom</td>
+<td>Talk to sales</td>
+<td>Any</td>
+<td>Any</td>
+</tr>
+</tbody>
+</table>
+<p>All plans include unlimited data, custom agent configuration, and the full chatbot feature set. The free Starter tier is intended for businesses to validate fit before committing — not as a long-term plan.</p>
+<p>Annual billing offers a 20% discount (toggle on the join page).</p>
+<p>A "conversation" is a unique customer thread within a calendar month. A returning customer chatting again in the same month does not consume an additional conversation slot.</p>
+<hr>
+<h2>8. Roadmap</h2>
+<p>The plan, in honest order:</p>
+<table>
+<thead>
+<tr>
+<th>Horizon</th>
+<th>Goal</th>
+<th>Key shipping work</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Next 30 days</td>
+<td>Make it un-embarrassing</td>
+<td>Move off the laptop to a $5 VPS; swap Gmail SMTP for Resend; first production WhatsApp number with a real business name; structured schedule JSON (not just plaintext hours)</td>
+</tr>
+<tr>
+<td>Next 90 days</td>
+<td>First 5 paying customers</td>
+<td><code>onboard-client.sh</code> script; Stripe Checkout end-to-end; per-customer Anthropic-cost reporting; R2 backups; UptimeRobot monitoring</td>
+</tr>
+<tr>
+<td>10–25 customers</td>
+<td>Multi-tenant migration</td>
+<td><code>workspace_id</code> on every table; SQLite → Postgres; auth swap to Clerk/WorkOS; tenant-resolution middleware</td>
+</tr>
+<tr>
+<td>Year 1+</td>
+<td>Vertical packaging</td>
+<td>Industry-specific landing pages and configurations; public REST API; phone-call answering via Twilio; multi-region deployment when EU/AU latency complaints arrive</td>
+</tr>
+</tbody>
+</table>
+<p>The single hardest engineering decision on the horizon is the single-tenant → multi-tenant migration, which will happen between customers 15 and 25. The decision is "when," not "whether."</p>
+<hr>
+<h2>9. About Dunper</h2>
+<p>Dunper AI was started in 2026 in Jakarta by five co-founders — two front-end engineers, two back-end engineers, and one running marketing and customer development. The team came together over a year of watching family, friends, and businesses around them juggle the same problem: too many channels, not enough hands, and a customer base that expects an answer in minutes.</p>
+<p>The product began as an internal experiment called FrontDesk — a question-answering bot for a friend's dental clinic. When that experiment quietly held up under real customer load for three months, the team decided to turn it into a product, rebranded as Dunper, and launched the marketing site at dunper.com in May 2026.</p>
+<p>We are building for Indonesian small businesses first, with the rest of Southeast Asia as the natural next wave. Multilingual support is not a localization checkbox — it is a core requirement of the market we are starting in.</p>
+<h3>9.1 Team</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aurel Gregoria</td>
+<td>Front-end</td>
+</tr>
+<tr>
+<td>Marc Tjhin</td>
+<td>Front-end</td>
+</tr>
+<tr>
+<td>Owen Tjandra</td>
+<td>Back-end</td>
+</tr>
+<tr>
+<td>Christopher Lo</td>
+<td>Back-end</td>
+</tr>
+<tr>
+<td>Cathleen Wang</td>
+<td>Marketing &amp; customer development</td>
+</tr>
+</tbody>
+</table>
+<p>Reach the team at <strong>dunperai@gmail.com</strong> or <strong>@dunper.ai</strong> on Instagram.</p>
+<hr>
+<h2>10. Conclusion</h2>
+<p>The thesis of Dunper AI is narrow on purpose: <strong>small service businesses lose customers because they cannot answer fast enough, and an AI receptionist that actually integrates with their calendar, speaks their customers' languages, and knows when to escalate is the practical fix.</strong></p>
+<p>We are not building artificial general intelligence. We are not chasing the largest enterprises. We are not trying to be a horizontal chatbot platform. We are building one thing — a receptionist that shows up — for a clearly defined customer.</p>
+<p>If you run a small service business in Jakarta, Bandung, Surabaya, Singapore, Kuala Lumpur, or anywhere in this region, and the problem above sounds like yours, we would love to hear from you. The fastest path to a working pilot is roughly a one-week setup, and the first month is free.</p>
+<p><strong>Get in touch:</strong></p>
+<ul>
+<li>Web: https://dunper.com</li>
+<li>Email: dunperai@gmail.com</li>
+<li>Instagram: @dunper.ai</li>
+<li>Live chat: https://dunper.com/dunper_chat.html</li>
+</ul>
+<hr>
+<p><em>Dunper AI Pte. Ltd. · Jakarta, Indonesia · May 2026 · Whitepaper v1.0</em></p>
+<p><em>This document describes the product and architecture as of May 2026. Features marked "planned" are on the public roadmap but not yet shipped. For the most current information, please reach out directly.</em></p>
+</div>
+</body>
+</html>
