@@ -829,6 +829,28 @@ app.get('/api/usage', requireBusinessOwner,(req, res) => {
   res.json(getUsageSnapshot());
 });
 
+app.get('/api/usage/sessions', requireBusinessOwner, (req, res) => {
+  const range = String(req.query.range || 'month');
+  let since;
+  if (range === 'month') since = "datetime('now', 'start of month')";
+  else if (range === 'day') since = "datetime('now', 'start of day')";
+  else if (range === 'week') since = "datetime('now', '-7 days')";
+  else since = "datetime('now', 'start of month')";
+  try {
+    const { countBillableSessions, SESSION_GAP_HOURS, MAX_MSGS_PER_SESSION } = require('./db');
+    const sessions = countBillableSessions({ since });
+    res.json({
+      sessions,
+      range,
+      session_gap_hours: SESSION_GAP_HOURS,
+      max_msgs_per_session: MAX_MSGS_PER_SESSION,
+    });
+  } catch (err) {
+    console.error('[usage/sessions] failed:', err.message);
+    res.status(500).json({ error: 'Session count unavailable' });
+  }
+});
+
 app.get('/api/usage/summary', requireBusinessOwner, (req, res) => {
   const range = String(req.query.range || 'month');
   let since;

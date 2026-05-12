@@ -30,5 +30,43 @@
     "Onboarding sessions are for customers on the Pro or Max plan.",
     "Cancellations or reschedules: email dunperai@gmail.com and we'll take care of it."
   ],
-  "about": "Dunper AI is the always-on AI receptionist for small businesses. We drop into a business's website or WhatsApp and reply to every customer in 60+ languages, 24/7 — answering questions, booking appointments, qualifying leads, handing off to a human when needed.\n\nWHAT IT IS\n- An AI receptionist your customers chat with on your website or WhatsApp.\n- It learns your business in plain English (no developer needed).\n- It books real appointments into your Google Calendar.\n- It logs every customer to a dashboard you control.\n- It hands off to a human the moment it doesn't know.\n\nPRICING (USD/mo)\n- Starter — Free. 100 conversations / month. 1 language. Solo founders or testing.\n- Pro — $20/mo. 500 conversations / month. 5 languages. Most small businesses pick this.\n- Max — $50/mo. 2,000 conversations / month. 40+ languages. Multi-location or growing teams.\n- Every plan: unlimited customer data, a custom agent tuned to your business, all chatbot features. No card to start.\n\nLANGUAGES\nDunper speaks 60+ languages including Bahasa Indonesia, English, Mandarin, Spanish, Tagalog, Arabic, Vietnamese, Thai, Japanese. It switches automatically mid-conversation: a customer can write in Bahasa and you can read it back in English.\n\nINTEGRATIONS\n- Google Calendar — real bookings appear in your calendar instantly. One-click connect.\n- Google Sheets — every customer row is auto-updated (name, phone, last seen, summary, sentiment).\n- WhatsApp Business Cloud API — same brain replies on your WhatsApp number too.\n- Custom webhooks — for anything else (CRMs, ticket systems, etc.).\n\nWHO USES IT\nSalons, dental clinics, restaurants, hotels, retail shops, spas, tutoring centers, repair shops, warungs. Any small business that answers the same questions over and over and books appointments.\n\nWHO BUILT IT\nFive co-founders out of Jakarta — two front-end engineers, two back-end engineers, one running marketing and support. Built for Indonesian SMEs first, then the rest of Southeast Asia.\n\nCONTACT\n- Email: dunperai@gmail.com\n- Instagram: @dunper.ai\n- GitHub: github.com/OwenTjandra/Dunper-AI (open source)\n\nFAQ\n- 'Will it replace my staff?' No — it covers the front desk so your team can focus on customers who need real human attention.\n- 'How is it different from ChatGPT?' Dunper is the wrapper around the chatbot you'd otherwise have to build — it already knows how to book appointments, hand off to humans, log conversations, send confirmation emails. You teach it about your business; it does the rest.\n- 'How long to set up?' 60 seconds to sign up, ~15 minutes to fill out your business config, then it's live.\n- 'How is my data handled?' Each business's data is isolated — never pooled, shared, or sold. End-to-end encrypted in transit. GDPR-style deletion on request."
+  "about": "Dunper AI is the always-on AI receptionist for small businesses. We drop into a business's website or WhatsApp and reply to every customer in 60+ languages, 24/7 — answering questions, booking appointments, qualifying leads, handing off to a human when needed.\n\nWHAT IT IS\n- An AI receptionist your customers chat with on your website or WhatsApp.\n- It learns your business in plain English (no developer needed).\n- It books real appointments into your Google Calendar.\n- It logs every customer to a dashboard you control.\n- It hands off to a human the moment it doesn't know.\n\nPRICING (USD/mo) — every plan starts with a 30-day free trial, no card required\n- Starter — $20/mo. 100 conversations / month. For solo founders, warungs, side projects.\n- Pro — $100/mo. 500 conversations / month. For salons, clinics, restaurants. Most popular.\n- Max — $400/mo. 2,000 conversations / month. For multi-location or high-volume businesses.\n- Custom — for 2,000+ conversations / month. Contact us for tailored pricing, dedicated onboarding, priority support.\n- A conversation = one customer's chat session, up to 20 messages within a 24-hour window. Beyond that it counts as a new conversation.\n- Every plan: unlimited customer data, 60+ languages, custom agent tuned to your business, all chatbot features. Save 20% on yearly billing.\n\nLANGUAGES\nDunper speaks 60+ languages including Bahasa Indonesia, English, Mandarin, Spanish, Tagalog, Arabic, Vietnamese, Thai, Japanese. It switches automatically mid-conversation: a customer can write in Bahasa and you can read it back in English.\n\nINTEGRATIONS\n- Google Calendar — real bookings appear in your calendar instantly. One-click connect.\n- Google Sheets — every customer row is auto-updated (name, phone, last seen, summary, sentiment).\n- WhatsApp Business Cloud API — same brain replies on your WhatsApp number too.\n- Custom webhooks — for anything else (CRMs, ticket systems, etc.).\n\nWHO USES IT\nSalons, dental clinics, restaurants, hotels, retail shops, spas, tutoring centers, repair shops, warungs. Any small business that answers the same questions over and over and books appointments.\n\nWHO BUILT IT\nFive co-founders out of Jakarta — two front-end engineers, two back-end engineers, one running marketing and support. Built for Indonesian SMEs first, then the rest of Southeast Asia.\n\nCONTACT\n- Email: dunperai@gmail.com\n- Instagram: @dunper.ai\n- GitHub: github.com/OwenTjandra/Dunper-AI (open source)\n\nFAQ\n- 'Will it replace my staff?' No — it covers the front desk so your team can focus on customers who need real human attention.\n- 'How is it different from ChatGPT?' Dunper is the wrapper around the chatbot you'd otherwise have to build — it already knows how to book appointments, hand off to humans, log conversations, send confirmation emails. You teach it about your business; it does the rest.\n- 'How long to set up?' 60 seconds to sign up, ~15 minutes to fill out your business config, then it's live.\n- 'How is my data handled?' Each business's data is isolated — never pooled, shared, or sold. End-to-end encrypted in transit. GDPR-style deletion on request.",
+  "weekly_hours": {
+    "mon": {
+      "open": "09:00",
+      "close": "17:00",
+      "closed": false
+    },
+    "tue": {
+      "open": "09:00",
+      "close": "17:00",
+      "closed": false
+    },
+    "wed": {
+      "open": "09:00",
+      "close": "17:00",
+      "closed": false
+    },
+    "thu": {
+      "open": "09:00",
+      "close": "17:00",
+      "closed": false
+    },
+    "fri": {
+      "open": "09:00",
+      "close": "17:00",
+      "closed": false
+    },
+    "sat": {
+      "open": "09:00",
+      "close": "13:00",
+      "closed": true
+    },
+    "sun": {
+      "open": "09:00",
+      "close": "13:00",
+      "closed": true
+    }
+  },
+  "blocked_dates": []
 }

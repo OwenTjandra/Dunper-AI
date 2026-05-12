@@ -919,7 +919,50 @@ function purgeOldWhatsAppMessages() {
   db.prepare("DELETE FROM processed_wa_messages WHERE processed_at < datetime('now', '-7 days')").run();
 }
 
+// Billing-session counter. A "conversation" = customer messages within a
+// 24-hour window AND capped at MAX_MSGS_PER_SESSION user messages. Crossing
+// either boundary starts a new billable session. Mirrors WhatsApp Business
+// API's "conversation" definition — what tier limits charge against.
+const SESSION_GAP_HOURS = 24;
+const MAX_MSGS_PER_SESSION = 20;
+
+function countBillableSessions(opts = {}) {
+  const since = opts.since || "datetime('now', 'start of month')";
+  // Window the customer_messages table by profile_id ordered chronologically.
+  // A new session starts when EITHER:
+  //   (a) gap from prior message > 24h, OR
+  //   (b) this is the 21st+ message in the current session.
+  const rows = db.prepare(`
+    SELECT profile_id, created_at
+    FROM customer_messages
+    WHERE role = 'user' AND created_at >= ${since}
+    ORDER BY profile_id, created_at
+  `).all();
+
+  let sessions = 0;
+  let lastProfile = null;
+  let lastTime = null;
+  let msgsInSession = 0;
+  for (const r of rows) {
+    const t = new Date(r.created_at + 'Z').getTime();
+    const newProfile = r.profile_id !== lastProfile;
+    const tooOld = lastTime !== null && (t - lastTime) / 3600000 > SESSION_GAP_HOURS;
+    if (newProfile || tooOld || msgsInSession >= MAX_MSGS_PER_SESSION) {
+      sessions++;
+      msgsInSession = 1;
+    } else {
+      msgsInSession++;
+    }
+    lastProfile = r.profile_id;
+    lastTime = t;
+  }
+  return sessions;
+}
+
 module.exports = {
+  countBillableSessions,
+  SESSION_GAP_HOURS,
+  MAX_MSGS_PER_SESSION,
   db,
   seedAdminFromEnv,
   seedFoundersFromEnv,

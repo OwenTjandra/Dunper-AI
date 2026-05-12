@@ -693,6 +693,13 @@
               <div id="ais-budget-bar" style="margin-top:10px;height:6px;border-radius:3px;background:var(--neutral-200);overflow:hidden;"><div id="ais-budget-fill" style="height:100%;width:0%;background:var(--accent);transition:width .3s;"></div></div>
               <div style="margin-top:12px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-tertiary);"><i class="ti ti-refresh"></i> Last saved <span id="ais-last-saved">—</span></div>
             </div>
+            <div style="margin-top:16px;" class="card">
+              <div class="card-title" style="margin-bottom:12px;">Conversations this month</div>
+              <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">Sessions used: <span id="ais-sessions-used" style="color:var(--text-primary);font-weight:500;">—</span></div>
+              <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">Tier cap: <span id="ais-sessions-cap" style="color:var(--text-primary);font-weight:500;">—</span></div>
+              <div id="ais-sessions-bar" style="margin-top:10px;height:6px;border-radius:3px;background:var(--neutral-200);overflow:hidden;"><div id="ais-sessions-fill" style="height:100%;width:0%;background:var(--accent);transition:width .3s;"></div></div>
+              <div style="margin-top:10px;font-size:11px;color:var(--text-tertiary);line-height:1.5;">A conversation = one customer's session, up to 20 messages within 24h. After that, a new session starts.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -851,6 +858,7 @@
       document.getElementById('ais-spend-budget').textContent = '$' + Number(settings.monthly_budget_usd || 0).toFixed(2);
       document.getElementById('ais-last-saved').textContent = settings.updated_at ? new Date(settings.updated_at + 'Z').toLocaleString() : '—';
       await loadAiSpend(settings.monthly_budget_usd);
+      await loadAiSessions();
       aisSetStatus('', false);
     } catch (e) {
       aisSetStatus('Failed to load: ' + e.message, true);
@@ -866,6 +874,23 @@
       document.getElementById('ais-spend-mtd').textContent = '$' + cost.toFixed(4);
       const pct = budget > 0 ? Math.min(100, (cost / budget) * 100) : 0;
       const fill = document.getElementById('ais-budget-fill');
+      fill.style.width = pct + '%';
+      fill.style.background = pct >= 100 ? '#e25555' : pct >= 80 ? '#e7a23a' : 'var(--accent)';
+    } catch (_e) {}
+  }
+
+  async function loadAiSessions() {
+    try {
+      const r = await fetch('/api/usage/sessions?range=month', { credentials: 'include' });
+      if (!r.ok) return;
+      const { sessions } = await r.json();
+      // Soft tier caps for the bar — adjust if billing tier is wired up.
+      // For now, default to "Starter cap 100" — customer can read it as guidance.
+      const cap = 100;
+      document.getElementById('ais-sessions-used').textContent = sessions;
+      document.getElementById('ais-sessions-cap').textContent = cap + ' (Starter)';
+      const pct = cap > 0 ? Math.min(100, (sessions / cap) * 100) : 0;
+      const fill = document.getElementById('ais-sessions-fill');
       fill.style.width = pct + '%';
       fill.style.background = pct >= 100 ? '#e25555' : pct >= 80 ? '#e7a23a' : 'var(--accent)';
     } catch (_e) {}
