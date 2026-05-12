@@ -345,7 +345,7 @@
       <span class="toggle-slider"></span>
     </label>
     <span class="toggle-label">Yearly</span>
-    <span class="save-badge">Save 20%</span>
+    <span class="save-badge">Save 10%</span>
   </div>
 
   <!-- PLANS -->
@@ -522,9 +522,9 @@
     window.location.href = 'dunper_signin.html?plan=' + planId + '&billing=' + billing;
   }
 
-  // Billing toggle. Yearly = 20% off (10 months instead of 12).
+  // Billing toggle. Yearly = 10% off the monthly rate.
   const monthly=[20,100,400];
-  const yearly=[16,80,320];
+  const yearly=[18,90,360];
   const toggle=document.getElementById('billingToggle');
   toggle.addEventListener('change',()=>{
     const isYearly=toggle.checked;
