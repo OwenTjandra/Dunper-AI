@@ -186,18 +186,58 @@
   .preview-refresh-btn.spinning { transform: rotate(360deg); }
   .preview-refresh-btn i { font-size: 14px; }
 
-  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
   .cal-month { font-family: var(--font-display); font-size: 22px; color: var(--text-primary); }
-  .cal-nav { display: flex; gap: 4px; }
-  .cal-nav-btn { width: 30px; height: 30px; border-radius: var(--r-sm); border: 0.5px solid var(--neutral-200); background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); }
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .cal-day-label { text-align: center; font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 0 8px; }
-  .cal-day { aspect-ratio: 1; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; color: var(--text-primary); transition: background 0.1s; position: relative; flex-direction: column; gap: 2px; }
-  .cal-day:hover { background: var(--neutral-100); }
-  .cal-day.today { background: var(--accent); color: #fff; font-weight: 500; }
-  .cal-day.has-event::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
-  .cal-day.today.has-event::after { background: rgba(255,255,255,0.7); }
-  .cal-day.other-month { color: var(--text-tertiary); }
+  .cal-nav { display: flex; gap: 4px; align-items: center; }
+  .cal-nav-btn { width: 30px; height: 30px; border-radius: var(--r-sm); border: 0.5px solid var(--neutral-200); background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); transition: background .15s ease, border-color .15s ease; }
+  .cal-nav-btn:hover { background: var(--neutral-100); }
+  .cal-nav-today { font-size: 12px; padding: 6px 12px; border-radius: var(--r-sm); border: 0.5px solid var(--neutral-200); background: #fff; cursor: pointer; color: var(--text-secondary); margin-right: 6px; }
+  .cal-nav-today:hover { background: var(--neutral-100); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .cal-day-label { text-align: center; font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 0 8px; font-weight: 500; }
+  .cal-day { aspect-ratio: 1; min-height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 13.5px; cursor: pointer; color: var(--text-primary); position: relative; flex-direction: column; gap: 2px; background: #fff; border: 1px solid transparent; transition: background .12s ease, border-color .12s ease, transform .08s ease; user-select: none; }
+  .cal-day:hover { background: var(--neutral-100); border-color: var(--neutral-200); }
+  .cal-day:active { transform: scale(0.96); }
+  .cal-day.today { box-shadow: 0 0 0 2px var(--accent) inset; font-weight: 600; }
+  .cal-day.other-month { color: var(--text-tertiary); opacity: 0.45; cursor: default; }
+  .cal-day.other-month:hover { background: transparent; border-color: transparent; }
+  .cal-day.has-event::after { content: ''; position: absolute; bottom: 5px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
+
+  /* Availability states — clickable */
+  .cal-day.open { background: rgba(52, 211, 153, 0.10); border-color: rgba(52, 211, 153, 0.28); }
+  .cal-day.open::before { content: ''; position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #34d399; }
+  .cal-day.open:hover { background: rgba(52, 211, 153, 0.18); }
+  .cal-day.closed { background: rgba(244, 63, 94, 0.08); border-color: rgba(244, 63, 94, 0.22); color: var(--text-tertiary); }
+  .cal-day.closed .day-num { text-decoration: line-through; opacity: 0.7; }
+  .cal-day.closed::before { content: '×'; position: absolute; top: 0; right: 7px; font-size: 14px; color: #f43f5e; font-weight: 700; line-height: 1.4; }
+  .cal-day.closed:hover { background: rgba(244, 63, 94, 0.14); }
+  .cal-day.normally-closed { background: var(--neutral-100); color: var(--text-tertiary); }
+
+  .cal-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); margin-top: 14px; padding-top: 14px; border-top: 0.5px solid var(--neutral-200); }
+  .cal-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .cal-legend-swatch { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+  .cal-legend-swatch.open { background: rgba(52, 211, 153, 0.18); border: 1px solid rgba(52,211,153,0.4); }
+  .cal-legend-swatch.closed { background: rgba(244, 63, 94, 0.14); border: 1px solid rgba(244,63,94,0.4); }
+  .cal-legend-swatch.today-sw { background: #fff; box-shadow: 0 0 0 2px var(--accent) inset; }
+
+  /* Weekly hours panel above the calendar */
+  .weekly-hours { display: flex; flex-direction: column; gap: 14px; }
+  .weekly-hours-hint { font-size: 13px; color: var(--text-secondary); }
+  .weekday-toggles { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .weekday-pill { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 0; border-radius: 12px; background: var(--neutral-100); border: 1.5px solid transparent; cursor: pointer; transition: background .15s ease, border-color .15s ease, color .15s ease; color: var(--text-secondary); user-select: none; }
+  .weekday-pill.on { background: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.4); color: var(--text-primary); }
+  .weekday-pill .wd-name { font-size: 11px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; }
+  .weekday-pill .wd-state { font-size: 11px; color: var(--text-tertiary); }
+  .weekday-pill.on .wd-state { color: #15803d; }
+  .hours-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .hours-row label { font-size: 13px; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 8px; }
+  .hours-row input[type=time] { font-family: var(--font-body); font-size: 13.5px; border: 0.5px solid var(--neutral-200); border-radius: var(--r-sm); padding: 6px 10px; background: #fff; color: var(--text-primary); }
+  .schedule-summary { font-size: 13px; color: var(--text-secondary); background: var(--neutral-100); border-radius: var(--r-sm); padding: 12px 14px; line-height: 1.55; }
+  .schedule-summary strong { color: var(--text-primary); }
+  .save-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; flex-wrap: wrap; }
+  .save-status { font-size: 12.5px; color: var(--text-tertiary); }
+  .save-status.ok { color: #15803d; }
+  .save-status.err { color: #b91c1c; }
 
   .profile-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
   .field-group { margin-bottom: 16px; }
@@ -401,37 +441,60 @@
 
       <div class="page" id="page-calendar">
         <div class="section-head">
-          <div class="section-title">Calendar</div>
+          <div class="section-title">My availability</div>
           <div style="display:flex;gap:8px;align-items:center;">
-            <button class="btn-ghost">Sync Google Calendar <i class="ti ti-brand-google"></i></button>
-            <button class="btn-primary"><i class="ti ti-plus"></i> New event</button>
+            <button class="btn-ghost" id="cal-sync-google">Sync Google Calendar <i class="ti ti-brand-google"></i></button>
           </div>
         </div>
-        <div class="card">
-          <div class="cal-header">
-            <div class="cal-month">June 2026</div>
-            <div class="cal-nav">
-              <button class="cal-nav-btn"><i class="ti ti-chevron-left"></i></button>
-              <button class="cal-nav-btn"><i class="ti ti-chevron-right"></i></button>
+
+        <!-- Weekly recurring hours -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header">
+            <div class="card-title">Weekly hours</div>
+            <span class="weekly-hours-hint">Tap a day to toggle open / closed.</span>
+          </div>
+          <div class="weekly-hours">
+            <div class="weekday-toggles" id="weekday-toggles">
+              <!-- 7 weekday pills injected by JS -->
+            </div>
+            <div class="hours-row">
+              <label>Open from <input type="time" id="cal-open-time" value="09:00"></label>
+              <label>to <input type="time" id="cal-close-time" value="17:00"></label>
             </div>
           </div>
-          <div class="cal-grid">
-            <div class="cal-day-label">Sun</div><div class="cal-day-label">Mon</div><div class="cal-day-label">Tue</div>
-            <div class="cal-day-label">Wed</div><div class="cal-day-label">Thu</div><div class="cal-day-label">Fri</div><div class="cal-day-label">Sat</div>
-            <div class="cal-day other-month">25</div><div class="cal-day other-month">26</div><div class="cal-day other-month">27</div>
-            <div class="cal-day other-month">28</div><div class="cal-day other-month">29</div><div class="cal-day other-month">30</div><div class="cal-day other-month">31</div>
-            <div class="cal-day">1</div><div class="cal-day has-event">2</div><div class="cal-day">3</div>
-            <div class="cal-day has-event">4</div><div class="cal-day">5</div><div class="cal-day has-event">6</div><div class="cal-day">7</div>
-            <div class="cal-day">8</div><div class="cal-day has-event">9</div><div class="cal-day today has-event">10</div>
-            <div class="cal-day has-event">11</div><div class="cal-day">12</div><div class="cal-day has-event">13</div><div class="cal-day">14</div>
-            <div class="cal-day">15</div><div class="cal-day has-event">16</div><div class="cal-day">17</div>
-            <div class="cal-day">18</div><div class="cal-day has-event">19</div><div class="cal-day">20</div><div class="cal-day">21</div>
-            <div class="cal-day has-event">22</div><div class="cal-day">23</div><div class="cal-day">24</div>
-            <div class="cal-day">25</div><div class="cal-day">26</div><div class="cal-day has-event">27</div><div class="cal-day">28</div>
-            <div class="cal-day">29</div><div class="cal-day">30</div><div class="cal-day other-month">1</div>
-            <div class="cal-day other-month">2</div><div class="cal-day other-month">3</div><div class="cal-day other-month">4</div><div class="cal-day other-month">5</div>
+        </div>
+
+        <!-- Date overrides (calendar) -->
+        <div class="card">
+          <div class="cal-header">
+            <div class="cal-month" id="cal-month">—</div>
+            <div class="cal-nav">
+              <button type="button" class="cal-nav-today" id="cal-today-btn">Today</button>
+              <button type="button" class="cal-nav-btn" id="cal-prev" aria-label="Previous month"><i class="ti ti-chevron-left"></i></button>
+              <button type="button" class="cal-nav-btn" id="cal-next" aria-label="Next month"><i class="ti ti-chevron-right"></i></button>
+            </div>
+          </div>
+          <div class="weekly-hours-hint" style="margin-bottom:10px;">Click a date to override your weekly schedule for that specific day.</div>
+          <div class="cal-grid" id="cal-grid">
+            <!-- day labels + day cells injected by JS -->
+          </div>
+          <div class="cal-legend">
+            <div class="cal-legend-item"><span class="cal-legend-swatch open"></span>Open</div>
+            <div class="cal-legend-item"><span class="cal-legend-swatch closed"></span>Closed (override)</div>
+            <div class="cal-legend-item"><span class="cal-legend-swatch today-sw"></span>Today</div>
           </div>
         </div>
+
+        <!-- Save / summary -->
+        <div class="card" style="margin-top:20px;">
+          <div class="card-header"><div class="card-title">Schedule summary</div></div>
+          <div class="schedule-summary" id="schedule-summary">Calculating…</div>
+          <div class="save-row">
+            <button type="button" class="btn-primary" id="cal-save-btn"><i class="ti ti-device-floppy"></i> Save schedule to AI</button>
+            <span class="save-status" id="cal-save-status"></span>
+          </div>
+        </div>
+
         <div style="margin-top:20px;">
           <div class="card">
             <div class="card-header"><div class="card-title" id="calendar-today-title">Today's Bookings</div></div>
@@ -1273,11 +1336,248 @@
     if (!btn || !frame) return;
     btn.addEventListener('click', () => {
       btn.classList.add('spinning');
-      // Cache-bust so the iframe definitely re-fetches the chat UI
       const base = '/preview-chat';
       frame.src = base + '?t=' + Date.now();
       setTimeout(() => btn.classList.remove('spinning'), 600);
     });
+  })();
+</script>
+
+<script>
+  // ===== Availability picker — weekly hours + date overrides =====
+  (function(){
+    const STORAGE_KEY = 'dunper-availability-v1';
+    const DAY_NAMES_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const DAY_NAMES_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    // ---- State, persisted to localStorage ----
+    const defaultState = {
+      // 0=Sun … 6=Sat. Default: Mon–Fri open, weekends closed.
+      weekly: [false, true, true, true, true, true, false],
+      openTime:  '09:00',
+      closeTime: '17:00',
+      // Map of 'YYYY-MM-DD' -> 'open' | 'closed' (override the weekly default for that date)
+      overrides: {},
+    };
+    function loadState(){
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return { ...defaultState };
+        const parsed = JSON.parse(raw);
+        return { ...defaultState, ...parsed, overrides: parsed.overrides || {} };
+      } catch { return { ...defaultState }; }
+    }
+    function saveState(){
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+    }
+    let state = loadState();
+    let cursor = new Date();
+    cursor.setDate(1);
+
+    // ---- DOM refs ----
+    const togglesEl  = document.getElementById('weekday-toggles');
+    const openTimeEl = document.getElementById('cal-open-time');
+    const closeTimeEl= document.getElementById('cal-close-time');
+    const monthEl    = document.getElementById('cal-month');
+    const gridEl     = document.getElementById('cal-grid');
+    const prevBtn    = document.getElementById('cal-prev');
+    const nextBtn    = document.getElementById('cal-next');
+    const todayBtn   = document.getElementById('cal-today-btn');
+    const summaryEl  = document.getElementById('schedule-summary');
+    const saveBtn    = document.getElementById('cal-save-btn');
+    const saveStatus = document.getElementById('cal-save-status');
+
+    if (!togglesEl || !gridEl) return; // not on calendar page
+
+    // ---- Helpers ----
+    function isoDate(d){
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const dd= String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${dd}`;
+    }
+    function sameDay(a,b){ return isoDate(a) === isoDate(b); }
+    function fmt12(t){
+      const [h,m] = t.split(':').map(n=>parseInt(n,10));
+      const period = h >= 12 ? 'PM' : 'AM';
+      const h12 = ((h + 11) % 12) + 1;
+      return `${h12}:${String(m).padStart(2,'0')} ${period}`;
+    }
+    function isPastDay(d){
+      const today = new Date(); today.setHours(0,0,0,0);
+      return d < today;
+    }
+
+    // ---- Weekday pills ----
+    function renderToggles(){
+      togglesEl.innerHTML = '';
+      DAY_NAMES_SHORT.forEach((name, i) => {
+        const open = !!state.weekly[i];
+        const pill = document.createElement('div');
+        pill.className = 'weekday-pill' + (open ? ' on' : '');
+        pill.setAttribute('role','button');
+        pill.setAttribute('tabindex','0');
+        pill.innerHTML = `<span class="wd-name">${name}</span><span class="wd-state">${open ? 'Open' : 'Closed'}</span>`;
+        const toggle = () => {
+          state.weekly[i] = !state.weekly[i];
+          saveState();
+          renderToggles();
+          renderCalendar();
+          renderSummary();
+        };
+        pill.addEventListener('click', toggle);
+        pill.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+        togglesEl.appendChild(pill);
+      });
+    }
+
+    // ---- Calendar grid ----
+    function renderCalendar(){
+      const year  = cursor.getFullYear();
+      const month = cursor.getMonth();
+      monthEl.textContent = cursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+      gridEl.innerHTML = '';
+      DAY_NAMES_SHORT.forEach(n => {
+        const lbl = document.createElement('div');
+        lbl.className = 'cal-day-label';
+        lbl.textContent = n;
+        gridEl.appendChild(lbl);
+      });
+
+      const first = new Date(year, month, 1);
+      const leadingBlanks = first.getDay(); // 0 = Sunday
+      // previous-month tail
+      const prevMonthDays = new Date(year, month, 0).getDate();
+      for (let i = leadingBlanks; i > 0; i--) {
+        const cell = document.createElement('div');
+        cell.className = 'cal-day other-month';
+        cell.innerHTML = `<span class="day-num">${prevMonthDays - i + 1}</span>`;
+        gridEl.appendChild(cell);
+      }
+
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const today = new Date();
+      for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(year, month, d);
+        const iso  = isoDate(date);
+        const dow  = date.getDay();
+        const weeklyOpen = !!state.weekly[dow];
+        const override  = state.overrides[iso];
+        const effective = override ? override : (weeklyOpen ? 'open' : 'closed');
+
+        const cell = document.createElement('div');
+        cell.className = 'cal-day';
+        if (sameDay(date, today)) cell.classList.add('today');
+        if (override === 'closed') cell.classList.add('closed');
+        else if (override === 'open') cell.classList.add('open');
+        else if (!weeklyOpen) cell.classList.add('normally-closed');
+
+        cell.innerHTML = `<span class="day-num">${d}</span>`;
+        cell.title = `${date.toDateString()} — ${effective === 'open' ? 'OPEN' : 'CLOSED'}${override ? ' (override)' : ''}. Click to toggle.`;
+
+        cell.addEventListener('click', () => {
+          // Cycle: weekly-default → override-flip → clear (back to weekly-default)
+          // For simplicity: tap toggles between effective state and its opposite.
+          // If currently effective=open, mark as closed. If closed, mark as open. Tap again clears the override.
+          const cur = state.overrides[iso];
+          if (cur === 'closed') state.overrides[iso] = 'open';
+          else if (cur === 'open') delete state.overrides[iso];
+          else state.overrides[iso] = effective === 'open' ? 'closed' : 'open';
+          saveState();
+          renderCalendar();
+          renderSummary();
+        });
+        gridEl.appendChild(cell);
+      }
+
+      // Trailing blanks to complete the last row
+      const totalCells = leadingBlanks + daysInMonth;
+      const trailing = (7 - (totalCells % 7)) % 7;
+      for (let i = 1; i <= trailing; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cal-day other-month';
+        cell.innerHTML = `<span class="day-num">${i}</span>`;
+        gridEl.appendChild(cell);
+      }
+    }
+
+    // ---- Schedule summary (also the text we send to /api/business) ----
+    function buildSummary(){
+      const openIdx = DAY_NAMES_FULL.map((_,i)=>i).filter(i => state.weekly[i]);
+      const closedIdx = DAY_NAMES_FULL.map((_,i)=>i).filter(i => !state.weekly[i]);
+      const openDays  = openIdx.map(i => DAY_NAMES_FULL[i]).join(', ') || 'No days set as open';
+      const closedDays= closedIdx.map(i => DAY_NAMES_FULL[i]).join(', ');
+      const hoursRange= `${fmt12(state.openTime)} – ${fmt12(state.closeTime)}`;
+
+      // Future overrides only (past doesn't matter for the AI)
+      const today = new Date(); today.setHours(0,0,0,0);
+      const futureOverrides = Object.entries(state.overrides)
+        .filter(([iso]) => new Date(iso + 'T00:00') >= today)
+        .sort((a,b) => a[0].localeCompare(b[0]));
+
+      const closedDates = futureOverrides.filter(([,v]) => v === 'closed').map(([d]) => d);
+      const openDates   = futureOverrides.filter(([,v]) => v === 'open').map(([d]) => d);
+
+      const lines = [];
+      if (openIdx.length === 0) {
+        lines.push(`Closed every day of the week.`);
+      } else {
+        lines.push(`Open ${openDays} ${hoursRange}.`);
+        if (closedDays) lines.push(`Closed ${closedDays}.`);
+      }
+      if (closedDates.length) lines.push(`Specific closed dates: ${closedDates.join(', ')}.`);
+      if (openDates.length)   lines.push(`Open on otherwise-closed dates: ${openDates.join(', ')}.`);
+      return { plain: lines.join(' '), html: lines.map(l => `<div>${l}</div>`).join('') };
+    }
+    function renderSummary(){
+      const { html } = buildSummary();
+      summaryEl.innerHTML = html;
+    }
+
+    // ---- Save to backend ----
+    async function saveToBackend(){
+      const { plain } = buildSummary();
+      saveBtn.disabled = true;
+      saveStatus.textContent = 'Saving…';
+      saveStatus.className = 'save-status';
+      try {
+        const cur = await fetch('/api/business', { credentials: 'include' });
+        if (cur.status === 401) { saveStatus.textContent = 'Please sign in again.'; saveStatus.className = 'save-status err'; return; }
+        const business = await cur.json();
+        business.hours = plain;
+        const res = await fetch('/api/business', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(business),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        saveStatus.textContent = 'Saved ✓  AI will use this from the next conversation.';
+        saveStatus.className = 'save-status ok';
+        setTimeout(() => { saveStatus.textContent = ''; }, 6000);
+      } catch (err) {
+        saveStatus.textContent = err.message || 'Save failed.';
+        saveStatus.className = 'save-status err';
+      } finally {
+        saveBtn.disabled = false;
+      }
+    }
+
+    // ---- Wire up ----
+    openTimeEl.value  = state.openTime;
+    closeTimeEl.value = state.closeTime;
+    openTimeEl.addEventListener('change',  () => { state.openTime  = openTimeEl.value;  saveState(); renderSummary(); });
+    closeTimeEl.addEventListener('change', () => { state.closeTime = closeTimeEl.value; saveState(); renderSummary(); });
+    prevBtn.addEventListener('click',  () => { cursor.setMonth(cursor.getMonth() - 1); renderCalendar(); });
+    nextBtn.addEventListener('click',  () => { cursor.setMonth(cursor.getMonth() + 1); renderCalendar(); });
+    todayBtn.addEventListener('click', () => { cursor = new Date(); cursor.setDate(1); renderCalendar(); });
+    saveBtn.addEventListener('click',  saveToBackend);
+
+    renderToggles();
+    renderCalendar();
+    renderSummary();
   })();
 </script>
 </body>
