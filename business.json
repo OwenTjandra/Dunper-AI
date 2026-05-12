@@ -1,37 +1,34 @@
 {
-  "name": "Dr. Smith Dental Clinic",
-  "type": "dental clinic",
-  "hours": "Monday to Friday, 9:00 AM - 5:00 PM. Closed weekends and public holidays.",
-  "address": "123 Example Street, Jakarta",
-  "phone": "+62 21 1234 5678",
-  "tone": "Warm, professional, and reassuring. Many patients are nervous about dental visits.",
-  "fallback_contact": "If a question is outside what you can help with, ask the customer to call us at +62 21 1234 5678 during business hours.",
+  "name": "Dunper AI",
+  "type": "AI receptionist platform for small businesses",
+  "hours": "Monday to Friday, 9:00 AM to 6:00 PM (Jakarta time, UTC+7). Async chat is open 24/7; the human team replies within an hour during business hours and within 24h otherwise.",
+  "address": "Remote — Jakarta, Indonesia",
+  "phone": "dunperai@gmail.com",
+  "tone": "Friendly, plain-language, helpful. You're talking to small-business owners — many have never heard the word 'API.' Avoid jargon. Lead with what changes for them (\"your customers get instant replies 24/7\") not how it works under the hood. If you don't know something, say so honestly and offer to email the team or book a call.",
+  "fallback_contact": "If a visitor asks something you can't answer, point them at dunperai@gmail.com or offer to book a quick discovery call.",
   "services": [
     {
-      "name": "Routine Cleaning",
+      "name": "Discovery call",
+      "duration_minutes": 15,
+      "price": "Free"
+    },
+    {
+      "name": "Live product demo",
       "duration_minutes": 30,
-      "price": "Rp 350,000"
+      "price": "Free"
     },
     {
-      "name": "Filling",
-      "duration_minutes": 45,
-      "price": "Rp 500,000"
-    },
-    {
-      "name": "Teeth Whitening",
+      "name": "Onboarding session",
       "duration_minutes": 60,
-      "price": "Rp 1,500,000"
-    },
-    {
-      "name": "Consultation",
-      "duration_minutes": 20,
-      "price": "Free for new patients"
+      "price": "Included with any paid plan"
     }
   ],
   "booking_rules": [
-    "Appointments require at least 24 hours advance notice.",
-    "Cancellations must be made at least 12 hours before the appointment.",
-    "No appointments on Sundays or public holidays.",
-    "First-time patients should arrive 15 minutes early to fill out paperwork."
-  ]
+    "Bookings need at least 24 hours notice.",
+    "Discovery calls and demos are free — no credit card required.",
+    "If you're not sure which option to pick, start with a 15-minute discovery call. We can always extend or rebook.",
+    "Onboarding sessions are for customers on the Pro or Max plan.",
+    "Cancellations or reschedules: email dunperai@gmail.com and we'll take care of it."
+  ],
+  "about": "Dunper AI is the always-on AI receptionist for small businesses. We drop into a business's website or WhatsApp and reply to every customer in 60+ languages, 24/7 — answering questions, booking appointments, qualifying leads, handing off to a human when needed.\n\nWHAT IT IS\n- An AI receptionist your customers chat with on your website or WhatsApp.\n- It learns your business in plain English (no developer needed).\n- It books real appointments into your Google Calendar.\n- It logs every customer to a dashboard you control.\n- It hands off to a human the moment it doesn't know.\n\nPRICING (USD/mo)\n- Starter — Free. 100 conversations / month. 1 language. Solo founders or testing.\n- Pro — $20/mo. 500 conversations / month. 5 languages. Most small businesses pick this.\n- Max — $50/mo. 2,000 conversations / month. 40+ languages. Multi-location or growing teams.\n- Every plan: unlimited customer data, a custom agent tuned to your business, all chatbot features. No card to start.\n\nLANGUAGES\nDunper speaks 60+ languages including Bahasa Indonesia, English, Mandarin, Spanish, Tagalog, Arabic, Vietnamese, Thai, Japanese. It switches automatically mid-conversation: a customer can write in Bahasa and you can read it back in English.\n\nINTEGRATIONS\n- Google Calendar — real bookings appear in your calendar instantly. One-click connect.\n- Google Sheets — every customer row is auto-updated (name, phone, last seen, summary, sentiment).\n- WhatsApp Business Cloud API — same brain replies on your WhatsApp number too.\n- Custom webhooks — for anything else (CRMs, ticket systems, etc.).\n\nWHO USES IT\nSalons, dental clinics, restaurants, hotels, retail shops, spas, tutoring centers, repair shops, warungs. Any small business that answers the same questions over and over and books appointments.\n\nWHO BUILT IT\nFive co-founders out of Jakarta — two front-end engineers, two back-end engineers, one running marketing and support. Built for Indonesian SMEs first, then the rest of Southeast Asia.\n\nCONTACT\n- Email: dunperai@gmail.com\n- Instagram: @dunper.ai\n- GitHub: github.com/OwenTjandra/Dunper-AI (open source)\n\nFAQ\n- 'Will it replace my staff?' No — it covers the front desk so your team can focus on customers who need real human attention.\n- 'How is it different from ChatGPT?' Dunper is the wrapper around the chatbot you'd otherwise have to build — it already knows how to book appointments, hand off to humans, log conversations, send confirmation emails. You teach it about your business; it does the rest.\n- 'How long to set up?' 60 seconds to sign up, ~15 minutes to fill out your business config, then it's live.\n- 'How is my data handled?' Each business's data is isolated — never pooled, shared, or sold. End-to-end encrypted in transit. GDPR-style deletion on request."
 }

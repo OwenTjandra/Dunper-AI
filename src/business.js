@@ -18,6 +18,12 @@ function buildSystemPrompt(b) {
     .map(s => `- ${s.name} (${s.duration_minutes} min, ${s.price})`)
     .join('\n') || '(none listed)';
   const rules = (b.booking_rules || []).map(r => `- ${r}`).join('\n') || '(none listed)';
+  // Optional free-text block for richer product/business knowledge that
+  // doesn't fit cleanly into hours/services/rules — e.g. pricing plans,
+  // language coverage, integrations, FAQ-style facts. Only rendered if set.
+  const aboutBlock = (typeof b.about === 'string' && b.about.trim())
+    ? `\n\nABOUT\n${b.about.trim()}`
+    : '';
 
   return `You are the AI frontdesk assistant for ${b.name}, a ${b.type}.
 
@@ -31,7 +37,7 @@ SERVICES
 ${services}
 
 BOOKING RULES
-${rules}
+${rules}${aboutBlock}
 
 TONE
 ${b.tone}
@@ -75,6 +81,8 @@ function validateBusiness(b) {
   }
   if (!Array.isArray(b.booking_rules)) return 'booking_rules must be an array.';
   if (!b.booking_rules.every(r => typeof r === 'string')) return 'booking_rules must contain only strings.';
+  // about is optional — when present it must be a string.
+  if (b.about !== undefined && typeof b.about !== 'string') return 'about must be a string if provided.';
   return null;
 }
 
