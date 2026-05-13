@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { db } = require('./db');
 
-const BACKUP_DIR = path.join(__dirname, '..', 'backups');
+const BACKUP_DIR = process.env.BACKUP_DIR || path.join(__dirname, '..', 'backups');
 const KEEP_DAYS = 7;
 const INTERVAL_MS = 24 * 60 * 60 * 1000;
 

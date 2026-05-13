@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Cloudflare Tunnel for dunper.com. Pinned to the named tunnel "dunper".
+  Assumes cloudflared is installed via Homebrew (/opt/homebrew/bin/cloudflared)
+  and the tunnel credentials JSON is at ~/.cloudflared/<UUID>.json.
+
+  Placeholders replaced by infra/launchd/install.sh:
+    {{TUNNEL_NAME}}  — e.g. dunper
+    {{LOG_DIR}}      — e.g. /Users/owen/Documents/Dunper-AI/.logs
+    {{HOME_DIR}}     — e.g. /Users/owen
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.dunper.tunnel</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/cloudflared</string>
+    <string>tunnel</string>
+    <string>--config</string>
+    <string>{{HOME_DIR}}/.cloudflared/config.yml</string>
+    <string>run</string>
+    <string>{{TUNNEL_NAME}}</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <key>StandardOutPath</key>
+  <string>{{LOG_DIR}}/tunnel.log</string>
+  <key>StandardErrorPath</key>
+  <string>{{LOG_DIR}}/tunnel.err.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+</dict>
+</plist>

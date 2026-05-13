@@ -2,7 +2,11 @@ const path = require('path');
 const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 
-const DB_PATH = path.join(__dirname, '../data.db');
+// Env override lets one codebase host many customer instances on a single
+// Mac mini (see docs/mac-mini-scaling-plan.md). Each instance points to
+// its own SQLite file via DATABASE_PATH. Default keeps the legacy
+// single-instance behaviour.
+const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, '../data.db');
 
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Main dunper.com Node server. Single-instance template.
+  For per-customer instances, see scripts/onboard-client.sh which
+  generates a plist per workspace.
+
+  Placeholders replaced by infra/launchd/install.sh:
+    {{DUNPER_REPO}}  — e.g. /Users/owen/Documents/Dunper-AI
+    {{LOG_DIR}}      — e.g. /Users/owen/Documents/Dunper-AI/.logs
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.dunper.server</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/env</string>
+    <string>bash</string>
+    <string>-lc</string>
+    <string>cd "{{DUNPER_REPO}}" && export $(grep -v '^#' .env | xargs) && exec node src/server.js</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Restart on crash, with a 10-second backoff to avoid tight loops -->
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <key>WorkingDirectory</key>
+  <string>{{DUNPER_REPO}}</string>
+
+  <key>StandardOutPath</key>
+  <string>{{LOG_DIR}}/server.log</string>
+  <key>StandardErrorPath</key>
+  <string>{{LOG_DIR}}/server.err.log</string>
+
+  <!-- Inherit the user's PATH (so node, sqlite3 etc. are found) -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>NODE_ENV</key>
+    <string>production</string>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+</dict>
+</plist>

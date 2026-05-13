@@ -2,7 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const { recordBusinessVersion } = require('./db');
 
-const BUSINESS_PATH = path.join(__dirname, '../business.json');
+// Env override lets one codebase host many customer instances on a single
+// Mac mini (see docs/mac-mini-scaling-plan.md). Each instance points to
+// its own business.json via BUSINESS_PATH. Default keeps the legacy
+// single-instance behaviour.
+const BUSINESS_PATH = process.env.BUSINESS_PATH || path.join(__dirname, '../business.json');
 
 function loadBusiness() {
   try {

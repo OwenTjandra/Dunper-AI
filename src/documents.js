@@ -9,10 +9,13 @@ const {
   deleteBusinessDocument,
 } = require('./db');
 
-const UPLOADS_ROOT = path.join(__dirname, '..', 'uploads');
+// Env overrides for multi-instance hosting on one Mac mini. Each customer
+// gets its own UPLOADS_ROOT so attachments don't collide. PUBLIC_UPLOADS
+// stays per-instance because business logos are served by Express static.
+const UPLOADS_ROOT = process.env.UPLOADS_DIR || path.join(__dirname, '..', 'uploads');
 const BUSINESS_DOCS_DIR = path.join(UPLOADS_ROOT, 'business');
 const CUSTOMER_UPLOADS_DIR = path.join(UPLOADS_ROOT, 'customer');
-const PUBLIC_UPLOADS_DIR = path.join(__dirname, '..', 'public', 'uploads');
+const PUBLIC_UPLOADS_DIR = process.env.PUBLIC_UPLOADS_DIR || path.join(__dirname, '..', 'public', 'uploads');
 const BUSINESS_LOGOS_DIR = path.join(PUBLIC_UPLOADS_DIR, 'business-logos');
 fs.mkdirSync(BUSINESS_DOCS_DIR, { recursive: true });
 fs.mkdirSync(CUSTOMER_UPLOADS_DIR, { recursive: true });
